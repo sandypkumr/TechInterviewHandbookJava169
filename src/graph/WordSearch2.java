@@ -1,0 +1,60 @@
+package graph;
+
+import java.util.*;
+
+public class WordSearch2 {
+    class TrieNode {
+        Map<Character, TrieNode> children = new HashMap<>();
+        String word = null;
+    }
+
+    private char[][] board;
+    private Set<String> result = new HashSet<>();
+    private int m, n;
+
+    public List<String> findWords(char[][] board, String[] words) {
+        this.board = board;
+        m = board.length;
+        n = board[0].length;
+
+        TrieNode root = new TrieNode();
+
+        for (String word : words) {
+            TrieNode node = root;
+            for (char c : word.toCharArray()) {
+                node = node.children.computeIfAbsent(c, k -> new TrieNode());
+            }
+            node.word = word;
+        }
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (root.children.containsKey(board[i][j])) {
+                    dfs(i, j, root);
+                }
+            }
+        }
+
+        return new ArrayList<>(result);
+    }
+
+    private void dfs(int i, int j, TrieNode node) {
+        char c = board[i][j];
+        TrieNode curr = node.children.get(c);
+        if (curr == null) return;
+        if (curr.word != null) {
+            result.add(curr.word);
+        }
+        board[i][j] = '#';
+
+        int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        for (int[] dir : dirs) {
+            int newX = i + dir[0];
+            int newY = j + dir[1];
+            if (newX >= 0 && newX < m && newY >= 0 && newY < n && board[newX][newY] != '#') {
+                dfs(newX, newY, curr);
+            }
+        }
+        board[i][j] = c;
+    }
+}
