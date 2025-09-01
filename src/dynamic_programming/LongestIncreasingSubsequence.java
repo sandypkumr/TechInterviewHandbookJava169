@@ -1,6 +1,6 @@
 package dynamic_programming;
 
-public class LongestIncreasingSequence {
+public class LongestIncreasingSubsequence {
     public int lengthOfLIS(int[] nums) {
         if (nums == null || nums.length == 0) {
             return 0;
