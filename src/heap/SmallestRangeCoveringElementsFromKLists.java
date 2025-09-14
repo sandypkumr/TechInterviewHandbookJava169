@@ -1,0 +1,39 @@
+package heap;
+
+import java.util.List;
+import java.util.PriorityQueue;
+
+public class SmallestRangeCoveringElementsFromKLists {
+    public int[] smallestRange(List<List<Integer>> nums) {
+        PriorityQueue<int[]> minHeap = new PriorityQueue<>((a, b) -> a[0] - b[0]);
+
+        int currentMax = Integer.MIN_VALUE;
+        for (int i = 0; i < nums.size(); i++) {
+            int val = nums.get(i).get(0);
+            minHeap.offer(new int[]{val, i, 0});
+            currentMax = Math.max(currentMax, val);
+        }
+
+        int rangeStart = 0, rangeEnd = Integer.MAX_VALUE;
+
+        while (minHeap.size() == nums.size()) {
+            int[] entry = minHeap.poll();
+            int val = entry[0], listIndex = entry[1], elementIndex = entry[2];
+
+            if (currentMax - val < rangeEnd - rangeStart) {
+                rangeStart = val;
+                rangeEnd = currentMax;
+            }
+
+            if (elementIndex + 1 < nums.get(listIndex).size()) {
+                int nextVal = nums.get(listIndex).get(elementIndex + 1);
+                minHeap.offer(new int[]{nextVal, listIndex, elementIndex + 1});
+                currentMax = Math.max(currentMax, nextVal);
+            } else {
+                break;
+            }
+        }
+
+        return new int[]{rangeStart, rangeEnd};
+    }
+}
