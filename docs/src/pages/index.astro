@@ -1,9 +1,37 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const allProblems  = await getCollection('problems');
+const hardProblems = allProblems
+  .filter(p => p.data.difficulty === 'Hard')
+  .sort((a, b) => a.data.title.localeCompare(b.data.title));
+const hardPreview  = hardProblems.slice(0, 7);
+const hardExtra    = hardProblems.length - hardPreview.length;
+
+const TOPIC_LABELS: Record<string, string> = {
+  array: 'Array', binary: 'Binary', binary_search: 'Binary Search',
+  binary_search_tree: 'BST', binary_tree: 'Binary Tree',
+  dynamic_programming: 'Dynamic Programming', graph: 'Graph',
+  hash_table: 'Hash Table', heap: 'Heap', linked_list: 'Linked List',
+  math: 'Math', matrix: 'Matrix', queue: 'Queue',
+  recursion: 'Recursion', stack: 'Stack', string: 'String', trie: 'Trie',
+};
+
+const revisionItems = [
+  { href: `${base}/cheatsheets/java-collections`,       tag: 'Cheat Sheet', tagColor: 'tag-sheet', title: 'Java Collections',    desc: 'HashMap, PriorityQueue, Deque, TreeMap APIs'   },
+  { href: `${base}/cheatsheets/sliding-window`,         tag: 'Template',    tagColor: 'tag-tmpl',  title: 'Sliding Window',      desc: 'Variable & fixed window templates'             },
+  { href: `${base}/cheatsheets/bfs-dfs-templates`,      tag: 'Template',    tagColor: 'tag-tmpl',  title: 'BFS / DFS Templates', desc: 'Graph traversal, topological sort'             },
+  { href: `${base}/cheatsheets/complexity-reference`,   tag: 'Reference',   tagColor: 'tag-ref',   title: 'Complexity Reference', desc: 'Big-O table for common algorithms'            },
+  { href: `${base}/cheatsheets/binary-search-templates`,tag: 'Template',    tagColor: 'tag-tmpl',  title: 'Binary Search',       desc: 'Left, right, answer-space patterns'            },
+  { href: `${base}/cheatsheets/dp-patterns`,            tag: 'Pattern',     tagColor: 'tag-pat',   title: 'DP Patterns',         desc: 'Transition types, common subproblems'          },
+  { href: `${base}/cheatsheets/graph-algorithms`,       tag: 'Reference',   tagColor: 'tag-ref',   title: 'Graph Algorithms',    desc: 'Dijkstra, Kahn\'s topo sort, DFS'              },
+  { href: `${base}/cheatsheets/trie-heap-unionfind`,    tag: 'Reference',   tagColor: 'tag-ref',   title: 'Trie / Heap / DSU',   desc: 'Trie class, top-K heap, Union-Find'            },
+];
 
 const topics = [
   { slug: 'array',               label: 'Array',               count: 24, icon: '📊', desc: 'Sliding window, two pointers, prefix sums, intervals',  easy: 7,  med: 15, hard: 2 },
@@ -82,6 +110,57 @@ const topics = [
           </div>
         </a>
       ))}
+    </div>
+  </section>
+
+  <!-- ── Hard Problems ────────────────────────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Hard Problems</h2>
+        <p class="section-sub">{hardProblems.length} problems · revisit these before your interview</p>
+      </div>
+      <a href={`${base}/revision`} class="view-all">All problems →</a>
+    </div>
+    <div class="hard-grid">
+      {hardPreview.map(p => (
+        <a href={`${base}/problems/${p.slug}`} class="hard-card">
+          <div class="hard-card-top">
+            <span class="hard-badge">HARD</span>
+            <div class="hard-bar"></div>
+          </div>
+          <div class="hard-title">{p.data.title}</div>
+          <div class="hard-topic">{TOPIC_LABELS[p.data.topic] ?? p.data.topic}</div>
+        </a>
+      ))}
+      {hardExtra > 0 && (
+        <a href={`${base}/revision`} class="hard-card hard-more">
+          <div class="hard-more-count">+{hardExtra} more Hard</div>
+          <div class="hard-more-link">Browse all →</div>
+        </a>
+      )}
+    </div>
+  </section>
+
+  <!-- ── Quick Revision ────────────────────────────────────────────── -->
+  <section class="revision-section">
+    <div class="revision-inner">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Quick Revision</h2>
+          <p class="section-sub">Cheat sheets, templates, and reference guides</p>
+        </div>
+        <a href={`${base}/cheatsheets/java-collections`} class="view-all">View all →</a>
+      </div>
+      <div class="revision-grid">
+        {revisionItems.map(item => (
+          <a href={item.href} class="revision-card">
+            <span class={`rev-tag ${item.tagColor}`}>{item.tag}</span>
+            <div class="rev-title">{item.title}</div>
+            <div class="rev-desc">{item.desc}</div>
+          </a>
+        ))}
+      </div>
     </div>
   </section>
 
@@ -330,6 +409,127 @@ const topics = [
     border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
   }
 
+  /* ── Section sub-heading ── */
+  .section-sub {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin: 0.2rem 0 0;
+  }
+
+  /* ── Hard Problems grid ── */
+  .hard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.875rem;
+  }
+  .hard-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem 1.125rem 1.125rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .hard-card:hover { border-color: var(--color-hard); transform: translateY(-2px); }
+  .hard-card-top { display: flex; flex-direction: column; gap: 0.375rem; }
+  .hard-badge {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--color-hard);
+    background: var(--color-hard-bg);
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    width: fit-content;
+  }
+  .hard-bar {
+    height: 2px;
+    background: var(--color-hard);
+    border-radius: 1px;
+    opacity: 0.6;
+  }
+  .hard-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.4;
+    flex: 1;
+  }
+  .hard-topic {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+  .hard-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px dashed var(--color-border);
+    background: transparent;
+  }
+  .hard-more:hover { border-color: var(--color-hard); }
+  .hard-more-count {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-hard);
+  }
+  .hard-more-link {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+
+  /* ── Quick Revision section ── */
+  .revision-section {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 3.5rem;
+  }
+  .revision-inner {
+    padding: 2.5rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .revision-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 0.875rem;
+  }
+  .revision-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 1rem 1.125rem;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .revision-card:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+  .rev-tag {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    width: fit-content;
+    margin-bottom: 0.125rem;
+  }
+  .tag-sheet { color: #22d3ee; background: rgba(34,211,238,0.12); }
+  .tag-tmpl  { color: var(--color-accent-h); background: var(--color-accent-bg); }
+  .tag-ref   { color: #fb923c; background: rgba(251,146,60,0.12); }
+  .tag-pat   { color: #4ade80; background: rgba(74,222,128,0.12); }
+  .rev-title { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
+  .rev-desc  { font-size: 0.775rem; color: var(--color-text-muted); line-height: 1.5; }
+
   @media (max-width: 900px) {
     .patterns-cta { flex-direction: column; gap: 1.5rem; }
     .cta-content p { max-width: none; }
@@ -337,8 +537,11 @@ const topics = [
   @media (max-width: 640px) {
     .hero    { padding: 2.5rem 1rem 2.5rem; }
     .section { padding: 0 1rem; }
+    .revision-inner { padding: 2rem 1rem; }
     .patterns-cta { padding: 1.5rem; margin: 0 1rem 2rem; }
     .topics-grid  { grid-template-columns: 1fr 1fr; }
+    .hard-grid    { grid-template-columns: 1fr 1fr; }
+    .revision-grid { grid-template-columns: 1fr 1fr; }
     .stats-bar    { padding: 0.75rem 0.75rem; }
     .stat-item    { padding: 0 0.75rem; }
     .stat-sep     { display: none; }
