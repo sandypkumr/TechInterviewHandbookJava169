@@ -5,7 +5,9 @@
   "description": "Content generation pipeline for the DSA Learning Portal",
   "scripts": {
     "generate": "node generate-content.mjs",
-    "validate": "node validate-content.mjs"
+    "validate": "node validate-content.mjs",
+    "fetch:descriptions": "node fetch-leetcode.mjs",
+    "enrich:descriptions": "node enrich-descriptions.mjs --write"
   },
   "dependencies": {
     "xlsx": "0.18.5"

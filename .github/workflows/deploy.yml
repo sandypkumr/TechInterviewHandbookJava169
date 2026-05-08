@@ -46,6 +46,10 @@ jobs:
         run: node enrich-metadata.mjs --write
         working-directory: scripts
 
+      - name: Enrich MDX with LeetCode problem descriptions
+        run: node enrich-descriptions.mjs --write
+        working-directory: scripts
+
       - name: Validate generated content
         run: node validate-content.mjs
         working-directory: scripts
