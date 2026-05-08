@@ -1,0 +1,47 @@
+---
+title: "Valid Anagram"
+difficulty: "Easy"
+topic: "string"
+leetcodeUrl: "https://leetcode.com/problems/valid-anagram"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/string/ValidAnagram.java"
+patterns: ["hash-map"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/valid-anagram) for the problem statement.
+
+## Java Solution
+
+```java
+package string;
+
+public class ValidAnagram {
+    public boolean isAnagram(String s, String t) {
+        if (s.length() != t.length()) {
+            return false;
+        }
+
+        int[] charCount = new int[26]; // Assuming only lowercase letters a-z
+
+        for (int i = 0; i < s.length(); i++) {
+            charCount[s.charAt(i) - 'a']++;
+            charCount[t.charAt(i) - 'a']--;
+        }
+
+        for (int count : charCount) {
+            if (count != 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+```

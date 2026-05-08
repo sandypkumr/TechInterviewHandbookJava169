@@ -1,0 +1,43 @@
+---
+title: "Combination Sum IV"
+difficulty: "Medium"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/combination-sum-iv"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/CombinationSum4.java"
+patterns: ["dynamic-programming"]
+tags: []
+timeComplexity: "O(n·target)"
+spaceComplexity: "O(target)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/combination-sum-iv) for the problem statement.
+
+**Patterns:** `backtracking`, `dynamic-programming`
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class CombinationSum4 {
+    public int combinationSum4(int[] nums, int target) {
+        int[] dp = new int[target + 1];
+        dp[0] = 1;
+
+        for (int i = 1; i <= target; i++) {
+            for (int num : nums) {
+                if (i - num >= 0) {
+                    dp[i] += dp[i - num];
+                }
+            }
+        }
+
+        return dp[target];
+    }
+}
+```

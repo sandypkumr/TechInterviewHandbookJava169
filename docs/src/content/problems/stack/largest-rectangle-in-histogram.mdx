@@ -1,0 +1,45 @@
+---
+title: "Largest Rectangle in Histogram"
+difficulty: "Hard"
+topic: "stack"
+leetcodeUrl: "https://leetcode.com/problems/largest-rectangle-in-histogram"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/stack/LargestRectangleInHistogram.java"
+patterns: ["monotonic-stack"]
+tags: ["classic"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Stack","Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/largest-rectangle-in-histogram) for the problem statement.
+
+## Java Solution
+
+```java
+package stack;
+
+import java.util.Stack;
+
+public class LargestRectangleInHistogram {
+    public int largestRectangleArea(int[] heights) {
+        Stack<Integer> stack = new Stack<>();
+        int maxArea = 0;
+        int n = heights.length;
+
+        for (int i = 0; i <= n; i++) {
+            int h = (i == n) ? 0 : heights[i];
+            while (!stack.isEmpty() && h < heights[stack.peek()]) {
+                int height = heights[stack.pop()];
+                int width = stack.isEmpty() ? i : i - stack.peek() - 1;
+                maxArea = Math.max(maxArea, height * width);
+            }
+            stack.push(i);
+        }
+        return maxArea;
+    }
+}
+```

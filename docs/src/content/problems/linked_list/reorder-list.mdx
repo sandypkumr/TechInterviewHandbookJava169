@@ -1,0 +1,69 @@
+---
+title: "Reorder List"
+difficulty: "Medium"
+topic: "linked_list"
+leetcodeUrl: "https://leetcode.com/problems/reorder-list"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/linked_list/ReorderList.java"
+patterns: ["fast-slow-pointers","two-pointers"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/reorder-list) for the problem statement.
+
+**Patterns:** `two-pointers`, `fast-slow-pointers`
+
+## Java Solution
+
+```java
+package linked_list;
+
+public class ReorderList {
+    public void reorderList(ListNode head) {
+        if (head == null || head.next == null) {
+            return;
+        }
+
+        // Step 1: Find the middle of the list
+        ListNode slow = head;
+        ListNode fast = head;
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+
+        // Step 2: Reverse the second half of the list
+        ListNode prev = null;
+        ListNode curr = slow;
+        while (curr != null) {
+            ListNode nextTemp = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = nextTemp;
+        }
+
+        // Step 3: Merge the two halves
+        ListNode first = head;
+        ListNode second = prev;
+
+        while (second != null) {
+            ListNode temp1 = first.next;
+            ListNode temp2 = second.next;
+
+            first.next = second;
+            if (second != temp1) {
+                second.next  = temp1;
+            }
+
+            first = temp1;
+            second = temp2;
+        }
+    }
+}
+```

@@ -1,0 +1,39 @@
+---
+title: "Best Time to Buy and Sell Stock"
+difficulty: "Easy"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/best-time-to-buy-and-sell-stock"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/BestTimeToBuyAndSellStock.java"
+patterns: ["greedy","sliding-window"]
+tags: ["classic"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Math.max/min","Integer.MAX/MIN_VALUE"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/best-time-to-buy-and-sell-stock) for the problem statement.
+
+## Java Solution
+
+```java
+package array;
+
+public class BestTimeToBuyAndSellStock {
+    public int maxProfit(int[] prices) {
+        int maxProfit = 0;
+        int minPrice = Integer.MAX_VALUE;
+        for (int price : prices) {
+            if (price < minPrice) {
+                minPrice = price;
+            } else {
+                maxProfit = Math.max(maxProfit, price - minPrice);
+            }
+        }
+        return maxProfit;
+    }
+}
+```

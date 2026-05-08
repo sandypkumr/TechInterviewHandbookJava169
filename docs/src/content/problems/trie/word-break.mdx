@@ -1,0 +1,47 @@
+---
+title: "Word Break"
+difficulty: "Medium"
+topic: "trie"
+leetcodeUrl: "https://leetcode.com/problems/word-break"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/trie/WordBreak.java"
+patterns: ["dynamic-programming","trie"]
+tags: []
+timeComplexity: "O(n³)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/word-break) for the problem statement.
+
+**Patterns:** `dynamic-programming`
+
+## Java Solution
+
+```java
+package trie;
+
+import java.util.List;
+
+public class WordBreak {
+    public boolean wordBreak(String s, List<String> wordDict) {
+        int n = s.length();
+        boolean[] dp = new boolean[n + 1];
+        dp[0] = true;
+
+        for (int i = 1; i <= n; i++) {
+            for (String word : wordDict) {
+                int len = word.length();
+                if (i >= len && s.substring(i - len, i).equals(word)) {
+                    dp[i] = dp[i] || dp[i - len];
+                }
+            }
+        }
+
+        return dp[n];
+    }
+}
+```

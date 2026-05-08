@@ -1,0 +1,46 @@
+---
+title: "Find Minimum in Rotated Sorted Array"
+difficulty: "Medium"
+topic: "binary_search"
+leetcodeUrl: "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search/FindMinimumInRotatedSortedArray.java"
+patterns: ["binary-search"]
+tags: []
+timeComplexity: "O(log n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/find-minimum-in-rotated-sorted-array) for the problem statement.
+
+**Patterns:** `sliding-window`
+
+## Java Solution
+
+```java
+package binary_search;
+
+public class FindMinimumInRotatedSortedArray {
+    public int findMin(int[] nums) {
+        int left = 0;
+        int right = nums.length - 1;
+
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+
+            // Decide which half to continue searching
+            if (nums[mid] < nums[right]) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        return nums[left]; // The minimum element
+    }
+}
+```

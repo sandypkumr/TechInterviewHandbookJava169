@@ -1,0 +1,43 @@
+---
+title: "Kth Largest Element in an Array"
+difficulty: "Medium"
+topic: "heap"
+leetcodeUrl: "https://leetcode.com/problems/kth-largest-element-in-an-array"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/heap/KthLargestElementInAnArray.java"
+patterns: ["heap"]
+tags: []
+timeComplexity: "O(n log k)"
+spaceComplexity: "O(k)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["PriorityQueue"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/kth-largest-element-in-an-array) for the problem statement.
+
+**Patterns:** `heap`
+
+## Java Solution
+
+```java
+package heap;
+
+import java.util.PriorityQueue;
+
+public class KthLargestElementInAnArray {
+    public int findKthLargest(int[] nums, int k) {
+        PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+
+        for (int num : nums) {
+            minHeap.offer(num);
+            if (minHeap.size() > k) {
+                minHeap.poll();
+            }
+        }
+
+        return minHeap.peek();
+    }
+}
+```

@@ -1,0 +1,45 @@
+---
+title: "Invert Binary Tree"
+difficulty: "Easy"
+topic: "binary_tree"
+leetcodeUrl: "https://leetcode.com/problems/invert-binary-tree"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/InvertBinaryTree.java"
+patterns: ["dfs"]
+tags: ["classic"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(h)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/invert-binary-tree) for the problem statement.
+
+**Patterns:** `sliding-window`
+
+## Java Solution
+
+```java
+package binary_tree;
+
+public class InvertBinaryTree {
+    public TreeNode invertTree(TreeNode root) {
+        if (root == null) {
+            return null;
+        }
+
+        // Swap the left and right children
+        TreeNode temp = root.left;
+        root.left = root.right;
+        root.right = temp;
+
+        // Recursively invert the left and right subtrees
+        invertTree(root.left);
+        invertTree(root.right);
+
+        return root;
+    }
+}
+```

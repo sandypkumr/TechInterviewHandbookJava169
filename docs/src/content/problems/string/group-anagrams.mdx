@@ -1,0 +1,42 @@
+---
+title: "Group Anagrams"
+difficulty: "Medium"
+topic: "string"
+leetcodeUrl: "https://leetcode.com/problems/group-anagrams"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/string/GroupAnagrams.java"
+patterns: ["hash-map"]
+tags: []
+timeComplexity: "O(n·k log k)"
+spaceComplexity: "O(n·k)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashMap","ArrayList","Arrays.sort"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/group-anagrams) for the problem statement.
+
+## Java Solution
+
+```java
+package string;
+
+import java.util.*;
+
+public class GroupAnagrams {
+    public List<List<String>> groupAnagrams(String[] strs) {
+        Map<String, List<String>> map = new HashMap<>();
+
+        for (String str : strs) {
+            char[] charArray = str.toCharArray();
+            Arrays.sort(charArray);
+            String sortedStr = new String(charArray);
+
+            map.computeIfAbsent(sortedStr, k -> new ArrayList<>()).add(str);
+        }
+
+        return new ArrayList<>(map.values());
+    }
+}
+```

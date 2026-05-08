@@ -1,0 +1,42 @@
+---
+title: "Symmetric Tree"
+difficulty: "Easy"
+topic: "binary_tree"
+leetcodeUrl: "https://leetcode.com/problems/symmetric-tree"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/SymmetricTree.java"
+patterns: ["sliding-window"]
+tags: []
+timeComplexity: ""
+spaceComplexity: ""
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/symmetric-tree) for the problem statement.
+
+**Patterns:** `sliding-window`
+
+## Java Solution
+
+```java
+package binary_tree;
+
+public class SymmetricTree {
+    public boolean isSymmetric(TreeNode root) {
+        return isMirror(root.left, root.right);
+    }
+
+    private boolean isMirror(TreeNode left, TreeNode right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.val == right.val && isMirror(left.left, right.right) && isMirror(left.right, right.left);
+    }
+}
+```

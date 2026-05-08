@@ -1,0 +1,53 @@
+---
+title: "Non-overlapping Intervals"
+difficulty: "Medium"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/non-overlapping-intervals"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/NonOverlappingIntervals.java"
+patterns: ["greedy","merge-intervals"]
+tags: []
+timeComplexity: "O(n log n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Arrays.sort"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/non-overlapping-intervals) for the problem statement.
+
+**Patterns:** `merge-intervals`
+
+## Java Solution
+
+```java
+package array;
+
+import java.util.Arrays;
+import java.util.Comparator;
+
+public class NonOverlappingIntervals {
+    public int eraseOverlapIntervals(int[][] intervals) {
+        if (intervals == null || intervals.length == 0) {
+            return 0;
+        }
+
+        // Sort the intervals based on their end times
+        Arrays.sort(intervals, Comparator.comparingInt(a -> a[1]));
+
+        int count = 0;
+        int end = intervals[0][1];
+
+        for (int i = 1; i < intervals.length; i++) {
+            if (intervals[i][0] < end) {
+                count++; // Overlapping interval found
+            } else {
+                end = intervals[i][1]; // Update the end time
+            }
+        }
+
+        return count;
+    }
+}
+```

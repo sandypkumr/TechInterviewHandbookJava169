@@ -1,0 +1,33 @@
+---
+title: "Maximum Depth of Binary Tree"
+difficulty: "Easy"
+topic: "binary_tree"
+leetcodeUrl: "https://leetcode.com/problems/maximum-depth-of-binary-tree"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/MaximumDepthOfBinaryTree.java"
+patterns: ["dfs","bfs"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(h)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/maximum-depth-of-binary-tree) for the problem statement.
+
+## Java Solution
+
+```java
+package binary_tree;
+
+public class MaximumDepthOfBinaryTree {
+    public int maxDepth(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        return Math.max(maxDepth(root.left), maxDepth(root.right)) + 1;
+    }
+}
+```

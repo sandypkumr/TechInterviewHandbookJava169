@@ -1,0 +1,206 @@
+---
+import { Code } from 'astro:components';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/layout/Sidebar.astro';
+import Header from '../../components/layout/Header.astro';
+import Footer from '../../components/layout/Footer.astro';
+import { CHEATSHEETS, CHEATSHEET_MAP } from '../../data/cheatsheets';
+
+export function getStaticPaths() {
+  return CHEATSHEETS.map(c => ({ params: { sheet: c.slug } }));
+}
+
+const { sheet }   = Astro.params;
+const cs          = CHEATSHEET_MAP[sheet];
+const base        = import.meta.env.BASE_URL.replace(/\/$/, '');
+const allSheets   = CHEATSHEETS;
+---
+
+<BaseLayout title={`${cs.title} Cheat Sheet`} description={cs.description}>
+  <Sidebar slot="sidebar" />
+  <Header  slot="header"  />
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={`${base}/`}>Home</a>
+    <span>›</span>
+    <span aria-current="page">Cheatsheets</span>
+    <span>›</span>
+    <span aria-current="page">{cs.title}</span>
+  </nav>
+
+  <header class="sheet-header">
+    <span class="sheet-icon" aria-hidden="true">{cs.icon}</span>
+    <div>
+      <h1 class="sheet-title">{cs.title} <span class="sheet-badge">Cheat Sheet</span></h1>
+      <p class="sheet-desc">{cs.description}</p>
+    </div>
+  </header>
+
+  <!-- Sheet navigation pills -->
+  <div class="sheet-nav">
+    {allSheets.map(s => (
+      <a
+        href={`${base}/cheatsheets/${s.slug}`}
+        class={`sheet-pill${s.slug === sheet ? ' active' : ''}`}
+      >{s.icon} {s.title}</a>
+    ))}
+  </div>
+
+  <!-- Sections -->
+  <div class="sheet-body">
+    {cs.sections.map(section => {
+      if (section.type === 'heading') return (
+        <h2 class="sec-heading">{section.text}</h2>
+      );
+      if (section.type === 'note') return (
+        <p class="sec-note">{section.text}</p>
+      );
+      if (section.type === 'tip') return (
+        <div class={`callout callout-${section.variant}`}>
+          <span class="callout-icon">
+            {section.variant === 'key' ? '🔑' : section.variant === 'warning' ? '⚠️' : '💡'}
+          </span>
+          <span class="callout-text">{section.text}</span>
+        </div>
+      );
+      if (section.type === 'list') return (
+        <div class="sec-list">
+          {section.title && <h3 class="sec-list-title">{section.title}</h3>}
+          <ul>
+            {section.items.map(item => <li>{item}</li>)}
+          </ul>
+        </div>
+      );
+      if (section.type === 'table') return (
+        <div class="sec-table-wrap">
+          {section.caption && <p class="tbl-caption">{section.caption}</p>}
+          <div class="table-scroll">
+            <table class="sec-table">
+              <thead><tr>{section.headers.map(h => <th>{h}</th>)}</tr></thead>
+              <tbody>
+                {section.rows.map(row => (
+                  <tr>{row.map(cell => <td>{cell}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+      if (section.type === 'code') return (
+        <div class="code-block">
+          {section.caption && <div class="code-caption">{section.caption}</div>}
+          <Code code={section.code} lang={section.lang} theme="github-dark" />
+        </div>
+      );
+      return null;
+    })}
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.8125rem; color: var(--color-text-muted);
+    margin-bottom: 1.75rem; flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--color-text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--color-accent); }
+  .breadcrumb span[aria-current] { color: var(--color-text); }
+
+  .sheet-header {
+    display: flex; align-items: flex-start; gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .sheet-icon { font-size: 2.5rem; flex-shrink: 0; margin-top: 0.125rem; }
+  .sheet-title {
+    font-size: clamp(1.375rem, 3vw, 1.875rem); font-weight: 700;
+    color: var(--color-text); letter-spacing: -0.025em; margin: 0 0 0.375rem;
+  }
+  .sheet-badge {
+    font-size: 0.625rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--color-accent);
+    background: var(--color-accent-bg); padding: 0.15rem 0.5rem;
+    border-radius: 9999px; vertical-align: middle; margin-left: 0.375rem;
+  }
+  .sheet-desc { font-size: 0.9375rem; color: var(--color-text-2); margin: 0; line-height: 1.6; }
+
+  .sheet-nav {
+    display: flex; flex-wrap: wrap; gap: 0.375rem;
+    margin-bottom: 2rem; padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .sheet-pill {
+    font-size: 0.75rem; font-weight: 500;
+    padding: 0.3rem 0.625rem; border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface); color: var(--color-text-2);
+    text-decoration: none; white-space: nowrap;
+    transition: border-color 0.1s, color 0.1s;
+  }
+  .sheet-pill:hover  { border-color: var(--color-accent); color: var(--color-accent); }
+  .sheet-pill.active { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-bg); font-weight: 700; }
+
+  .sheet-body { display: flex; flex-direction: column; gap: 0; }
+
+  .sec-heading {
+    font-size: 1.0625rem; font-weight: 700; color: var(--color-text);
+    margin: 1.75rem 0 0.625rem; padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .sec-heading:first-child { margin-top: 0; }
+  .sec-note { font-size: 0.8125rem; color: var(--color-text-muted); margin: 0.25rem 0 0.75rem; font-style: italic; }
+
+  .callout {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    padding: 0.75rem 1rem; border-radius: 0.5rem;
+    margin: 0.75rem 0;
+  }
+  .callout-key     { background: var(--color-accent-bg); border-left: 3px solid var(--color-accent); }
+  .callout-tip     { background: rgba(34,197,94,0.08); border-left: 3px solid #22c55e; }
+  .callout-warning { background: rgba(234,179,8,0.08);  border-left: 3px solid #eab308; }
+  .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .callout-text { font-size: 0.875rem; color: var(--color-text); line-height: 1.6; }
+
+  .sec-list { margin: 0.5rem 0 0.75rem; }
+  .sec-list-title { font-size: 0.8125rem; font-weight: 700; color: var(--color-text-2); margin: 0 0 0.375rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .sec-list ul { margin: 0; padding-left: 1.25rem; }
+  .sec-list li { font-size: 0.875rem; color: var(--color-text-2); margin: 0.2rem 0; }
+
+  .code-block { margin: 0.625rem 0 1rem; border-radius: 0.625rem; overflow: hidden; border: 1px solid var(--color-border); }
+  .code-caption {
+    padding: 0.35rem 0.875rem;
+    font-size: 0.6875rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--color-text-muted);
+    background: #1a1a2e; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  :global(.code-block pre) {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    font-size: 0.8rem !important;
+    padding: 1rem !important;
+    overflow-x: auto;
+  }
+
+  .sec-table-wrap { margin: 0.625rem 0 1rem; }
+  .tbl-caption { font-size: 0.75rem; color: var(--color-text-muted); margin: 0 0 0.375rem; font-style: italic; }
+  .table-scroll { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 0.625rem; }
+  .sec-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  .sec-table th {
+    padding: 0.5rem 0.75rem; text-align: left;
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--color-text-muted);
+    background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+  }
+  .sec-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--color-border); color: var(--color-text-2); }
+  .sec-table tbody tr:last-child td { border-bottom: none; }
+  .sec-table tbody tr:hover { background: var(--color-sidebar); }
+  .sec-table td:first-child { color: var(--color-text); font-weight: 500; }
+
+  @media (max-width: 640px) {
+    .sheet-nav { gap: 0.25rem; }
+    .sheet-pill { font-size: 0.6875rem; }
+  }
+</style>

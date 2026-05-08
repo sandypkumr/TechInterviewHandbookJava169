@@ -1,0 +1,51 @@
+---
+title: "Search a 2D Matrix"
+difficulty: "Medium"
+topic: "binary_search"
+leetcodeUrl: "https://leetcode.com/problems/search-a-2d-matrix"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search/SearchA2DMatrix.java"
+patterns: ["binary-search"]
+tags: []
+timeComplexity: "O(log(m·n))"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/search-a-2d-matrix) for the problem statement.
+
+**Patterns:** `sliding-window`, `binary-search`
+
+## Java Solution
+
+```java
+package binary_search;
+
+public class SearchA2DMatrix {
+    public boolean searchMatrix(int[][] matrix, int target) {
+        int rows = matrix.length;
+        int cols = matrix[0].length;
+
+        int left = 0;
+        int right = rows * cols - 1;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            int midValue = matrix[mid / cols][mid % cols];
+
+            if (midValue == target) {
+                return true; // Target found
+            } else if (midValue < target) {
+                left = mid + 1; // Search in the right half
+            } else {
+                right = mid - 1; // Search in the left half
+            }
+        }
+
+        return false; // Target not found
+    }
+}
+```

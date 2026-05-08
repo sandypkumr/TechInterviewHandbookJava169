@@ -1,0 +1,55 @@
+---
+title: "Path Sum III"
+difficulty: "Medium"
+topic: "binary_tree"
+leetcodeUrl: "https://leetcode.com/problems/path-sum-iii"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/PathSum3.java"
+patterns: ["dfs","prefix-sum"]
+tags: []
+timeComplexity: ""
+spaceComplexity: ""
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashMap"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/path-sum-iii) for the problem statement.
+
+**Patterns:** `dfs`, `prefix-sum`
+
+## Java Solution
+
+```java
+package binary_tree;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class PathSum3 {
+    public int pathSum(TreeNode root, int targetSum) {
+        Map<Long, Integer> prefixSumMap = new HashMap<>();
+        prefixSumMap.put(0L, 1);
+        return dfs(root, 0L, targetSum, prefixSumMap);
+    }
+
+    private int dfs(TreeNode node, long curSum, int targetSum, Map<Long, Integer> prefixSumMap) {
+        if (node == null) {
+            return 0;
+        }
+
+        curSum += node.val;
+        int count = prefixSumMap.getOrDefault(curSum - targetSum, 0);
+
+        prefixSumMap.put(curSum, prefixSumMap.getOrDefault(curSum, 0) + 1);
+
+        count += dfs(node.left, curSum, targetSum, prefixSumMap);
+        count += dfs(node.right, curSum, targetSum, prefixSumMap);
+
+        prefixSumMap.put(curSum, prefixSumMap.get(curSum) - 1);
+
+        return count;
+    }
+}
+```

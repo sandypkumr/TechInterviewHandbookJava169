@@ -1,0 +1,54 @@
+---
+title: "Task Scheduler"
+difficulty: "Medium"
+topic: "heap"
+leetcodeUrl: "https://leetcode.com/problems/task-scheduler"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/heap/TaskScheduler.java"
+patterns: ["heap","greedy"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/task-scheduler) for the problem statement.
+
+**Patterns:** `merge-intervals`
+
+## Java Solution
+
+```java
+package heap;
+
+public class TaskScheduler {
+    public int leastInterval(char[] tasks, int n) {
+        int[] taskCounts = new int[26];
+        for (char task : tasks) {
+            taskCounts[task - 'A']++;
+        }
+
+        int maxCount = 0;
+        int maxCountTasks = 0;
+        for (int count : taskCounts) {
+            if (count > maxCount) {
+                maxCount = count;
+                maxCountTasks = 1;
+            } else if (count == maxCount) {
+                maxCountTasks++;
+            }
+        }
+
+        int partCount = maxCount - 1;
+        int partLength = n - (maxCountTasks - 1);
+        int emptySlots = partCount * partLength;
+        int availableTasks = tasks.length - (maxCount * maxCountTasks);
+        int idles = Math.max(0, emptySlots - availableTasks);
+
+        return tasks.length + idles;
+    }
+}
+```

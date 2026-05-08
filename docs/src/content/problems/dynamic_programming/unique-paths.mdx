@@ -1,0 +1,48 @@
+---
+title: "Unique Paths"
+difficulty: "Medium"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/unique-paths"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/UniquePaths.java"
+patterns: ["dynamic-programming"]
+tags: []
+timeComplexity: "O(m·n)"
+spaceComplexity: "O(m·n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/unique-paths) for the problem statement.
+
+**Patterns:** `dynamic-programming`
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class UniquePaths {
+    public int uniquePaths(int m, int n) {
+        int[][] dp = new int[m][n];
+
+        for (int i = 0; i < m; i++) {
+            dp[i][0] = 1;
+        }
+
+        for (int j = 0; j < n; j++) {
+            dp[0][j] = 1;
+        }
+
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+            }
+        }
+
+        return dp[m - 1][n - 1];
+    }
+}
+```

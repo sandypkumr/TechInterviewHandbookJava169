@@ -1,0 +1,106 @@
+---
+title: "Shortest Path to Get Food"
+difficulty: "Medium"
+topic: "graph"
+leetcodeUrl: "https://leetcode.com/problems/shortest-path-to-get-food"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/graph/ShortestPathToGetFood.java"
+patterns: ["bfs"]
+tags: []
+timeComplexity: "O(m·n)"
+spaceComplexity: "O(m·n)"
+isPremium: false
+hasProblemStatement: true
+javaApis: ["LinkedList"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+You are given a 2D grid where:
+
+Each cell in the grid can be one of the following:
+'*': Your starting position. There is exactly one '*' in the grid.
+'#': A food cell. There may be multiple food cells.
+'O': An open cell you can walk through.
+'X': A blocked cell you cannot walk through.
+You need to find the shortest path from your starting position ('*') to any food cell ('#') in the grid. You can move
+ up, down, left, or right. Return the number of steps in the shortest path, or -1 if no path exists.
+
+
+**Example 1:**
+
+**Input: grid =   [["X","X","X","X","X","X"],**
+                 ["X","*","O","O","O","X"],
+                 ["X","O","O","#","O","X"],
+                 ["X","X","X","X","X","X"]]
+
+**Output: 3**
+Explanation: It takes 3 steps to reach the food.
+
+**Patterns:** `sliding-window`, `bfs`
+
+## Java Solution
+
+```java
+package graph;
+
+import java.util.LinkedList;
+import java.util.Queue;
+
+/**
+ * You are given a 2D grid where:
+ *
+ * Each cell in the grid can be one of the following:
+ * '*': Your starting position. There is exactly one '*' in the grid.
+ * '#': A food cell. There may be multiple food cells.
+ * 'O': An open cell you can walk through.
+ * 'X': A blocked cell you cannot walk through.
+ * You need to find the shortest path from your starting position ('*') to any food cell ('#') in the grid. You can move
+ *  up, down, left, or right. Return the number of steps in the shortest path, or -1 if no path exists.
+ *
+ * Example 1:
+ * Input: grid =   [["X","X","X","X","X","X"],
+ *                  ["X","*","O","O","O","X"],
+ *                  ["X","O","O","#","O","X"],
+ *                  ["X","X","X","X","X","X"]]
+ * Output: 3
+ * Explanation: It takes 3 steps to reach the food.
+ */
+public class ShortestPathToGetFood {
+    public int getFood(char[][] grid) {
+        int rows = grid.length;
+        int cols = grid[0].length;
+        Queue<int[]> queue = new LinkedList<>();
+        boolean[][] visited = new boolean[rows][cols];
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (grid[r][c] == '*') {
+                    queue.offer(new int[]{r, c, 0});
+                    visited[r][c] = true;
+                }
+            }
+        }
+
+        int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        while (!queue.isEmpty()) {
+            int[] cell = queue.poll();
+            int r = cell[0], c = cell[1], dist = cell[2];
+
+            if (grid[r][c] == '#') {
+                return dist;
+            }
+
+            for (int[] dir : directions) {
+                int nr = r + dir[0];
+                int nc = c + dir[1];
+                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !visited[nr][nc] && (grid[nr][nc] != 'X')) {
+                    visited[nr][nc] = true;
+                    queue.offer(new int[]{nr, nc, dist + 1});
+                }
+            }
+        }
+
+        return -1;
+    }
+}
+```

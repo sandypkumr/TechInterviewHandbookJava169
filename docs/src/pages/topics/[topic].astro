@@ -1,0 +1,183 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/layout/Sidebar.astro';
+import Header from '../../components/layout/Header.astro';
+import Footer from '../../components/layout/Footer.astro';
+import ProblemCard from '../../components/ui/ProblemCard.astro';
+
+export async function getStaticPaths() {
+  const TOPICS = [
+    'array', 'binary', 'binary_search', 'binary_search_tree',
+    'binary_tree', 'dynamic_programming', 'graph', 'hash_table',
+    'heap', 'linked_list', 'math', 'matrix', 'queue',
+    'recursion', 'stack', 'string', 'trie',
+  ] as const;
+  const allProblems = await getCollection('problems');
+  return TOPICS.map(topic => ({
+    params: { topic },
+    props: { problems: allProblems.filter(p => p.data.topic === topic) },
+  }));
+}
+
+const { topic }    = Astro.params;
+const { problems } = Astro.props;
+const base         = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const label = topic.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+
+const TOPIC_ICONS: Record<string, string> = {
+  array: '📊', binary: '⚙️', binary_search: '🔍', binary_search_tree: '🌳',
+  binary_tree: '🌲', dynamic_programming: '🧮', graph: '🕸️', hash_table: '#️⃣',
+  heap: '⛰️', linked_list: '🔗', math: '➗', matrix: '🟦',
+  queue: '📥', recursion: '🔄', stack: '📚', string: '🔤', trie: '🌐',
+};
+const TOPIC_DESC: Record<string, string> = {
+  array:               'Sliding window, two pointers, prefix sums, merge intervals, and more.',
+  binary:              'XOR tricks, bit manipulation, counting bits, and missing number patterns.',
+  binary_search:       'Classic and creative binary search on arrays, answers, and 2D matrices.',
+  binary_search_tree:  'BST properties, in-order traversal, validation, and successor search.',
+  binary_tree:         'DFS/BFS traversals, path problems, LCA, serialization, and construction.',
+  dynamic_programming: 'Top-down, bottom-up, 1D/2D DP — knapsack, LIS, coin change, and more.',
+  graph:               'BFS/DFS, topological sort, union-find, shortest path, and cycle detection.',
+  hash_table:          'O(1) insert/delete/getRandom designs and classic hash map applications.',
+  heap:                'PriorityQueue patterns — top-K, median stream, merge K lists.',
+  linked_list:         'Two pointers, fast-slow, reversal, merge, cycle detection, and LRU Cache.',
+  math:                'Number theory, power, palindrome number, and weighted random sampling.',
+  matrix:              'Spiral traversal, rotation, Sudoku, island problems, and matrix DP.',
+  queue:               'Queue design patterns and BFS-based simulations.',
+  recursion:           'Backtracking — permutations, subsets, combinations, N-Queens, phone letters.',
+  stack:               'Monotonic stack, calculator, parentheses, decode string, and histogram.',
+  string:              'Sliding window, anagram, palindrome, encoding, and pattern matching.',
+  trie:                'Prefix tree construction, word search, and in-memory file system design.',
+};
+
+// Sort: Easy → Medium → Hard, then alphabetically
+const DIFF_ORDER = { Easy: 0, Medium: 1, Hard: 2 };
+const sorted = [...problems].sort((a, b) => {
+  const dDiff = DIFF_ORDER[a.data.difficulty] - DIFF_ORDER[b.data.difficulty];
+  return dDiff !== 0 ? dDiff : a.data.title.localeCompare(b.data.title);
+});
+
+const easyCnt  = problems.filter(p => p.data.difficulty === 'Easy').length;
+const medCnt   = problems.filter(p => p.data.difficulty === 'Medium').length;
+const hardCnt  = problems.filter(p => p.data.difficulty === 'Hard').length;
+---
+
+<BaseLayout title={`${label} Problems`}>
+  <Sidebar slot="sidebar" />
+  <Header  slot="header"  />
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={`${base}/`}>Home</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">{label}</span>
+  </nav>
+
+  <!-- Topic header -->
+  <header class="topic-header">
+    <div class="topic-icon" aria-hidden="true">{TOPIC_ICONS[topic] ?? '📌'}</div>
+    <div>
+      <h1 class="topic-title">{label}</h1>
+      <p class="topic-desc">{TOPIC_DESC[topic] ?? ''}</p>
+    </div>
+  </header>
+
+  <!-- Stat row -->
+  <div class="stat-row">
+    <span class="stat-total">{problems.length} problems</span>
+    {easyCnt > 0 && <span class="diff-pill easy">{easyCnt} Easy</span>}
+    {medCnt  > 0 && <span class="diff-pill medium">{medCnt} Medium</span>}
+    {hardCnt > 0 && <span class="diff-pill hard">{hardCnt} Hard</span>}
+  </div>
+
+  <!-- Problem grid -->
+  {sorted.length === 0 ? (
+    <p class="empty">No problems found for this topic.</p>
+  ) : (
+    <div class="problem-grid">
+      {sorted.map(entry => (
+        <ProblemCard
+          title={entry.data.title}
+          difficulty={entry.data.difficulty}
+          topic={entry.data.topic}
+          slug={entry.slug}
+          patterns={entry.data.patterns}
+          timeComplexity={entry.data.timeComplexity}
+          spaceComplexity={entry.data.spaceComplexity}
+          leetcodeUrl={entry.data.leetcodeUrl}
+          githubUrl={entry.data.githubUrl}
+          hasProblemStatement={entry.data.hasProblemStatement}
+        />
+      ))}
+    </div>
+  )}
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--color-text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--color-accent); }
+  .breadcrumb span[aria-current] { color: var(--color-text); }
+
+  .topic-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.125rem;
+    margin-bottom: 1.25rem;
+  }
+  .topic-icon { font-size: 2.25rem; line-height: 1; flex-shrink: 0; margin-top: 0.125rem; }
+  .topic-title {
+    font-size: clamp(1.375rem, 3vw, 1.875rem);
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: -0.025em;
+    margin: 0 0 0.375rem;
+  }
+  .topic-desc {
+    font-size: 0.9375rem;
+    color: var(--color-text-2);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .stat-total { font-size: 0.875rem; color: var(--color-text-muted); }
+  .diff-pill {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+  }
+  .diff-pill.easy   { color: var(--color-easy);   background: var(--color-easy-bg);   }
+  .diff-pill.medium { color: var(--color-medium); background: var(--color-medium-bg); }
+  .diff-pill.hard   { color: var(--color-hard);   background: var(--color-hard-bg);   }
+
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.75rem;
+  }
+  .empty { color: var(--color-text-muted); font-size: 0.9375rem; margin-top: 2rem; }
+
+  @media (max-width: 640px) {
+    .problem-grid { grid-template-columns: 1fr; }
+  }
+</style>

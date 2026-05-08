@@ -1,0 +1,38 @@
+---
+title: "Jump Game"
+difficulty: "Medium"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/jump-game"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/JumpGame.java"
+patterns: ["greedy","dynamic-programming"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/jump-game) for the problem statement.
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class JumpGame {
+    public boolean canJump(int[] nums) {
+        int maxReach = 0;
+
+        for (int i = 0; i < nums.length; i++) {
+            if (i > maxReach) {
+                return false;
+            }
+            maxReach = Math.max(maxReach, i + nums[i]);
+        }
+        return true;
+    }
+}
+```

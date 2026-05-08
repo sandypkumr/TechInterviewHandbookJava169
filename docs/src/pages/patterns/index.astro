@@ -1,0 +1,137 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/layout/Sidebar.astro';
+import Header from '../../components/layout/Header.astro';
+import Footer from '../../components/layout/Footer.astro';
+import { PATTERNS } from '../../data/patterns';
+
+const base     = import.meta.env.BASE_URL.replace(/\/$/, '');
+const problems = await getCollection('problems');
+
+const patternStats: Record<string, { total: number; easy: number; medium: number; hard: number; samples: string[] }> = {};
+for (const p of problems) {
+  for (const pat of p.data.patterns) {
+    if (!patternStats[pat]) patternStats[pat] = { total: 0, easy: 0, medium: 0, hard: 0, samples: [] };
+    patternStats[pat].total++;
+    if (p.data.difficulty === 'Easy')        patternStats[pat].easy++;
+    else if (p.data.difficulty === 'Medium') patternStats[pat].medium++;
+    else                                     patternStats[pat].hard++;
+    if (patternStats[pat].samples.length < 3) patternStats[pat].samples.push(p.data.title);
+  }
+}
+
+const sortedPatterns = PATTERNS
+  .filter(p => patternStats[p.slug])
+  .sort((a, b) => (patternStats[b.slug]?.total ?? 0) - (patternStats[a.slug]?.total ?? 0));
+
+const totalWithPatterns = problems.filter(p => p.data.patterns.length > 0).length;
+---
+
+<BaseLayout title="Pattern Index" description="Browse all 169 DSA problems by algorithmic pattern.">
+  <Sidebar slot="sidebar" />
+  <Header  slot="header"  />
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={`${base}/`}>Home</a>
+    <span aria-hidden="true">›</span>
+    <span aria-current="page">Pattern Index</span>
+  </nav>
+
+  <header class="page-header">
+    <h1 class="page-title">🧩 Pattern Index</h1>
+    <p class="page-desc">
+      Recognise the pattern → solve the problem. Browse all {sortedPatterns.length} patterns across&nbsp;
+      <strong>{totalWithPatterns}</strong> tagged problems.
+    </p>
+  </header>
+
+  <div class="pattern-grid">
+    {sortedPatterns.map(pat => {
+      const stats = patternStats[pat.slug];
+      const href  = `${base}/patterns/${pat.slug}`;
+      return (
+        <a href={href} class="pattern-card">
+          <div class="pc-top">
+            <span class="pc-icon" aria-hidden="true">{pat.icon}</span>
+            <span class="pc-count">{stats.total}</span>
+          </div>
+          <h2 class="pc-name">{pat.name}</h2>
+          <p class="pc-desc">{pat.description}</p>
+          <div class="pc-diff">
+            {stats.easy   > 0 && <span class="diff-pill easy">{stats.easy}E</span>}
+            {stats.medium > 0 && <span class="diff-pill medium">{stats.medium}M</span>}
+            {stats.hard   > 0 && <span class="diff-pill hard">{stats.hard}H</span>}
+          </div>
+          <div class="pc-samples">
+            {stats.samples.map(t => <span class="sample-tag">{t}</span>)}
+            {stats.total > 3 && <span class="sample-more">+{stats.total - 3} more</span>}
+          </div>
+          <div class="pc-cta">Browse pattern →</div>
+        </a>
+      );
+    })}
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.8125rem; color: var(--color-text-muted);
+    margin-bottom: 1.75rem; flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--color-text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--color-accent); }
+  .breadcrumb span[aria-current] { color: var(--color-text); }
+
+  .page-header { margin-bottom: 2rem; }
+  .page-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700; color: var(--color-text);
+    letter-spacing: -0.025em; margin: 0 0 0.5rem;
+  }
+  .page-desc { font-size: 0.9375rem; color: var(--color-text-2); margin: 0; line-height: 1.6; }
+
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .pattern-card {
+    display: flex; flex-direction: column; gap: 0.625rem;
+    padding: 1.125rem 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.875rem;
+    text-decoration: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+  }
+  .pattern-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 4px 16px -4px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
+  }
+  .pc-top { display: flex; align-items: center; justify-content: space-between; }
+  .pc-icon { font-size: 1.5rem; line-height: 1; }
+  .pc-count { font-size: 1.5rem; font-weight: 800; color: var(--color-accent); line-height: 1; }
+  .pc-name { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0; }
+  .pc-desc { font-size: 0.8125rem; color: var(--color-text-2); line-height: 1.55; margin: 0; flex: 1; }
+  .pc-diff { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .diff-pill { font-size: 0.6875rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 9999px; }
+  .diff-pill.easy   { color: var(--color-easy);   background: var(--color-easy-bg); }
+  .diff-pill.medium { color: var(--color-medium); background: var(--color-medium-bg); }
+  .diff-pill.hard   { color: var(--color-hard);   background: var(--color-hard-bg); }
+  .pc-samples { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+  .sample-tag {
+    font-size: 0.6875rem; color: var(--color-text-muted);
+    background: var(--color-bg); border: 1px solid var(--color-border);
+    border-radius: 0.25rem; padding: 0.1rem 0.4rem;
+    white-space: nowrap; max-width: 140px;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .sample-more { font-size: 0.6875rem; color: var(--color-text-muted); align-self: center; }
+  .pc-cta { font-size: 0.75rem; font-weight: 600; color: var(--color-accent); margin-top: auto; padding-top: 0.25rem; }
+  @media (max-width: 640px) { .pattern-grid { grid-template-columns: 1fr; } }
+</style>

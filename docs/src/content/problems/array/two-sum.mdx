@@ -1,0 +1,44 @@
+---
+title: "Two Sum"
+difficulty: "Easy"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/two-sum"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/TwoSum.java"
+patterns: ["hash-map"]
+tags: ["classic"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashMap"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/two-sum) for the problem statement.
+
+## Java Solution
+
+```java
+package array;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class TwoSum {
+    public int[] twoSum(int[] nums, int target) {
+        int[] result = new int[2];
+        Map<Integer, Integer> numMap = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            int diff = target - nums[i];
+            if (numMap.containsKey(diff)) {
+                result[0] = numMap.get(diff);
+                result[1] = i;
+                return result;
+            }
+            numMap.put(nums[i], i);
+        }
+        return null;
+    }
+}
+```

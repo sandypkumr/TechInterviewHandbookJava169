@@ -1,0 +1,39 @@
+---
+title: "Contains Duplicate"
+difficulty: "Easy"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/contains-duplicate"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/ContainsDuplicate.java"
+patterns: ["hash-map"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashSet"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/contains-duplicate) for the problem statement.
+
+## Java Solution
+
+```java
+package array;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class ContainsDuplicate {
+    public boolean containsDuplicate(int[] nums) {
+        Set<Integer> set = new HashSet<>();
+        for (int num : nums) {
+            if (!set.add(num)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```

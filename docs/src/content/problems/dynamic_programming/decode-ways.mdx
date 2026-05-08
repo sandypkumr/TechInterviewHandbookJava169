@@ -1,0 +1,54 @@
+---
+title: "Decode Ways"
+difficulty: "Medium"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/decode-ways"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/DecodeWays.java"
+patterns: ["dynamic-programming"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Integer.parseInt"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/decode-ways) for the problem statement.
+
+**Patterns:** `dynamic-programming`
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class DecodeWays {
+    public int numDecodings(String s) {
+        if (s.charAt(0) == '0') {
+            return 0;
+        }
+
+        int n = s.length();
+        int[] dp = new int[n + 1];
+        dp[0] = 1;
+        dp[1] = 1;
+
+        for (int i = 2; i <= n; i++) {
+            int oneDigit = Integer.parseInt(s.substring(i - 1, i));
+            int twoDigits = Integer.parseInt(s.substring(i - 2, i));
+
+            if (oneDigit >= 1 && oneDigit <= 9) {
+                dp[i] += dp[i - 1];
+            }
+
+            if (twoDigits >= 10 && twoDigits <= 26) {
+                dp[i] += dp[i - 2];
+            }
+        }
+
+        return dp[n];
+    }
+}
+```

@@ -1,0 +1,254 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/layout/Sidebar.astro';
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+import Badge from '../components/ui/Badge.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const stats = [
+  { label: 'Problems', value: '169' },
+  { label: 'Topics',   value: '17'  },
+  { label: 'Easy',     value: '41'  },
+  { label: 'Medium',   value: '102' },
+  { label: 'Hard',     value: '26'  },
+];
+
+const topics = [
+  { slug: 'array',               label: 'Array',               count: 24, icon: '📊', desc: 'Sliding window, two pointers, prefix sums, intervals'  },
+  { slug: 'graph',               label: 'Graph',               count: 21, icon: '🕸️', desc: 'BFS, DFS, topological sort, union-find, shortest path'  },
+  { slug: 'binary_tree',         label: 'Binary Tree',         count: 18, icon: '🌲', desc: 'Traversals, path sums, LCA, serialization'              },
+  { slug: 'stack',               label: 'Stack',               count: 14, icon: '📚', desc: 'Monotonic stack, calculator, parentheses matching'      },
+  { slug: 'string',              label: 'String',              count: 14, icon: '🔤', desc: 'Sliding window, palindrome, anagram, encoding'          },
+  { slug: 'linked_list',         label: 'Linked List',         count: 14, icon: '🔗', desc: 'Two pointers, reversal, merge, LRU Cache'               },
+  { slug: 'dynamic_programming', label: 'Dynamic Programming', count: 12, icon: '🧮', desc: '1D/2D DP, knapsack, LIS, coin change, word break'       },
+  { slug: 'binary_search',       label: 'Binary Search',       count:  8, icon: '🔍', desc: 'Rotated arrays, boundary search, DP + binary search'   },
+  { slug: 'heap',                label: 'Heap',                count:  8, icon: '⛰️', desc: 'PriorityQueue, top-K, median stream, merge K lists'     },
+  { slug: 'binary',              label: 'Binary / Bit Ops',    count:  7, icon: '⚙️', desc: 'XOR tricks, counting bits, missing number'             },
+  { slug: 'recursion',           label: 'Recursion',           count:  6, icon: '🔄', desc: 'Backtracking, permutations, combinations, N-Queens'    },
+  { slug: 'binary_search_tree',  label: 'BST',                 count:  5, icon: '🌳', desc: 'In-order, validation, kth smallest, successor'         },
+  { slug: 'math',                label: 'Math',                count:  5, icon: '➗', desc: 'Number theory, power, random weighted sampling'        },
+  { slug: 'matrix',              label: 'Matrix',              count:  5, icon: '🟦', desc: 'Spiral, rotate, Sudoku, island problems'               },
+  { slug: 'trie',                label: 'Trie',                count:  4, icon: '🌐', desc: 'Prefix tree, word search, in-memory file system'       },
+  { slug: 'hash_table',          label: 'Hash Table',          count:  3, icon: '#️⃣', desc: 'Insert-delete-getRandom O(1), ransom note'             },
+  { slug: 'queue',               label: 'Queue',               count:  1, icon: '📥', desc: 'Design hit counter, circular buffer'                   },
+];
+
+const quickActions = [
+  { href: `${base}/revision`,                        icon: '⚡', title: 'Quick Revision',    desc: '5-minute topic summaries',    primary: true  },
+  { href: `${base}/patterns`,                        icon: '🗂️', title: 'Pattern Index',      desc: 'Browse by algorithm pattern', primary: false },
+  { href: `${base}/cheatsheets/java-collections`,    icon: '☕', title: 'Java Cheat Sheet',   desc: 'Collections API reference',   primary: false },
+  { href: `${base}/search`,                          icon: '🔎', title: 'Search',             desc: 'Find any problem instantly',  primary: false },
+];
+---
+
+<BaseLayout title="DSA Learning Portal">
+  <Sidebar slot="sidebar" />
+  <Header  slot="header"  />
+
+  <!-- ── Hero ─────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="hero-eyebrow">☕ Java &nbsp;·&nbsp; LeetCode &nbsp;·&nbsp; Interview Prep</div>
+    <h1 class="hero-title">DSA Learning Portal</h1>
+    <p class="hero-subtitle">
+      169 curated Java solutions across 17 DSA topics — built for fast revision,
+      deep pattern recognition, and interview readiness.
+    </p>
+    <div class="stats-row" role="list" aria-label="Repository statistics">
+      {stats.map(s => (
+        <div class="stat-card" role="listitem">
+          <span class="stat-value">{s.value}</span>
+          <span class="stat-label">{s.label}</span>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ── Quick Actions ─────────────────────────────────────────────── -->
+  <section class="section" aria-label="Quick actions">
+    <div class="quick-actions">
+      {quickActions.map(a => (
+        <a href={a.href} class:list={['action-card', { 'action-primary': a.primary }]}>
+          <span class="action-icon" aria-hidden="true">{a.icon}</span>
+          <div>
+            <div class="action-title">{a.title}</div>
+            <div class="action-desc">{a.desc}</div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- ── Topics Grid ───────────────────────────────────────────────── -->
+  <section class="section">
+    <h2 class="section-title">Browse by Topic</h2>
+    <div class="topics-grid">
+      {topics.map(t => (
+        <a href={`${base}/topics/${t.slug}`} class="topic-card">
+          <div class="topic-card-top">
+            <span class="topic-icon" aria-hidden="true">{t.icon}</span>
+            <Badge variant="default" label={String(t.count)} />
+          </div>
+          <div class="topic-name">{t.label}</div>
+          <div class="topic-desc">{t.desc}</div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<style>
+  /* ── Hero ── */
+  .hero {
+    padding: 2.75rem 0 2.25rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 2.25rem;
+  }
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    background: var(--color-accent-bg);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    margin-bottom: 1rem;
+    letter-spacing: 0.01em;
+  }
+  .hero-title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--color-text);
+    margin: 0 0 0.75rem;
+    line-height: 1.15;
+  }
+  .hero-subtitle {
+    font-size: 1.0625rem;
+    color: var(--color-text-2);
+    max-width: 560px;
+    line-height: 1.7;
+    margin: 0 0 2rem;
+  }
+  .stats-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.625rem;
+    min-width: 76px;
+  }
+  .stat-value {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    margin-top: 0.3rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 2.5rem; }
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 1rem;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Quick Actions ── */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 0.75rem;
+  }
+  .action-card {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem 1.125rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  }
+  .action-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-bg);
+  }
+  .action-card.action-primary {
+    border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+    background: var(--color-accent-bg);
+  }
+  .action-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .action-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .action-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 0.125rem;
+  }
+
+  /* ── Topics Grid ── */
+  .topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 0.75rem;
+  }
+  .topic-card {
+    padding: 1.125rem 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    transition: border-color 0.12s ease, transform 0.12s ease;
+  }
+  .topic-card:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+  }
+  .topic-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+  }
+  .topic-icon  { font-size: 1.375rem; }
+  .topic-name  { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
+  .topic-desc  { font-size: 0.78rem; color: var(--color-text-muted); line-height: 1.5; }
+
+  @media (max-width: 640px) {
+    .quick-actions { grid-template-columns: 1fr 1fr; }
+    .topics-grid   { grid-template-columns: 1fr 1fr; }
+    .stats-row     { gap: 0.5rem; }
+    .stat-card     { padding: 0.625rem 1rem; min-width: 64px; }
+  }
+  @media (max-width: 400px) {
+    .quick-actions { grid-template-columns: 1fr; }
+    .topics-grid   { grid-template-columns: 1fr; }
+  }
+</style>

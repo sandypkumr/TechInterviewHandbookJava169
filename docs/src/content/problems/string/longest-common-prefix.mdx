@@ -1,0 +1,43 @@
+---
+title: "Longest Common Prefix"
+difficulty: "Easy"
+topic: "string"
+leetcodeUrl: "https://leetcode.com/problems/longest-common-prefix"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/string/LongestCommonPrefix.java"
+patterns: ["prefix-sum"]
+tags: []
+timeComplexity: ""
+spaceComplexity: ""
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/longest-common-prefix) for the problem statement.
+
+**Patterns:** `prefix-sum`
+
+## Java Solution
+
+```java
+package string;
+
+public class LongestCommonPrefix {
+    public String longestCommonPrefix(String[] strs) {
+        String prefix = strs[0];
+
+        for (int i = 1; i < strs.length; i++) {
+            while (strs[i].indexOf(prefix) != 0) {
+                prefix = prefix.substring(0, prefix.length() - 1);
+                if (prefix.isEmpty()) {
+                    return "";
+                }
+            }
+        }
+
+        return prefix;
+    }
+}
+```

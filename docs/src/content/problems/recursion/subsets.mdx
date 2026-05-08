@@ -1,0 +1,49 @@
+---
+title: "Subsets"
+difficulty: "Medium"
+topic: "recursion"
+leetcodeUrl: "https://leetcode.com/problems/subsets"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/recursion/Subsets.java"
+patterns: ["backtracking"]
+tags: []
+timeComplexity: "O(2^n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["ArrayList"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/subsets) for the problem statement.
+
+**Patterns:** `backtracking`
+
+## Java Solution
+
+```java
+package recursion;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Subsets {
+    public List<List<Integer>> subsets(int[] nums) {
+        List<List<Integer>> result = new ArrayList<>();
+        int n = nums.length;
+        int total = 1 << n;
+
+        for (int mask = 0; mask < total; mask++) {
+            List<Integer> subset = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                if ((mask & (1 << i)) != 0) {
+                    subset.add(nums[i]);
+                }
+            }
+            result.add(subset);
+        }
+
+        return result;
+    }
+}
+```

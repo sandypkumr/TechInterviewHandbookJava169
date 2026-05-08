@@ -1,0 +1,61 @@
+---
+title: "Top K Frequent Words"
+difficulty: "Medium"
+topic: "heap"
+leetcodeUrl: "https://leetcode.com/problems/top-k-frequent-words"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/heap/TopKFrequentWords.java"
+patterns: ["heap","hash-map"]
+tags: []
+timeComplexity: "O(n log k)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashMap","PriorityQueue","ArrayList","Collections.reverse"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/top-k-frequent-words) for the problem statement.
+
+**Patterns:** `heap`
+
+## Java Solution
+
+```java
+package heap;
+
+import java.util.*;
+
+public class TopKFrequentWords {
+    public List<String> topKFrequent(String[] words, int k) {
+        Map<String, Integer> freqMap = new HashMap<>();
+        for (String word : words) {
+            freqMap.put(word, freqMap.getOrDefault(word, 0) + 1);
+        }
+
+        PriorityQueue<String> heap = new PriorityQueue<>(
+                (w1, w2) -> {
+                    int freqCompare = freqMap.get(w1) - freqMap.get(w2);
+                    if (freqCompare == 0) {
+                        return w2.compareTo(w1);
+                    }
+                    return freqCompare;
+                }
+        );
+
+        for (String word : freqMap.keySet()) {
+            heap.offer(word);
+            if (heap.size() > k) {
+                heap.poll();
+            }
+        }
+
+        List<String> result = new ArrayList<>();
+        while (!heap.isEmpty()) {
+            result.add(heap.poll());
+        }
+        Collections.reverse(result);
+        return result;
+    }
+}
+```

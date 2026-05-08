@@ -1,0 +1,53 @@
+---
+const year = new Date().getFullYear();
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-inner">
+    <span class="footer-copy">
+      © {year} &nbsp;·&nbsp; DSA Learning Portal &nbsp;·&nbsp; 169 Java Solutions
+    </span>
+    <nav class="footer-links" aria-label="Footer links">
+      <a href={`${base}/cheatsheets/java-collections`}>Java Cheat Sheet</a>
+      <a href={`${base}/revision`}>Quick Revision</a>
+      <a
+        href="https://github.com/sandypkumr/TechInterviewHandbookJava169"
+        target="_blank"
+        rel="noopener noreferrer"
+      >GitHub</a>
+      <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer">LeetCode</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--color-border);
+    padding: 1rem 2.5rem;
+    margin-top: auto;
+  }
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+  .footer-links {
+    display: flex;
+    gap: 1.25rem;
+  }
+  .footer-links a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color 0.12s ease;
+  }
+  .footer-links a:hover { color: var(--color-accent); }
+
+  @media (max-width: 640px) {
+    .footer-inner    { flex-direction: column; align-items: flex-start; }
+    .footer-links    { flex-wrap: wrap; gap: 0.75rem; }
+  }
+</style>

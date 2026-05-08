@@ -1,0 +1,53 @@
+---
+title: "Decode String"
+difficulty: "Medium"
+topic: "stack"
+leetcodeUrl: "https://leetcode.com/problems/decode-string"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/stack/DecodeString.java"
+patterns: []
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Stack","StringBuilder","Character utilities"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/decode-string) for the problem statement.
+
+## Java Solution
+
+```java
+package stack;
+
+import java.util.Stack;
+
+public class DecodeString {
+    public String decodeString(String s) {
+        Stack<Integer> countStack = new Stack<>();
+        Stack<StringBuilder> stringStack = new Stack<>();
+        StringBuilder current = new StringBuilder();
+        int k = 0;
+        for (char c : s.toCharArray()) {
+            if (Character.isDigit(c)) {
+                k = k * 10 + (c - '0');
+            } else if (c == '[') {
+                countStack.push(k);
+                stringStack.push(current);
+                current = new StringBuilder();
+                k = 0;
+            } else if (c == ']') {
+                StringBuilder decodedString = stringStack.pop();
+                int repeatCount = countStack.pop();
+                decodedString.append(String.valueOf(current).repeat(repeatCount));
+                current = decodedString;
+            } else {
+                current.append(c);
+            }
+        }
+        return current.toString();
+    }
+}
+```

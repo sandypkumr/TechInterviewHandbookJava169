@@ -1,0 +1,916 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# DSA Learning Portal — Metadata Overrides
+# Keys must match the slug derived from the problem title (kebab-case).
+# All fields are optional — only defined fields are merged into the MDX.
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── ARRAY ─────────────────────────────────────────────────────────────────────
+
+two-sum:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+  tags: ["classic"]
+
+best-time-to-buy-and-sell-stock:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["greedy", "sliding-window"]
+  tags: ["classic"]
+
+majority-element:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["greedy"]
+
+contains-duplicate:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+
+meeting-rooms:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(1)"
+  patterns: ["greedy", "merge-intervals"]
+
+move-zeroes:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+squares-of-a-sorted-array:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["two-pointers"]
+
+insert-interval:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["merge-intervals"]
+
+3sum:
+  timeComplexity: "O(n²)"
+  spaceComplexity: "O(n)"
+  patterns: ["two-pointers"]
+  tags: ["classic"]
+
+product-of-array-except-self:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["prefix-sum"]
+  tags: ["classic"]
+
+combination-sum:
+  timeComplexity: "O(2^n)"
+  spaceComplexity: "O(n)"
+  patterns: ["backtracking", "dfs"]
+
+merge-intervals:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["merge-intervals", "greedy"]
+
+sort-colors:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+container-with-most-water:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+  tags: ["classic"]
+
+gas-station:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["greedy"]
+
+longest-consecutive-sequence:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+
+rotate-array:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+contiguous-array:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map", "prefix-sum"]
+
+subarray-sum-equals-k:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map", "prefix-sum"]
+
+meeting-rooms-ii:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["heap", "greedy", "merge-intervals"]
+
+3sum-closest:
+  timeComplexity: "O(n²)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+non-overlapping-intervals:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(1)"
+  patterns: ["greedy", "merge-intervals"]
+
+employee-free-time:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["heap", "merge-intervals"]
+
+sliding-window-maximum:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(k)"
+  patterns: ["sliding-window", "monotonic-stack"]
+
+# ── STACK ─────────────────────────────────────────────────────────────────────
+
+valid-parentheses:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+  tags: ["classic"]
+
+implement-queue-using-stacks:
+  timeComplexity: "O(1) amortized"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+backspace-string-compare:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["two-pointers"]
+
+evaluate-reverse-polish-notation:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+min-stack:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+daily-temperatures:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["monotonic-stack"]
+
+decode-string:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+asteroid-collision:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["monotonic-stack"]
+
+basic-calculator-ii:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+basic-calculator:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+largest-rectangle-in-histogram:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["monotonic-stack"]
+  tags: ["classic"]
+
+maximum-frequency-stack:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+
+longest-valid-parentheses:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+# ── LINKED LIST ───────────────────────────────────────────────────────────────
+
+reverse-linked-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+  tags: ["classic"]
+
+lru-cache:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+  tags: ["classic", "design"]
+
+remove-nth-node-from-end-of-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+swap-nodes-in-pairs:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: []
+
+odd-even-linked-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+middle-of-the-linked-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["fast-slow-pointers"]
+
+linked-list-cycle:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["fast-slow-pointers"]
+
+linked-list-cycle-ii:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["fast-slow-pointers"]
+
+reorder-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["fast-slow-pointers", "two-pointers"]
+
+merge-two-sorted-lists:
+  timeComplexity: "O(n+m)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+  tags: ["classic"]
+
+intersection-of-two-linked-lists:
+  timeComplexity: "O(n+m)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+reverse-linked-list-ii:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+palindrome-linked-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["fast-slow-pointers", "two-pointers"]
+
+sort-list:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(log n)"
+  patterns: ["divide-and-conquer"]
+
+# ── STRING ────────────────────────────────────────────────────────────────────
+
+valid-anagram:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["hash-map"]
+
+longest-substring-without-repeating-characters:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["sliding-window", "hash-map"]
+  tags: ["classic"]
+
+longest-palindrome:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["hash-map"]
+
+reverse-vowels-of-a-string:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+longest-palindromic-substring:
+  timeComplexity: "O(n²)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+find-all-anagrams-in-a-string:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["sliding-window", "hash-map"]
+
+minimum-window-substring:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["sliding-window", "hash-map"]
+  tags: ["classic"]
+
+group-anagrams:
+  timeComplexity: "O(n·k log k)"
+  spaceComplexity: "O(n·k)"
+  patterns: ["hash-map"]
+
+longest-repeating-character-replacement:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["sliding-window"]
+
+valid-palindrome:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+palindromic-substrings:
+  timeComplexity: "O(n²)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+encode-and-decode-strings:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: []
+
+reverse-words-in-a-string:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["two-pointers"]
+
+# ── BINARY TREE ───────────────────────────────────────────────────────────────
+
+invert-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+  tags: ["classic"]
+
+maximum-depth-of-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs", "bfs"]
+
+diameter-of-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+balanced-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+same-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+subtree-of-another-tree:
+  timeComplexity: "O(n·m)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+binary-tree-level-order-traversal:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["bfs"]
+  tags: ["classic"]
+
+binary-tree-right-side-view:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["bfs", "dfs"]
+
+path-sum-ii:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs", "backtracking"]
+
+construct-binary-tree-from-preorder-and-inorder-traversal:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["dfs", "divide-and-conquer"]
+
+binary-tree-maximum-path-sum:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+serialize-and-deserialize-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["bfs", "dfs"]
+  tags: ["design"]
+
+lowest-common-ancestor-of-a-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+count-good-nodes-in-binary-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+flatten-binary-tree-to-linked-list:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["dfs"]
+
+sum-root-to-leaf-numbers:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+binary-tree-zigzag-level-order-traversal:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["bfs"]
+
+vertical-order-traversal-of-a-binary-tree:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["bfs", "dfs"]
+
+# ── BINARY SEARCH ─────────────────────────────────────────────────────────────
+
+binary-search:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search"]
+  tags: ["classic"]
+
+first-bad-version:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search"]
+
+search-in-rotated-sorted-array:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search"]
+  tags: ["classic"]
+
+time-based-key-value-store:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["binary-search"]
+  tags: ["design"]
+
+find-minimum-in-rotated-sorted-array:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search"]
+
+search-a-2d-matrix:
+  timeComplexity: "O(log(m·n))"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search"]
+
+koko-eating-bananas:
+  timeComplexity: "O(n log m)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search"]
+
+maximum-profit-in-job-scheduling:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["binary-search", "dynamic-programming"]
+
+median-of-two-sorted-arrays:
+  timeComplexity: "O(log(min(m,n)))"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search", "divide-and-conquer"]
+  tags: ["classic", "hard"]
+
+# ── GRAPH ─────────────────────────────────────────────────────────────────────
+
+flood-fill:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["dfs", "bfs"]
+
+01-matrix:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["bfs"]
+
+clone-graph:
+  timeComplexity: "O(V+E)"
+  spaceComplexity: "O(V)"
+  patterns: ["dfs", "bfs", "hash-map"]
+
+course-schedule:
+  timeComplexity: "O(V+E)"
+  spaceComplexity: "O(V+E)"
+  patterns: ["topological-sort", "dfs"]
+  tags: ["classic"]
+
+number-of-islands:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["dfs", "bfs", "union-find"]
+  tags: ["classic"]
+
+rotting-oranges:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["bfs"]
+
+accounts-merge:
+  timeComplexity: "O(n·k·log(n·k))"
+  spaceComplexity: "O(n·k)"
+  patterns: ["union-find", "dfs"]
+
+word-search:
+  timeComplexity: "O(m·n·4^L)"
+  spaceComplexity: "O(L)"
+  patterns: ["dfs", "backtracking"]
+
+minimum-height-trees:
+  timeComplexity: "O(V)"
+  spaceComplexity: "O(V)"
+  patterns: ["bfs", "topological-sort"]
+
+pacific-atlantic-water-flow:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["dfs", "bfs"]
+
+shortest-path-to-get-food:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["bfs"]
+
+graph-valid-tree:
+  timeComplexity: "O(V+E)"
+  spaceComplexity: "O(V)"
+  patterns: ["union-find", "dfs"]
+
+course-schedule-ii:
+  timeComplexity: "O(V+E)"
+  spaceComplexity: "O(V+E)"
+  patterns: ["topological-sort", "dfs"]
+
+number-of-connected-components-in-an-undirected-graph:
+  timeComplexity: "O(V+E)"
+  spaceComplexity: "O(V)"
+  patterns: ["union-find", "dfs"]
+
+minimum-knight-moves:
+  timeComplexity: "O(n²)"
+  spaceComplexity: "O(n²)"
+  patterns: ["bfs"]
+
+cheapest-flights-within-k-stops:
+  timeComplexity: "O(k·E)"
+  spaceComplexity: "O(V)"
+  patterns: ["dynamic-programming", "bfs"]
+
+word-ladder:
+  timeComplexity: "O(M²·N)"
+  spaceComplexity: "O(M²·N)"
+  patterns: ["bfs"]
+
+longest-increasing-path-in-a-matrix:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["dfs", "dynamic-programming"]
+
+word-search-ii:
+  timeComplexity: "O(m·n·4·3^(L-1))"
+  spaceComplexity: "O(L)"
+  patterns: ["trie", "dfs", "backtracking"]
+
+alien-dictionary:
+  timeComplexity: "O(C)"
+  spaceComplexity: "O(U)"
+  patterns: ["topological-sort", "bfs"]
+
+bus-routes:
+  timeComplexity: "O(N·M)"
+  spaceComplexity: "O(N·M)"
+  patterns: ["bfs", "hash-map"]
+
+# ── BINARY SEARCH TREE ────────────────────────────────────────────────────────
+
+lowest-common-ancestor-of-a-binary-search-tree:
+  timeComplexity: "O(h)"
+  spaceComplexity: "O(1)"
+  patterns: ["dfs"]
+
+convert-sorted-array-to-binary-search-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(log n)"
+  patterns: ["divide-and-conquer", "dfs"]
+
+validate-binary-search-tree:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs"]
+
+kth-smallest-element-in-a-bst:
+  timeComplexity: "O(h+k)"
+  spaceComplexity: "O(h)"
+  patterns: ["dfs", "in-order traversal"]
+
+inorder-successor-in-bst:
+  timeComplexity: "O(h)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search", "dfs"]
+
+# ── HASH TABLE ────────────────────────────────────────────────────────────────
+
+ransom-note:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["hash-map"]
+
+insert-delete-getrandom-o-1:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(n)"
+  patterns: ["hash-map"]
+  tags: ["design"]
+
+first-missing-positive:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["hash-map"]
+  tags: ["hard", "clever"]
+
+# ── DYNAMIC PROGRAMMING ───────────────────────────────────────────────────────
+
+climbing-stairs:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["dynamic-programming"]
+  tags: ["classic"]
+
+maximum-subarray:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["dynamic-programming", "greedy"]
+  tags: ["classic"]
+
+coin-change:
+  timeComplexity: "O(n·m)"
+  spaceComplexity: "O(n)"
+  patterns: ["dynamic-programming"]
+  tags: ["classic"]
+
+partition-equal-subset-sum:
+  timeComplexity: "O(n·W)"
+  spaceComplexity: "O(W)"
+  patterns: ["dynamic-programming"]
+
+unique-paths:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["dynamic-programming"]
+
+house-robber:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["dynamic-programming"]
+  tags: ["classic"]
+
+maximum-product-subarray:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["dynamic-programming"]
+
+longest-increasing-subsequence:
+  timeComplexity: "O(n log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["dynamic-programming", "binary-search"]
+  tags: ["classic"]
+
+jump-game:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["greedy", "dynamic-programming"]
+
+maximal-square:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(m·n)"
+  patterns: ["dynamic-programming"]
+
+decode-ways:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["dynamic-programming"]
+
+combination-sum-iv:
+  timeComplexity: "O(n·target)"
+  spaceComplexity: "O(target)"
+  patterns: ["dynamic-programming"]
+
+# ── BINARY ────────────────────────────────────────────────────────────────────
+
+add-binary:
+  timeComplexity: "O(max(m,n))"
+  spaceComplexity: "O(max(m,n))"
+  patterns: []
+
+counting-bits:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(n)"
+  patterns: ["dynamic-programming"]
+
+number-of-1-bits:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(1)"
+  patterns: []
+
+single-number:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: []
+  tags: ["xor-trick"]
+
+missing-number:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: []
+  tags: ["xor-trick"]
+
+reverse-bits:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(1)"
+  patterns: []
+
+find-the-duplicate-number:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["fast-slow-pointers"]
+
+# ── MATH ──────────────────────────────────────────────────────────────────────
+
+roman-to-integer:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["hash-map"]
+
+palindrome-number:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(1)"
+  patterns: []
+
+random-pick-with-weight:
+  timeComplexity: "O(n) build / O(log n) pick"
+  spaceComplexity: "O(n)"
+  patterns: ["binary-search", "prefix-sum"]
+
+pow-x-n:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(log n)"
+  patterns: ["divide-and-conquer"]
+
+reverse-integer:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(1)"
+  patterns: []
+
+# ── HEAP ──────────────────────────────────────────────────────────────────────
+
+k-closest-points-to-origin:
+  timeComplexity: "O(n log k)"
+  spaceComplexity: "O(k)"
+  patterns: ["heap"]
+
+task-scheduler:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["heap", "greedy"]
+
+top-k-frequent-words:
+  timeComplexity: "O(n log k)"
+  spaceComplexity: "O(n)"
+  patterns: ["heap", "hash-map"]
+
+find-k-closest-elements:
+  timeComplexity: "O(log(n-k)+k)"
+  spaceComplexity: "O(1)"
+  patterns: ["binary-search", "two-pointers"]
+
+kth-largest-element-in-an-array:
+  timeComplexity: "O(n log k)"
+  spaceComplexity: "O(k)"
+  patterns: ["heap"]
+
+find-median-from-data-stream:
+  timeComplexity: "O(log n)"
+  spaceComplexity: "O(n)"
+  patterns: ["heap"]
+  tags: ["design", "classic"]
+
+merge-k-sorted-lists:
+  timeComplexity: "O(n log k)"
+  spaceComplexity: "O(k)"
+  patterns: ["heap", "divide-and-conquer"]
+  tags: ["classic"]
+
+smallest-range-covering-elements-from-k-lists:
+  timeComplexity: "O(n log k)"
+  spaceComplexity: "O(k)"
+  patterns: ["heap", "sliding-window"]
+
+# ── TRIE ──────────────────────────────────────────────────────────────────────
+
+implement-trie-prefix-tree:
+  timeComplexity: "O(L)"
+  spaceComplexity: "O(L)"
+  patterns: ["trie"]
+  tags: ["design", "classic"]
+
+word-break:
+  timeComplexity: "O(n³)"
+  spaceComplexity: "O(n)"
+  patterns: ["dynamic-programming", "trie"]
+
+design-add-and-search-words-data-structure:
+  timeComplexity: "O(M·26^M)"
+  spaceComplexity: "O(M)"
+  patterns: ["trie", "dfs"]
+  tags: ["design"]
+
+design-in-memory-file-system:
+  timeComplexity: "O(L)"
+  spaceComplexity: "O(n)"
+  patterns: ["trie"]
+  tags: ["design"]
+
+# ── RECURSION ─────────────────────────────────────────────────────────────────
+
+permutations:
+  timeComplexity: "O(n!)"
+  spaceComplexity: "O(n)"
+  patterns: ["backtracking"]
+  tags: ["classic"]
+
+subsets:
+  timeComplexity: "O(2^n)"
+  spaceComplexity: "O(n)"
+  patterns: ["backtracking"]
+
+letter-combinations-of-a-phone-number:
+  timeComplexity: "O(4^n)"
+  spaceComplexity: "O(n)"
+  patterns: ["backtracking"]
+
+next-permutation:
+  timeComplexity: "O(n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+generate-parentheses:
+  timeComplexity: "O(4^n / sqrt(n))"
+  spaceComplexity: "O(n)"
+  patterns: ["backtracking"]
+
+n-queens:
+  timeComplexity: "O(n!)"
+  spaceComplexity: "O(n)"
+  patterns: ["backtracking"]
+
+# ── MATRIX ────────────────────────────────────────────────────────────────────
+
+spiral-matrix:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+valid-sudoku:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(1)"
+  patterns: ["hash-map"]
+
+rotate-image:
+  timeComplexity: "O(n²)"
+  spaceComplexity: "O(1)"
+  patterns: ["two-pointers"]
+
+set-matrix-zeroes:
+  timeComplexity: "O(m·n)"
+  spaceComplexity: "O(1)"
+  patterns: []
+
+sudoku-solver:
+  timeComplexity: "O(9^81)"
+  spaceComplexity: "O(1)"
+  patterns: ["backtracking"]
+
+# ── QUEUE ─────────────────────────────────────────────────────────────────────
+
+design-hit-counter:
+  timeComplexity: "O(1)"
+  spaceComplexity: "O(n)"
+  patterns: []
+  tags: ["design"]

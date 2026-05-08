@@ -1,0 +1,51 @@
+---
+title: "Maximum Width of Binary Tree"
+difficulty: "Medium"
+topic: "binary_tree"
+leetcodeUrl: "https://leetcode.com/problems/maximum-width-of-binary-tree"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/MaximumWidthOfBinaryTree.java"
+patterns: ["sliding-window","dfs"]
+tags: []
+timeComplexity: ""
+spaceComplexity: ""
+isPremium: false
+hasProblemStatement: false
+javaApis: ["ArrayList","Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/maximum-width-of-binary-tree) for the problem statement.
+
+**Patterns:** `sliding-window`, `dfs`
+
+## Java Solution
+
+```java
+package binary_tree;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MaximumWidthOfBinaryTree {
+    private int maxWidth = 1;
+    private final List<Integer> left = new ArrayList<>();
+    public int widthOfBinaryTree(TreeNode root) {
+        dfs(root, 0, 1);
+        return maxWidth;
+    }
+
+    private void dfs(TreeNode node, int depth, int index) {
+        if (node == null) {
+            return;
+        }
+        if (depth == left.size()) {
+            left.add(index);
+        } else {
+            maxWidth = Math.max(maxWidth, index - left.get(depth) + 1);
+        }
+        dfs(node.left, depth + 1, index * 2 - 1);
+        dfs(node.right, depth + 1, index * 2);
+    }
+}
+```

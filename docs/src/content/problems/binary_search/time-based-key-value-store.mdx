@@ -1,0 +1,48 @@
+---
+title: "Time Based Key-Value Store"
+difficulty: "Medium"
+topic: "binary_search"
+leetcodeUrl: "https://leetcode.com/problems/time-based-key-value-store"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search/TimeBasedKeyValueStore.java"
+patterns: ["binary-search"]
+tags: ["design"]
+timeComplexity: "O(log n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashMap","TreeMap"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/time-based-key-value-store) for the problem statement.
+
+## Java Solution
+
+```java
+package binary_search;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+
+public class TimeBasedKeyValueStore {
+
+    private Map<String, TreeMap<Integer, String>> map;
+
+    public TimeBasedKeyValueStore() {
+        map = new HashMap<>();
+    }
+
+    public void set(String key, String value, int timestamp) {
+        map.computeIfAbsent(key, k -> new TreeMap<>()).put(timestamp, value);
+    }
+
+    public String get(String key, int timestamp) {
+        if (!map.containsKey(key)) return "";
+        TreeMap<Integer, String> tree = map.get(key);
+        Map.Entry<Integer, String> entry = tree.floorEntry(timestamp);
+        return entry != null ? entry.getValue() : "";
+    }
+}
+```

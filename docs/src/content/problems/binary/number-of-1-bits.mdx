@@ -1,0 +1,35 @@
+---
+title: "Number of 1 Bits"
+difficulty: "Easy"
+topic: "binary"
+leetcodeUrl: "https://leetcode.com/problems/number-of-1-bits"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary/NumberOf1Bits.java"
+patterns: []
+tags: []
+timeComplexity: "O(1)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/number-of-1-bits) for the problem statement.
+
+## Java Solution
+
+```java
+package binary;
+
+public class NumberOf1Bits {
+    public int hammingWeight(int n) {
+        int count = 0;
+        while (n != 0) {
+            count += n & 1;
+            n >>= 1;
+        }
+        return count;
+    }
+}
+```

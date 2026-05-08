@@ -1,0 +1,47 @@
+---
+title: "Contiguous Array"
+difficulty: "Medium"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/contiguous-array"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/ContiguousArray.java"
+patterns: ["hash-map","prefix-sum"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashMap","Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/contiguous-array) for the problem statement.
+
+## Java Solution
+
+```java
+package array;
+
+import java.util.HashMap;
+
+public class ContiguousArray {
+    public int findMaxLength(int[] nums) {
+        int maxLength = 0;
+        int count = 0;
+        HashMap<Integer, Integer> map = new HashMap<>();
+        map.put(0, -1); // Handle the case when the entire array is valid
+
+        for (int i = 0; i < nums.length; i++) {
+            count += (nums[i] == 1) ? 1 : -1; // Increment for 1, decrement for 0
+
+            if (map.containsKey(count)) {
+                maxLength = Math.max(maxLength, i - map.get(count));
+            } else {
+                map.put(count, i);
+            }
+        }
+
+        return maxLength;
+    }
+}
+```

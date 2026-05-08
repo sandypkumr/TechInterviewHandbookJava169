@@ -1,0 +1,258 @@
+---
+const rawBase = import.meta.env.BASE_URL;
+const base = rawBase.replace(/\/$/, '');
+const pathname = Astro.url.pathname;
+
+const topics = [
+  { slug: 'array',               label: 'Array',               count: 24 },
+  { slug: 'graph',               label: 'Graph',               count: 21 },
+  { slug: 'binary_tree',         label: 'Binary Tree',         count: 18 },
+  { slug: 'stack',               label: 'Stack',               count: 14 },
+  { slug: 'string',              label: 'String',              count: 14 },
+  { slug: 'linked_list',         label: 'Linked List',         count: 14 },
+  { slug: 'dynamic_programming', label: 'Dynamic Programming', count: 12 },
+  { slug: 'binary_search',       label: 'Binary Search',       count:  8 },
+  { slug: 'heap',                label: 'Heap',                count:  8 },
+  { slug: 'binary',              label: 'Binary / Bit Ops',    count:  7 },
+  { slug: 'recursion',           label: 'Recursion',           count:  6 },
+  { slug: 'binary_search_tree',  label: 'BST',                 count:  5 },
+  { slug: 'math',                label: 'Math',                count:  5 },
+  { slug: 'matrix',              label: 'Matrix',              count:  5 },
+  { slug: 'trie',                label: 'Trie',                count:  4 },
+  { slug: 'hash_table',          label: 'Hash Table',          count:  3 },
+  { slug: 'queue',               label: 'Queue',               count:  1 },
+];
+
+const cheatsheets = [
+  { slug: 'java-collections',        label: 'Java Collections'       },
+  { slug: 'complexity-reference',    label: 'Complexity Reference'   },
+  { slug: 'sliding-window',          label: 'Sliding Window'         },
+  { slug: 'binary-search-templates', label: 'Binary Search Templates'},
+  { slug: 'bfs-dfs-templates',       label: 'BFS / DFS Templates'    },
+  { slug: 'dp-patterns',             label: 'DP Patterns'            },
+  { slug: 'graph-algorithms',        label: 'Graph Algorithms'       },
+  { slug: 'trie-heap-unionfind',     label: 'Trie / Heap / Union-Find'},
+];
+
+function isActive(href: string) {
+  return pathname === href || pathname.startsWith(href + '/');
+}
+---
+
+<aside class="sidebar" id="sidebar" aria-label="Site navigation">
+  <div class="sidebar-inner">
+
+    <!-- Logo -->
+    <a href={`${base}/`} class="sidebar-logo">
+      <span class="logo-icon">⚡</span>
+      <div class="logo-text-group">
+        <span class="logo-title">DSA Portal</span>
+        <span class="logo-sub">169 Java Solutions</span>
+      </div>
+    </a>
+
+    <!-- Search placeholder (wired up in Phase 6) -->
+    <button class="search-placeholder" aria-label="Open search" id="sidebar-search-btn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <span>Search problems…</span>
+      <kbd>⌘K</kbd>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+
+      <!-- Main -->
+      <div class="nav-section">
+        <a href={`${base}/`} class:list={['nav-link', { active: isActive(base + '/') || pathname === base }]}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Home
+        </a>
+        <a href={`${base}/revision`} class:list={['nav-link', { active: isActive(base + '/revision') }]}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Revision Dashboard
+        </a>
+        <a href={`${base}/patterns`} class:list={['nav-link', { active: isActive(base + '/patterns') }]}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Pattern Index
+        </a>
+        <a href={`${base}/search`} class:list={['nav-link', { active: isActive(base + '/search') }]}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Search
+        </a>
+      </div>
+
+      <!-- Topics -->
+      <div class="nav-section">
+        <span class="section-label">Topics</span>
+        {topics.map(t => (
+          <a
+            href={`${base}/topics/${t.slug}`}
+            class:list={['nav-link', { active: isActive(base + '/topics/' + t.slug) }]}
+          >
+            <span class="link-label">{t.label}</span>
+            <span class="link-count">{t.count}</span>
+          </a>
+        ))}
+      </div>
+
+      <!-- Cheat Sheets -->
+      <div class="nav-section">
+        <span class="section-label">Cheat Sheets</span>
+        {cheatsheets.map(c => (
+          <a
+            href={`${base}/cheatsheets/${c.slug}`}
+            class:list={['nav-link', { active: isActive(base + '/cheatsheets/' + c.slug) }]}
+          >
+            {c.label}
+          </a>
+        ))}
+      </div>
+
+    </nav>
+  </div>
+</aside>
+
+<style>
+  .sidebar {
+    width: var(--sidebar-width, 272px);
+    min-width: var(--sidebar-width, 272px);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    background: var(--color-sidebar);
+    border-right: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+  .sidebar-inner {
+    padding: 1.25rem 0.75rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    transition: background 0.12s ease;
+  }
+  .sidebar-logo:hover { background: var(--color-surface); }
+  .logo-icon { font-size: 1.375rem; line-height: 1; }
+  .logo-text-group { display: flex; flex-direction: column; }
+  .logo-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .logo-sub {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    margin-top: 0.125rem;
+  }
+  .search-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: border-color 0.12s ease;
+    font-family: inherit;
+  }
+  .search-placeholder:hover { border-color: var(--color-accent); }
+  .search-placeholder kbd {
+    margin-left: auto;
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-sidebar);
+    color: var(--color-text-muted);
+    font-family: inherit;
+  }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding-top: 0.25rem;
+  }
+  .section-label {
+    display: block;
+    padding: 0.5rem 0.75rem 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--color-text-2);
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .nav-link:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  .nav-link.active {
+    background: var(--color-accent-bg);
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+  .link-label { flex: 1; }
+  .link-count {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    padding: 0.1rem 0.4rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    min-width: 1.5rem;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .nav-link.active .link-count {
+    background: var(--color-accent-bg);
+    border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      height: 100vh;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+    }
+    .sidebar.open { display: block; }
+  }
+</style>

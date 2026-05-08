@@ -1,0 +1,262 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Sidebar from '../../components/layout/Sidebar.astro';
+import Header from '../../components/layout/Header.astro';
+import Footer from '../../components/layout/Footer.astro';
+
+const base     = import.meta.env.BASE_URL.replace(/\/$/, '');
+const problems = await getCollection('problems');
+
+const total  = problems.length;
+const easy   = problems.filter(p => p.data.difficulty === 'Easy').length;
+const medium = problems.filter(p => p.data.difficulty === 'Medium').length;
+const hard   = problems.filter(p => p.data.difficulty === 'Hard').length;
+
+const topicCounts: Record<string, number> = {};
+for (const p of problems) topicCounts[p.data.topic] = (topicCounts[p.data.topic] ?? 0) + 1;
+const topTopics = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+const sorted = [...problems].sort((a, b) => {
+  const d = { Easy: 0, Medium: 1, Hard: 2 } as Record<string, number>;
+  const dd = d[a.data.difficulty] - d[b.data.difficulty];
+  return dd !== 0 ? dd : a.data.title.localeCompare(b.data.title);
+});
+const topics = [...new Set(problems.map(p => p.data.topic))].sort();
+---
+
+<BaseLayout title="Revision Dashboard" description="Browse and filter all 169 Java DSA problems.">
+  <Sidebar slot="sidebar" />
+  <Header  slot="header"  />
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={`${base}/`}>Home</a>
+    <span>›</span>
+    <span aria-current="page">Revision</span>
+  </nav>
+
+  <h1 class="page-title">⚡ Revision Dashboard</h1>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-num">{total}</span>
+      <span class="stat-lbl">Total</span>
+    </div>
+    <div class="stat-card easy-card">
+      <span class="stat-num">{easy}</span>
+      <span class="stat-lbl">Easy</span>
+    </div>
+    <div class="stat-card medium-card">
+      <span class="stat-num">{medium}</span>
+      <span class="stat-lbl">Medium</span>
+    </div>
+    <div class="stat-card hard-card">
+      <span class="stat-num">{hard}</span>
+      <span class="stat-lbl">Hard</span>
+    </div>
+  </div>
+
+  <div class="top-topics">
+    <h2 class="section-title">Top Topics by Volume</h2>
+    <div class="topic-bars">
+      {topTopics.map(([topic, count]) => (
+        <a href={`${base}/topics/${topic}`} class="topic-bar-row">
+          <span class="tb-label">{topic.replace(/_/g, ' ')}</span>
+          <div class="tb-track">
+            <div class="tb-fill" style={`width:${Math.round(count / total * 100)}%`}></div>
+          </div>
+          <span class="tb-count">{count}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <input id="search-input" type="search" placeholder="Search problems…" class="search-input" autocomplete="off" />
+    <div class="filter-group">
+      <button class="filter-btn active" data-filter="diff" data-value="">All</button>
+      <button class="filter-btn easy-btn"   data-filter="diff" data-value="Easy">Easy</button>
+      <button class="filter-btn medium-btn" data-filter="diff" data-value="Medium">Medium</button>
+      <button class="filter-btn hard-btn"   data-filter="diff" data-value="Hard">Hard</button>
+    </div>
+    <select id="topic-select" class="topic-select">
+      <option value="">All Topics</option>
+      {topics.map(t => <option value={t}>{t.replace(/_/g, ' ')}</option>)}
+    </select>
+    <span id="result-count" class="result-count">{total} problems</span>
+  </div>
+
+  <div class="table-wrap">
+    <table class="problem-table" id="problem-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Problem</th><th>Difficulty</th>
+          <th>Topic</th><th>Time</th><th>Space</th><th>Patterns</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sorted.map((entry, i) => {
+          const d    = entry.data;
+          const href = `${base}/problems/${entry.slug}`;
+          return (
+            <tr data-diff={d.difficulty} data-topic={d.topic} data-title={d.title.toLowerCase()}>
+              <td class="td-num">{i + 1}</td>
+              <td class="td-title"><a href={href}>{d.title}</a></td>
+              <td><span class={`diff-badge ${d.difficulty.toLowerCase()}`}>{d.difficulty}</span></td>
+              <td class="td-topic"><a href={`${base}/topics/${d.topic}`}>{d.topic.replace(/_/g,' ')}</a></td>
+              <td class="td-mono">{d.timeComplexity  || '–'}</td>
+              <td class="td-mono">{d.spaceComplexity || '–'}</td>
+              <td class="td-patterns">
+                {d.patterns.slice(0,2).map((p: string) => (
+                  <a href={`${base}/patterns/${p}`} class="pchip">{p}</a>
+                ))}
+                {d.patterns.length > 2 && <span class="pmore">+{d.patterns.length-2}</span>}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<script>
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const topicSelect = document.getElementById('topic-select') as HTMLSelectElement;
+  const filterBtns  = document.querySelectorAll<HTMLButtonElement>('[data-filter="diff"]');
+  const resultCount = document.getElementById('result-count')!;
+  const rows        = document.querySelectorAll<HTMLTableRowElement>('#problem-table tbody tr');
+  let activeDiff = '', activeTopic = '', searchTerm = '';
+
+  function applyFilters() {
+    let visible = 0;
+    rows.forEach(row => {
+      const show =
+        (!activeDiff  || row.dataset.diff  === activeDiff)  &&
+        (!activeTopic || row.dataset.topic === activeTopic) &&
+        (!searchTerm  || (row.dataset.title ?? '').includes(searchTerm));
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    resultCount.textContent = `${visible} problem${visible !== 1 ? 's' : ''}`;
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeDiff = btn.dataset.value ?? '';
+      applyFilters();
+    });
+  });
+  topicSelect.addEventListener('change', () => { activeTopic = topicSelect.value; applyFilters(); });
+  searchInput.addEventListener('input',  () => { searchTerm = searchInput.value.toLowerCase().trim(); applyFilters(); });
+</script>
+
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.8125rem; color: var(--color-text-muted);
+    margin-bottom: 1.75rem; flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--color-text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--color-accent); }
+  .breadcrumb span[aria-current] { color: var(--color-text); }
+
+  .page-title {
+    font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700;
+    color: var(--color-text); letter-spacing: -0.025em; margin: 0 0 1.5rem;
+  }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem; margin-bottom: 1.75rem;
+  }
+  .stat-card {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1rem; border-radius: 0.75rem;
+    border: 1px solid var(--color-border); background: var(--color-surface);
+  }
+  .stat-num { font-size: 1.875rem; font-weight: 800; line-height: 1; color: var(--color-text); }
+  .stat-lbl { font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.25rem; }
+  .easy-card   .stat-num { color: var(--color-easy); }
+  .medium-card .stat-num { color: var(--color-medium); }
+  .hard-card   .stat-num { color: var(--color-hard); }
+
+  .top-topics { margin-bottom: 1.75rem; }
+  .section-title { font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-text-muted); margin: 0 0 0.75rem; }
+  .topic-bars { display: flex; flex-direction: column; gap: 0.5rem; }
+  .topic-bar-row { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+  .tb-label { font-size: 0.8125rem; color: var(--color-text-2); min-width: 120px; text-transform: capitalize; }
+  .tb-track { flex: 1; height: 6px; background: var(--color-border); border-radius: 9999px; overflow: hidden; }
+  .tb-fill  { height: 100%; background: var(--color-accent); border-radius: 9999px; transition: width 0.3s; }
+  .tb-count { font-size: 0.75rem; color: var(--color-text-muted); min-width: 24px; text-align: right; }
+  .topic-bar-row:hover .tb-label { color: var(--color-accent); }
+
+  .filter-bar {
+    display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap;
+    padding: 0.75rem 1rem; background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: 0.625rem;
+    margin-bottom: 1rem;
+  }
+  .search-input {
+    flex: 1; min-width: 160px; padding: 0.35rem 0.75rem;
+    background: var(--color-bg); border: 1px solid var(--color-border);
+    border-radius: 0.375rem; color: var(--color-text); font-size: 0.875rem;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--color-accent); }
+  .filter-group { display: flex; gap: 0.25rem; }
+  .filter-btn {
+    font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.625rem;
+    border-radius: 0.375rem; border: 1px solid var(--color-border);
+    background: var(--color-bg); color: var(--color-text-2); cursor: pointer;
+  }
+  .filter-btn.active, .filter-btn:hover { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
+  .easy-btn.active   { background: var(--color-easy);   border-color: var(--color-easy); }
+  .medium-btn.active { background: var(--color-medium); border-color: var(--color-medium); }
+  .hard-btn.active   { background: var(--color-hard);   border-color: var(--color-hard); }
+  .topic-select {
+    font-size: 0.8125rem; padding: 0.3rem 0.5rem;
+    background: var(--color-bg); border: 1px solid var(--color-border);
+    border-radius: 0.375rem; color: var(--color-text); cursor: pointer;
+  }
+  .result-count { font-size: 0.75rem; color: var(--color-text-muted); margin-left: auto; white-space: nowrap; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 0.75rem; }
+  .problem-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+  .problem-table th {
+    padding: 0.6rem 0.875rem; text-align: left;
+    font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--color-text-muted);
+    background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+  }
+  .problem-table td { padding: 0.55rem 0.875rem; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+  .problem-table tbody tr:last-child td { border-bottom: none; }
+  .problem-table tbody tr:hover { background: var(--color-sidebar); }
+  .td-num { color: var(--color-text-muted); font-variant-numeric: tabular-nums; width: 36px; }
+  .td-title a { color: var(--color-text); text-decoration: none; font-weight: 500; }
+  .td-title a:hover { color: var(--color-accent); }
+  .td-topic a { color: var(--color-text-2); text-decoration: none; text-transform: capitalize; }
+  .td-topic a:hover { color: var(--color-accent); }
+  .td-mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--color-text-2); white-space: nowrap; }
+  .td-patterns { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+  .diff-badge { font-size: 0.6875rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 9999px; white-space: nowrap; }
+  .diff-badge.easy   { color: var(--color-easy);   background: var(--color-easy-bg); }
+  .diff-badge.medium { color: var(--color-medium); background: var(--color-medium-bg); }
+  .diff-badge.hard   { color: var(--color-hard);   background: var(--color-hard-bg); }
+  .pchip {
+    font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 9999px;
+    background: var(--color-accent-bg); color: var(--color-accent);
+    text-decoration: none; white-space: nowrap;
+  }
+  .pmore { font-size: 0.6rem; color: var(--color-text-muted); }
+
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .problem-table th:nth-child(n+5), .problem-table td:nth-child(n+5) { display: none; }
+  }
+</style>

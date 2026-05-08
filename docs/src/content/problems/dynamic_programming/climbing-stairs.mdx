@@ -1,0 +1,44 @@
+---
+title: "Climbing Stairs"
+difficulty: "Easy"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/climbing-stairs"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/ClimbingStairs.java"
+patterns: ["dynamic-programming"]
+tags: ["classic"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/climbing-stairs) for the problem statement.
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class ClimbingStairs {
+    public int climbStairs(int n) {
+        if (n <= 2) {
+            return n;
+        }
+
+        int first = 1;
+        int second = 2;
+        int current = 0;
+
+        for (int i = 3; i <= n; i++) {
+            current = first + second;
+            first = second;
+            second = current;
+        }
+
+        return current;
+    }
+}
+```

@@ -1,0 +1,48 @@
+---
+title: "Linked List Cycle"
+difficulty: "Easy"
+topic: "linked_list"
+leetcodeUrl: "https://leetcode.com/problems/linked-list-cycle"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/linked_list/LinkedListCycle.java"
+patterns: ["fast-slow-pointers"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["LinkedList"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/linked-list-cycle) for the problem statement.
+
+**Patterns:** `two-pointers`, `fast-slow-pointers`
+
+## Java Solution
+
+```java
+package linked_list;
+
+public class LinkedListCycle {
+    public boolean hasCycle(ListNode head) {
+        if (head == null || head.next == null) {
+            return false;
+        }
+
+        ListNode slow = head;
+        ListNode fast = head;
+
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+
+            if (slow == fast) {
+                return true; // Cycle detected
+            }
+        }
+
+        return false; // No cycle
+    }
+}
+```

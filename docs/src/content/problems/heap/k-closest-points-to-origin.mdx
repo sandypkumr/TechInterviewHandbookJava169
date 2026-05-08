@@ -1,0 +1,50 @@
+---
+title: "K Closest Points to Origin"
+difficulty: "Medium"
+topic: "heap"
+leetcodeUrl: "https://leetcode.com/problems/k-closest-points-to-origin"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/heap/KClosestPointsToOrigin.java"
+patterns: ["heap"]
+tags: []
+timeComplexity: "O(n log k)"
+spaceComplexity: "O(k)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["PriorityQueue"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/k-closest-points-to-origin) for the problem statement.
+
+**Patterns:** `heap`
+
+## Java Solution
+
+```java
+package heap;
+
+import java.util.PriorityQueue;
+
+public class KClosestPointsToOrigin {
+    public int[][] kClosest(int[][] points, int k) {
+        int[][] result = new int[k][2];
+        PriorityQueue<int[]> maxHeap = new PriorityQueue<>(
+                (a, b) -> Integer.compare(b[0] * b[0] + b[1] * b[1], a[0] * a[0] + a[1] * a[1])
+        );
+
+        for (int[] point : points) {
+            maxHeap.offer(point);
+            if (maxHeap.size() > k) {
+                maxHeap.poll();
+            }
+        }
+
+        for (int i = 0; i < k; i++) {
+            result[i] = maxHeap.poll();
+        }
+
+        return result;
+    }
+}
+```

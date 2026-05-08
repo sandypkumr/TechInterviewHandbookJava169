@@ -1,0 +1,43 @@
+---
+title: "Convert Sorted Array to Binary Search Tree"
+difficulty: "Easy"
+topic: "binary_search_tree"
+leetcodeUrl: "https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search_tree/ConvertSortedArrayToBinarySearchTree.java"
+patterns: ["divide-and-conquer","dfs"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(log n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree) for the problem statement.
+
+**Patterns:** `sliding-window`
+
+## Java Solution
+
+```java
+package binary_search_tree;
+
+public class ConvertSortedArrayToBinarySearchTree {
+    public TreeNode sortedArrayToBST(int[] nums) {
+        return buildBST(nums, 0, nums.length - 1);
+    }
+
+    private TreeNode buildBST(int[] nums, int left, int right) {
+        if (left > right) {
+            return null;
+        }
+        int mid = left + (right - left) / 2;
+        TreeNode node = new TreeNode(nums[mid]);
+        node.left = buildBST(nums, left, mid - 1);
+        node.right = buildBST(nums, mid + 1, right);
+        return node;
+    }
+}
+```

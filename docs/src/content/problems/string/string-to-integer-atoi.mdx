@@ -1,0 +1,56 @@
+---
+title: "String to Integer (atoi)"
+difficulty: "Medium"
+topic: "string"
+leetcodeUrl: "https://leetcode.com/problems/string-to-integer-atoi"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/string/StringToIntegerAToI.java"
+patterns: []
+tags: []
+timeComplexity: ""
+spaceComplexity: ""
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Integer.MAX/MIN_VALUE","Character utilities"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/string-to-integer-atoi) for the problem statement.
+
+## Java Solution
+
+```java
+package string;
+
+public class StringToIntegerAToI {
+    public int myAtoi(String s) {
+        int n = s.length();
+        int i = 0;
+        while (i < n && s.charAt(i) == ' ') {
+            i++;
+        }
+        if (i == n) {
+            return 0;
+        }
+        boolean isNegative = false;
+        if (s.charAt(i) == '-') {
+            isNegative = true;
+            i++;
+        } else if (s.charAt(i) == '+') {
+            i++;
+        }
+        long result = 0;
+        while (i < n && Character.isDigit(s.charAt(i))) {
+            result = result * 10 + (s.charAt(i) - '0');
+            if (isNegative && -result < Integer.MIN_VALUE) {
+                return Integer.MIN_VALUE;
+            }
+            if (!isNegative && result > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;
+            }
+            i++;
+        }
+        return isNegative ? (int) -result : (int) result;
+    }
+}
+```

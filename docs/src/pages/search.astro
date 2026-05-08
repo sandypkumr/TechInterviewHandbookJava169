@@ -1,0 +1,179 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/layout/Sidebar.astro';
+import Header from '../components/layout/Header.astro';
+import Footer from '../components/layout/Footer.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<BaseLayout title="Search" description="Full-text search across all 169 Java DSA problems, patterns, and cheatsheets.">
+  <!-- Inject pagefind CSS into <head> via named slot -->
+  <link
+    slot="head"
+    rel="stylesheet"
+    href={`${base}/_pagefind/pagefind-ui.css`}
+  />
+
+  <Sidebar slot="sidebar" />
+  <Header  slot="header"  />
+
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={`${base}/`}>Home</a>
+    <span>›</span>
+    <span aria-current="page">Search</span>
+  </nav>
+
+  <div class="search-header">
+    <h1 class="search-title">🔍 Search</h1>
+    <p class="search-desc">
+      Full-text search across all 169 Java solutions, patterns, and cheatsheets.
+      Powered by <a href="https://pagefind.app" target="_blank" rel="noopener noreferrer">Pagefind</a>.
+    </p>
+  </div>
+
+  <!-- Pagefind UI mounts here -->
+  <div id="pagefind-search" class="pagefind-wrapper"></div>
+
+  <!-- Dev-mode fallback (shown until Pagefind loads) -->
+  <p id="search-fallback" class="search-fallback">
+    ⚠️ Search index not available in dev mode. Run <code>npm run build</code> first.
+  </p>
+
+  <Footer slot="footer" />
+</BaseLayout>
+
+<!-- Load Pagefind UI and theme it to match the site -->
+<script is:inline define:vars={{ base }}>
+  (function () {
+    const fallback = document.getElementById('search-fallback');
+
+    // Dynamically load pagefind-ui.js (only exists after `npm run build`)
+    const script = document.createElement('script');
+    script.src = base + '/_pagefind/pagefind-ui.js';
+
+    script.onload = function () {
+      if (fallback) fallback.style.display = 'none';
+      new PagefindUI({
+        element: '#pagefind-search',
+        bundlePath: base + '/_pagefind/',
+        showSubResults: true,
+        excerptLength: 20,
+        resetStyles: false,
+        showImages: false,
+        translations: {
+          placeholder: 'Search problems, patterns, topics…',
+          zero_results: 'No results for [SEARCH_TERM]',
+        },
+      });
+      // Auto-focus the input
+      setTimeout(() => {
+        const input = document.querySelector('.pagefind-ui__search-input');
+        if (input) input.focus();
+      }, 100);
+    };
+
+    script.onerror = function () {
+      if (fallback) {
+        fallback.style.display = 'block';
+        fallback.style.color = 'var(--color-text-muted)';
+      }
+    };
+
+    document.body.appendChild(script);
+
+    // Keyboard shortcut: focus search on '/' keypress
+    document.addEventListener('keydown', function (e) {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        const input = document.querySelector('.pagefind-ui__search-input');
+        if (input) input.focus();
+      }
+    });
+  })();
+</script>
+
+<style>
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.375rem;
+    font-size: 0.8125rem; color: var(--color-text-muted);
+    margin-bottom: 1.75rem; flex-wrap: wrap;
+  }
+  .breadcrumb a { color: var(--color-text-2); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--color-accent); }
+  .breadcrumb span[aria-current] { color: var(--color-text); }
+
+  .search-header { margin-bottom: 1.75rem; }
+  .search-title {
+    font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700;
+    color: var(--color-text); letter-spacing: -0.025em; margin: 0 0 0.5rem;
+  }
+  .search-desc { font-size: 0.9375rem; color: var(--color-text-2); margin: 0; line-height: 1.6; }
+  .search-desc a { color: var(--color-accent); text-decoration: none; }
+  .search-desc a:hover { text-decoration: underline; }
+
+  .search-fallback {
+    display: none;
+    font-size: 0.875rem; color: var(--color-text-muted);
+    padding: 1rem; border: 1px solid var(--color-border);
+    border-radius: 0.5rem; background: var(--color-surface);
+    margin-top: 1rem;
+  }
+  .search-fallback code {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--color-bg); padding: 0.1em 0.35em;
+    border-radius: 0.25rem; font-size: 0.875em;
+  }
+
+  .pagefind-wrapper { max-width: 720px; }
+
+  /* ── Pagefind UI theme overrides ── */
+  .pagefind-wrapper {
+    --pagefind-ui-scale: 0.9;
+    --pagefind-ui-primary: var(--color-accent);
+    --pagefind-ui-text: var(--color-text);
+    --pagefind-ui-background: var(--color-bg);
+    --pagefind-ui-border: var(--color-border);
+    --pagefind-ui-tag: var(--color-surface);
+    --pagefind-ui-border-width: 1px;
+    --pagefind-ui-border-radius: 0.5rem;
+    --pagefind-ui-font: 'Inter', system-ui, sans-serif;
+  }
+
+  :global(.pagefind-ui__search-input) {
+    background: var(--color-surface) !important;
+    color: var(--color-text) !important;
+    border-color: var(--color-border) !important;
+    font-size: 0.9375rem !important;
+  }
+  :global(.pagefind-ui__search-input:focus) {
+    border-color: var(--color-accent) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px var(--color-accent-bg) !important;
+  }
+  :global(.pagefind-ui__result) {
+    border-color: var(--color-border) !important;
+    background: var(--color-surface) !important;
+    border-radius: 0.625rem !important;
+  }
+  :global(.pagefind-ui__result:hover) {
+    border-color: var(--color-accent) !important;
+  }
+  :global(.pagefind-ui__result-title) { color: var(--color-text) !important; }
+  :global(.pagefind-ui__result-excerpt) { color: var(--color-text-2) !important; }
+  :global(.pagefind-ui__result-link) { text-decoration: none !important; }
+  :global(.pagefind-ui__button) {
+    background: var(--color-accent) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 0.5rem !important;
+    font-weight: 600 !important;
+  }
+  :global(.pagefind-ui__search-clear) { color: var(--color-text-muted) !important; }
+  :global(mark) {
+    background: var(--color-accent-bg) !important;
+    color: var(--color-accent) !important;
+    border-radius: 0.2em;
+    padding: 0 0.1em;
+  }
+</style>

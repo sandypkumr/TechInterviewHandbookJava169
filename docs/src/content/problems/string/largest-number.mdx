@@ -1,0 +1,48 @@
+---
+title: "Largest Number"
+difficulty: "Medium"
+topic: "string"
+leetcodeUrl: "https://leetcode.com/problems/largest-number"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/string/LargestNumber.java"
+patterns: []
+tags: []
+timeComplexity: ""
+spaceComplexity: ""
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Arrays.sort","StringBuilder"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/largest-number) for the problem statement.
+
+## Java Solution
+
+```java
+package string;
+
+import java.util.Arrays;
+
+public class LargestNumber {
+    public String largestNumber(int[] nums) {
+        String[] strNums = new String[nums.length];
+        for (int i = 0; i < nums.length; i++) {
+            strNums[i] = String.valueOf(nums[i]);
+        }
+
+        Arrays.sort(strNums, (a, b) -> (b + a).compareTo(a + b));
+
+        if (strNums[0].equals("0")) {
+            return "0";
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (String str : strNums) {
+            result.append(str);
+        }
+
+        return result.toString();
+    }
+}
+```

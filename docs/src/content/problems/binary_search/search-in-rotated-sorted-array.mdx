@@ -1,0 +1,58 @@
+---
+title: "Search in Rotated Sorted Array"
+difficulty: "Medium"
+topic: "binary_search"
+leetcodeUrl: "https://leetcode.com/problems/search-in-rotated-sorted-array"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search/SearchInRotatedSortedArray.java"
+patterns: ["binary-search"]
+tags: ["classic"]
+timeComplexity: "O(log n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/search-in-rotated-sorted-array) for the problem statement.
+
+**Patterns:** `sliding-window`, `binary-search`
+
+## Java Solution
+
+```java
+package binary_search;
+
+public class SearchInRotatedSortedArray {
+    public int search(int[] nums, int target) {
+        int left = 0;
+        int right = nums.length - 1;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target) {
+                return mid; // Target found
+            }
+
+            // Determine which side is sorted
+            if (nums[left] <= nums[mid]) { // Left side is sorted
+                if (nums[left] <= target && target < nums[mid]) {
+                    right = mid - 1; // Search in the left half
+                } else {
+                    left = mid + 1; // Search in the right half
+                }
+            } else { // Right side is sorted
+                if (nums[mid] < target && target <= nums[right]) {
+                    left = mid + 1; // Search in the right half
+                } else {
+                    right = mid - 1; // Search in the left half
+                }
+            }
+        }
+
+        return -1; // Target not found
+    }
+}
+```

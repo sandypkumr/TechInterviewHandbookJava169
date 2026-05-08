@@ -1,0 +1,36 @@
+---
+title: "Missing Number"
+difficulty: "Easy"
+topic: "binary"
+leetcodeUrl: "https://leetcode.com/problems/missing-number"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary/MissingNumber.java"
+patterns: []
+tags: ["xor-trick"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/missing-number) for the problem statement.
+
+## Java Solution
+
+```java
+package binary;
+
+public class MissingNumber {
+    public int missingNumber(int[] nums) {
+        int n = nums.length;
+        int expectedSum = n * (n + 1) / 2;
+        int actualSum = 0;
+        for (int num : nums) {
+            actualSum += num;
+        }
+        return expectedSum - actualSum;
+    }
+}
+```

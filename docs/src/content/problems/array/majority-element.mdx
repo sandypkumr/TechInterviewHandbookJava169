@@ -1,0 +1,38 @@
+---
+title: "Majority Element"
+difficulty: "Easy"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/majority-element"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/MajorityElement.java"
+patterns: ["greedy"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/majority-element) for the problem statement.
+
+## Java Solution
+
+```java
+package array;
+
+public class MajorityElement {
+    public int majorityElement(int[] nums) {
+        int count = 0;
+        int candidate = 0;
+        for (int num : nums) {
+            if (count == 0) {
+                candidate = num;
+            }
+            count += (num == candidate) ? 1 : -1;
+        }
+        return candidate;
+    }
+}
+```

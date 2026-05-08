@@ -1,0 +1,51 @@
+---
+title: "Partition Equal Subset Sum"
+difficulty: "Medium"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/partition-equal-subset-sum"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/PartitionEqualSubsetSum.java"
+patterns: ["dynamic-programming"]
+tags: []
+timeComplexity: "O(n·W)"
+spaceComplexity: "O(W)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/partition-equal-subset-sum) for the problem statement.
+
+**Patterns:** `dynamic-programming`
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class PartitionEqualSubsetSum {
+    public boolean canPartition(int[] nums) {
+        int totalSum = 0;
+        for (int num : nums) {
+            totalSum += num;
+        }
+
+        if (totalSum % 2 != 0) {
+            return false;
+        }
+
+        int target = totalSum / 2;
+        boolean[] dp = new boolean[target + 1];
+        dp[0] = true;
+
+        for (int num : nums) {
+            for (int j = target; j >= num; j--) {
+                dp[j] = dp[j] || dp[j - num];
+            }
+        }
+
+        return dp[target];
+    }
+}
+```

@@ -1,0 +1,40 @@
+---
+title: "Reverse Linked List"
+difficulty: "Easy"
+topic: "linked_list"
+leetcodeUrl: "https://leetcode.com/problems/reverse-linked-list"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/linked_list/ReverseLinkedList.java"
+patterns: ["two-pointers"]
+tags: ["classic"]
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["LinkedList"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/reverse-linked-list) for the problem statement.
+
+## Java Solution
+
+```java
+package linked_list;
+
+public class ReverseLinkedList {
+    public ListNode reverseList(ListNode head) {
+        ListNode prev = null;
+        ListNode current = head;
+
+        while (current != null) {
+            ListNode nextTemp = current.next; // Store next node
+            current.next = prev; // Reverse the link
+            prev = current; // Move prev to current
+            current = nextTemp; // Move to the next node
+        }
+
+        return prev; // New head of the reversed list
+    }
+}
+```

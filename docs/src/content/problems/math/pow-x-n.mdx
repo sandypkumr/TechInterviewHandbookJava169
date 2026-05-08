@@ -1,0 +1,43 @@
+---
+title: "Pow(x, n)"
+difficulty: "Medium"
+topic: "math"
+leetcodeUrl: "https://leetcode.com/problems/powx-n"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/math/PowOfXAndN.java"
+patterns: ["divide-and-conquer"]
+tags: []
+timeComplexity: "O(log n)"
+spaceComplexity: "O(log n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/powx-n) for the problem statement.
+
+## Java Solution
+
+```java
+package math;
+
+public class PowOfXAndN {
+    public double myPow(double x, int n) {
+        long N = n;
+        if (N < 0) {
+            x = 1 / x;
+            N = -N;
+        }
+        double result = 1.0;
+        while (N > 0) {
+            if ((N % 2) == 1) {
+                result *= x;
+            }
+            x *= x;
+            N /= 2;
+        }
+        return result;
+    }
+}
+```

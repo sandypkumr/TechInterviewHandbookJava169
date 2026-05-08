@@ -1,0 +1,57 @@
+---
+title: "Construct Binary Tree from Preorder and Inorder Traversal"
+difficulty: "Medium"
+topic: "binary_tree"
+leetcodeUrl: "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/ConstructBinaryTreeFromPreorderAndInOrderTraversal.java"
+patterns: ["dfs","divide-and-conquer"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal) for the problem statement.
+
+**Patterns:** `sliding-window`
+
+## Java Solution
+
+```java
+package binary_tree;
+
+public class ConstructBinaryTreeFromPreorderAndInOrderTraversal {
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        return buildTree(preorder, 0, preorder.length - 1,
+                inorder, 0, inorder.length - 1);
+    }
+
+    private TreeNode buildTree(int[] preorder, int preStart, int preEnd,
+                               int[] inorder, int inStart, int inEnd) {
+        if (preStart > preEnd || inStart > inEnd) {
+            return null;
+        }
+        TreeNode root = new TreeNode(preorder[preStart]);
+        int rootIndex = findRootIndex(inorder, inStart, inEnd, root.val);
+        int leftTreeSize = rootIndex - inStart;
+        root.left = buildTree(preorder, preStart + 1, preStart + leftTreeSize,
+                inorder, inStart, rootIndex - 1);
+        root.right = buildTree(preorder, preStart + leftTreeSize + 1, preEnd,
+                inorder, rootIndex + 1, inEnd);
+        return root;
+    }
+
+    private int findRootIndex(int[] inorder, int start, int end, int value) {
+        for (int i = start; i <= end; i++) {
+            if (inorder[i] == value) {
+                return i;
+            }
+        }
+        return -1;
+    }
+}
+```

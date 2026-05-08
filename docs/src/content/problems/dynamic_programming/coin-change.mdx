@@ -1,0 +1,42 @@
+---
+title: "Coin Change"
+difficulty: "Medium"
+topic: "dynamic_programming"
+leetcodeUrl: "https://leetcode.com/problems/coin-change"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/dynamic_programming/CoinChange.java"
+patterns: ["dynamic-programming"]
+tags: ["classic"]
+timeComplexity: "O(n·m)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["Math.max/min"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/coin-change) for the problem statement.
+
+**Patterns:** `dynamic-programming`
+
+## Java Solution
+
+```java
+package dynamic_programming;
+
+public class CoinChange {
+    public int coinChange(int[] coins, int amount) {
+        int max = amount + 1;
+        int[] dp = new int[amount + 1];
+        for (int i = 1; i <= amount; i++) {
+            dp[i] = max;
+        }
+        for (int coin : coins) {
+            for (int i = coin; i <= amount; i++) {
+                dp[i] = Math.min(dp[i], dp[i - coin] + 1);
+            }
+        }
+        return dp[amount] > amount ? -1 : dp[amount];
+    }
+}
+```

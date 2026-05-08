@@ -1,0 +1,13 @@
+{
+  "name": "dsa-content-pipeline",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Content generation pipeline for the DSA Learning Portal",
+  "scripts": {
+    "generate": "node generate-content.mjs",
+    "validate": "node validate-content.mjs"
+  },
+  "dependencies": {
+    "xlsx": "0.18.5"
+  }
+}

@@ -1,0 +1,44 @@
+---
+title: "Find the Duplicate Number"
+difficulty: "Medium"
+topic: "binary"
+leetcodeUrl: "https://leetcode.com/problems/find-the-duplicate-number"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary/FindTheDuplicateNumber.java"
+patterns: ["fast-slow-pointers"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(1)"
+isPremium: false
+hasProblemStatement: false
+javaApis: []
+similarProblems: []
+enrichmentNeeded: true
+---
+
+> 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/find-the-duplicate-number) for the problem statement.
+
+## Java Solution
+
+```java
+package binary;
+
+public class FindTheDuplicateNumber {
+    public int findDuplicate(int[] nums) {
+        int slow = nums[0];
+        int fast = nums[0];
+
+        do {
+            slow = nums[slow];
+            fast = nums[nums[fast]];
+        } while (slow != fast);
+
+        slow = nums[0];
+        while (slow != fast) {
+            slow = nums[slow];
+            fast = nums[fast];
+        }
+
+        return slow;
+    }
+}
+```
