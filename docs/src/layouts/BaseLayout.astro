@@ -4,18 +4,18 @@ import '../styles/global.css';
 export interface Props {
   title: string;
   description?: string;
-  noSidebar?: boolean;
+  fullWidth?: boolean;
 }
 
 const {
   title,
-  description = 'A premium Java DSA learning portal — 169 curated LeetCode solutions with patterns, complexity analysis, and revision tools.',
-  noSidebar = false,
+  description = '169 curated Java DSA solutions with patterns, complexity analysis, and revision tools. Built for interview preparation.',
+  fullWidth = false,
 } = Astro.props;
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://sandypkumr.github.io');
-const fullTitle = title === 'DSA Learning Portal' ? title : `${title} · DSA Portal`;
+const fullTitle = title === 'DSA Java Portal' ? title : `${title} · DSA Java`;
 ---
 <!doctype html>
 <html lang="en">
@@ -50,55 +50,38 @@ const fullTitle = title === 'DSA Learning Portal' ? title : `${title} · DSA Por
 
     <slot name="head" />
 
-    <!-- Runs before paint to avoid theme flash -->
+    <!-- Dark is default; only add .light if user saved light or system prefers light -->
     <script is:inline>
       (function () {
         const stored = typeof localStorage !== 'undefined' && localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (stored === 'dark' || (!stored && prefersDark)) {
-          document.documentElement.classList.add('dark');
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (stored === 'light' || (!stored && prefersLight)) {
+          document.documentElement.classList.add('light');
         }
       })();
     </script>
   </head>
   <body>
-    {noSidebar ? (
+    <slot name="header" />
+    <main class:list={['page-main', { 'full-width': fullWidth }]} data-pagefind-body>
       <slot />
-    ) : (
-      <div class="app-shell">
-        <slot name="sidebar" />
-        <div class="main-column">
-          <slot name="header" />
-          <main class="page-content" data-pagefind-body>
-            <slot />
-          </main>
-          <slot name="footer" />
-        </div>
-      </div>
-    )}
+    </main>
+    <slot name="footer" />
   </body>
 </html>
 
 <style>
-  .app-shell {
-    display: flex;
-    min-height: 100vh;
-  }
-  .main-column {
+  .page-main {
     flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .page-content {
-    flex: 1;
-    padding: 2.5rem 2.5rem 3rem;
-    max-width: 920px;
     width: 100%;
+    max-width: 860px;
     margin: 0 auto;
+    padding: 2.5rem 2rem 4rem;
+  }
+  .page-main.full-width {
+    max-width: 1200px;
   }
   @media (max-width: 768px) {
-    .app-shell { flex-direction: column; }
-    .page-content { padding: 1.5rem 1.125rem 2.5rem; }
+    .page-main { padding: 1.5rem 1rem 3rem; }
   }
 </style>

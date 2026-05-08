@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Sidebar from '../components/layout/Sidebar.astro';
 import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 
@@ -15,7 +14,6 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     href={`${base}/_pagefind/pagefind-ui.css`}
   />
 
-  <Sidebar slot="sidebar" />
   <Header  slot="header"  />
 
   <nav class="breadcrumb" aria-label="Breadcrumb">

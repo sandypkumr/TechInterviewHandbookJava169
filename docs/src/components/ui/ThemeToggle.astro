@@ -17,18 +17,18 @@
 
 <script>
   function syncIcons() {
-    const isDark = document.documentElement.classList.contains('dark');
+    const isLight = document.documentElement.classList.contains('light');
     const sun  = document.querySelector<HTMLElement>('.icon-sun');
     const moon = document.querySelector<HTMLElement>('.icon-moon');
     if (sun && moon) {
-      sun.style.display  = isDark ? 'block' : 'none';
-      moon.style.display = isDark ? 'none'  : 'block';
+      sun.style.display  = isLight ? 'none'  : 'block';
+      moon.style.display = isLight ? 'block' : 'none';
     }
   }
   syncIcons();
   document.getElementById('theme-toggle')?.addEventListener('click', () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    const isLight = document.documentElement.classList.toggle('light');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
     syncIcons();
   });
 </script>

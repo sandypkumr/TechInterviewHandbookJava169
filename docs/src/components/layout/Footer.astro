@@ -5,49 +5,119 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 <footer class="site-footer" role="contentinfo">
   <div class="footer-inner">
-    <span class="footer-copy">
-      © {year} &nbsp;·&nbsp; DSA Learning Portal &nbsp;·&nbsp; 169 Java Solutions
-    </span>
-    <nav class="footer-links" aria-label="Footer links">
-      <a href={`${base}/cheatsheets/java-collections`}>Java Cheat Sheet</a>
-      <a href={`${base}/revision`}>Quick Revision</a>
-      <a
-        href="https://github.com/sandypkumr/TechInterviewHandbookJava169"
-        target="_blank"
-        rel="noopener noreferrer"
-      >GitHub</a>
-      <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer">LeetCode</a>
-    </nav>
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="7" fill="#6366f1"/>
+          <text x="16" y="22" text-anchor="middle" font-size="16" font-family="monospace" font-weight="700" fill="white">J</text>
+        </svg>
+        <span class="footer-logo-text">DSA<span class="footer-logo-accent">Java</span></span>
+      </div>
+      <p class="footer-tagline">169 Java DSA solutions · Interview preparation · Pattern recognition</p>
+    </div>
+
+    <div class="footer-cols">
+      <div class="footer-col">
+        <span class="footer-col-title">EXPLORE</span>
+        <a href={`${base}/topics/array`}>Topics</a>
+        <a href={`${base}/patterns`}>Patterns</a>
+        <a href={`${base}/search`}>Search</a>
+        <a href={`${base}/revision`}>Quick Revision</a>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-title">REFERENCE</span>
+        <a href={`${base}/cheatsheets/java-collections`}>Java Collections</a>
+        <a href={`${base}/cheatsheets/complexity-reference`}>Complexity</a>
+        <a href={`${base}/cheatsheets/bfs-dfs-templates`}>BFS / DFS</a>
+        <a href={`${base}/cheatsheets/dp-patterns`}>DP Patterns</a>
+      </div>
+      <div class="footer-col">
+        <span class="footer-col-title">SOURCE</span>
+        <a href="https://github.com/sandypkumr/TechInterviewHandbookJava169" target="_blank" rel="noopener noreferrer">GitHub Repo ↗</a>
+        <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer">LeetCode ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span>© {year} DSAJava · Built with Astro</span>
   </div>
 </footer>
 
 <style>
   .site-footer {
     border-top: 1px solid var(--color-border);
-    padding: 1rem 2.5rem;
     margin-top: auto;
   }
   .footer-inner {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 3rem;
+    padding: 2.5rem 2rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .footer-brand { flex: 1; min-width: 0; }
+  .footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.625rem;
+  }
+  .footer-logo-text {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .footer-logo-accent { color: var(--color-accent); }
+  .footer-tagline {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
+    line-height: 1.6;
+    max-width: 260px;
+    margin: 0;
   }
-  .footer-links {
+
+  .footer-cols {
     display: flex;
-    gap: 1.25rem;
+    gap: 3rem;
   }
-  .footer-links a {
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .footer-col-title {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
     color: var(--color-text-muted);
+    margin-bottom: 0.375rem;
+  }
+  .footer-col a {
+    font-size: 0.8125rem;
+    color: var(--color-text-2);
     text-decoration: none;
     transition: color 0.12s ease;
   }
-  .footer-links a:hover { color: var(--color-accent); }
+  .footer-col a:hover { color: var(--color-accent); }
 
-  @media (max-width: 640px) {
-    .footer-inner    { flex-direction: column; align-items: flex-start; }
-    .footer-links    { flex-wrap: wrap; gap: 0.75rem; }
+  .footer-bottom {
+    border-top: 1px solid var(--color-border);
+    padding: 1rem 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .footer-inner { flex-direction: column; gap: 2rem; padding: 2rem 1.25rem 1.5rem; }
+    .footer-cols  { gap: 1.5rem; flex-wrap: wrap; }
+    .footer-tagline { max-width: none; }
+    .footer-bottom { padding: 1rem 1.25rem; }
   }
 </style>

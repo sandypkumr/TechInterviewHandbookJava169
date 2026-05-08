@@ -1,7 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Sidebar from '../../components/layout/Sidebar.astro';
 import Header from '../../components/layout/Header.astro';
 import Footer from '../../components/layout/Footer.astro';
 import ProblemCard from '../../components/ui/ProblemCard.astro';
@@ -46,7 +45,6 @@ for (const p of problems) {
   title={`${meta?.name ?? pattern} Pattern`}
   description={meta?.description ?? `Problems using the ${pattern} pattern.`}
 >
-  <Sidebar slot="sidebar" />
   <Header  slot="header"  />
 
   <nav class="breadcrumb" aria-label="Breadcrumb">

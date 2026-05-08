@@ -1,7 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Sidebar from '../../components/layout/Sidebar.astro';
 import Header from '../../components/layout/Header.astro';
 import Footer from '../../components/layout/Footer.astro';
 import ProblemCard from '../../components/ui/ProblemCard.astro';
@@ -65,7 +64,6 @@ const hardCnt  = problems.filter(p => p.data.difficulty === 'Hard').length;
 ---
 
 <BaseLayout title={`${label} Problems`}>
-  <Sidebar slot="sidebar" />
   <Header  slot="header"  />
 
   <!-- Breadcrumb -->

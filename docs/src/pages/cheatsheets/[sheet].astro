@@ -1,7 +1,6 @@
 ---
 import { Code } from 'astro:components';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Sidebar from '../../components/layout/Sidebar.astro';
 import Header from '../../components/layout/Header.astro';
 import Footer from '../../components/layout/Footer.astro';
 import { CHEATSHEETS, CHEATSHEET_MAP } from '../../data/cheatsheets';
@@ -17,7 +16,6 @@ const allSheets   = CHEATSHEETS;
 ---
 
 <BaseLayout title={`${cs.title} Cheat Sheet`} description={cs.description}>
-  <Sidebar slot="sidebar" />
   <Header  slot="header"  />
 
   <nav class="breadcrumb" aria-label="Breadcrumb">

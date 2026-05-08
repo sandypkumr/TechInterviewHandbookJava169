@@ -1,7 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Sidebar from '../../components/layout/Sidebar.astro';
 import Header from '../../components/layout/Header.astro';
 import Footer from '../../components/layout/Footer.astro';
 
@@ -26,7 +25,6 @@ const topics = [...new Set(problems.map(p => p.data.topic))].sort();
 ---
 
 <BaseLayout title="Revision Dashboard" description="Browse and filter all 169 Java DSA problems.">
-  <Sidebar slot="sidebar" />
   <Header  slot="header"  />
 
   <nav class="breadcrumb" aria-label="Breadcrumb">

@@ -1,7 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Sidebar from '../../components/layout/Sidebar.astro';
 import Header from '../../components/layout/Header.astro';
 import Footer from '../../components/layout/Footer.astro';
 import { PATTERNS } from '../../data/patterns';
@@ -29,7 +28,6 @@ const totalWithPatterns = problems.filter(p => p.data.patterns.length > 0).lengt
 ---
 
 <BaseLayout title="Pattern Index" description="Browse all 169 DSA problems by algorithmic pattern.">
-  <Sidebar slot="sidebar" />
   <Header  slot="header"  />
 
   <nav class="breadcrumb" aria-label="Breadcrumb">
