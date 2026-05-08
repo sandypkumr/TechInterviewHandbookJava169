@@ -13,6 +13,7 @@ const {
   noSidebar = false,
 } = Astro.props;
 
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? 'https://sandypkumr.github.io');
 const fullTitle = title === 'DSA Learning Portal' ? title : `${title} · DSA Portal`;
 ---
@@ -38,7 +39,7 @@ const fullTitle = title === 'DSA Learning Portal' ? title : `${title} · DSA Por
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
 
-    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
