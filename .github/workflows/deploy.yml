@@ -30,29 +30,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: |
-            scripts/package-lock.json
-            docs/package-lock.json
-
-      - name: Install pipeline dependencies
-        run: npm install
-        working-directory: scripts
-
-      - name: Generate MDX content from Java sources
-        run: node generate-content.mjs
-        working-directory: scripts
-
-      - name: Enrich MDX with complexity and pattern metadata
-        run: node enrich-metadata.mjs --write
-        working-directory: scripts
-
-      - name: Enrich MDX with LeetCode problem descriptions
-        run: node enrich-descriptions.mjs --write
-        working-directory: scripts
-
-      - name: Validate generated content
-        run: node validate-content.mjs
-        working-directory: scripts
+          cache-dependency-path: docs/package-lock.json
 
       - name: Install Astro dependencies
         run: npm ci

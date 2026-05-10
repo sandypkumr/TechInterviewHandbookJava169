@@ -1,5 +1,11 @@
 ### IntelliJ IDEA ###
+.idea/
+*.iml
 out/
+
+### Generated / intermediate artefacts ###
+DSASpreadSheetJava.xlsx
+scripts/overrides/descriptions.json
 !**/src/main/**/out/
 !**/src/test/**/out/
 
