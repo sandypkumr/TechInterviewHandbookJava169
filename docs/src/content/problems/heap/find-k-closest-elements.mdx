@@ -85,9 +85,9 @@ The solution is implemented in `findClosestElements(int[] arr, int k, int x)`:
 2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
 3. Evaluate the predicate at mid to decide which half to discard.
 4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left > right; the answer is typically left (or right + 1).
+5. Repeat until left &gt; right; the answer is typically left (or right + 1).
 
-> **Note:** This solution also uses the **two pointers moving toward each other** technique.
+&gt; **Note:** This solution also uses the **two pointers moving toward each other** technique.
 
 ### Complexity Analysis
 

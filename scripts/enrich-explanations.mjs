@@ -280,10 +280,10 @@ const PATTERN_DESCRIPTIONS = {
       `**${title}** involves many prefix-based string operations (insert, startsWith, search). A trie (prefix tree) stores characters along edges; words with common prefixes share nodes, making prefix checks O(L) where L is the word length — independent of the total number of stored words.\n\n` +
       `Think of a trie as an autocomplete system. When you type "pre", the trie immediately navigates to the "pre" node and can enumerate all completions from there without scanning the entire dictionary.`,
     keySteps: [
-      'Define a TrieNode with children[26] (or a HashMap<Character, TrieNode>) and a boolean isEnd.',
-      'insert(word): traverse/create nodes character by character; mark isEnd = true at the last node.',
-      'search(word): traverse nodes; return true only if all characters matched and isEnd is true.',
-      'startsWith(prefix): same traversal but return true as soon as you\'ve matched the full prefix.',
+      'Define a TrieNode with `children[26]` (or a `HashMap<Character, TrieNode>`) and a boolean `isEnd`.',
+      '`insert(word)`: traverse/create nodes character by character; mark `isEnd = true` at the last node.',
+      '`search(word)`: traverse nodes; return true only if all characters matched and `isEnd` is true.',
+      '`startsWith(prefix)`: same traversal but return true as soon as you\'ve matched the full prefix.',
     ],
   },
   'merge-intervals': {
@@ -439,7 +439,7 @@ function generateExplanation(fm, javaSource) {
   lines.push('### Approach');
   lines.push('');
   if (desc) {
-    lines.push(desc.approach(title, javaApis));
+    lines.push(escapeMDXText(desc.approach(title, javaApis)));
   } else {
     // Generic fallback based on topic
     const topicVerb = (fm.topic || '').replace(/_/g, ' ');
@@ -463,7 +463,7 @@ function generateExplanation(fm, javaSource) {
 
   if (desc) {
     desc.keySteps.forEach((step, i) => {
-      lines.push(`${i + 1}. ${step}`);
+      lines.push(`${i + 1}. ${escapeMDXText(step)}`);
     });
   } else {
     // Generic walkthrough using extracted variables
@@ -477,9 +477,9 @@ function generateExplanation(fm, javaSource) {
   const secondary = patterns.filter(p => p !== primaryPattern && PATTERN_DESCRIPTIONS[p]);
   if (secondary.length > 0) {
     lines.push('');
-    lines.push(
+    lines.push(escapeMDXText(
       `> **Note:** This solution also uses the **${secondary.map(p => PATTERN_DESCRIPTIONS[p].oneLiner).join('** and **')}** technique${secondary.length > 1 ? 's' : ''}.`
-    );
+    ));
   }
 
   lines.push('');
@@ -487,10 +487,27 @@ function generateExplanation(fm, javaSource) {
   // ── Complexity analysis ────────────────────────────────────────────────────
   lines.push('### Complexity Analysis');
   lines.push('');
-  lines.push(explainComplexity(tc, sc, patterns, javaApis, javaSource));
+  lines.push(escapeMDXText(explainComplexity(tc, sc, patterns, javaApis, javaSource)));
   lines.push('');
 
   return lines.join('\n');
+}
+
+// ─── MDX safety ─────────────────────────────────────────────────────────────
+
+/**
+ * Escape characters that MDX would interpret as JSX in plain text.
+ * Leaves content inside backtick code-spans untouched.
+ */
+function escapeMDXText(text) {
+  // Split on backtick spans so we only escape outside code-spans
+  const parts = text.split(/(`[^`]*`)/g);
+  return parts.map((part, i) => {
+    if (i % 2 === 1) return part; // inside a backtick span — leave as-is
+    return part
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }).join('');
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────

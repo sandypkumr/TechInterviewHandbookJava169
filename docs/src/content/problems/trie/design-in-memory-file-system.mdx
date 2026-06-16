@@ -152,10 +152,10 @@ Think of a trie as an autocomplete system. When you type "pre", the trie immedia
 
 The solution is implemented in `ls(String path)`:
 
-1. Define a TrieNode with children[26] (or a HashMap<Character, TrieNode>) and a boolean isEnd.
-2. insert(word): traverse/create nodes character by character; mark isEnd = true at the last node.
-3. search(word): traverse nodes; return true only if all characters matched and isEnd is true.
-4. startsWith(prefix): same traversal but return true as soon as you've matched the full prefix.
+1. Define a TrieNode with `children[26]` (or a `HashMap<Character, TrieNode>`) and a boolean `isEnd`.
+2. `insert(word)`: traverse/create nodes character by character; mark `isEnd = true` at the last node.
+3. `search(word)`: traverse nodes; return true only if all characters matched and `isEnd` is true.
+4. `startsWith(prefix)`: same traversal but return true as soon as you've matched the full prefix.
 
 ### Complexity Analysis
 
