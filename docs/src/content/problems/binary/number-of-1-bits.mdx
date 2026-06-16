@@ -69,3 +69,23 @@ public class NumberOf1Bits {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Number of 1 Bits** is a binary problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(1)` time and `O(1)` space.
+
+### Code Walkthrough
+
+The solution is implemented in `hammingWeight(int n)`:
+
+1. **Initialise** the necessary data structures (`count`).
+2. **Iterate** over the input using a iterative loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

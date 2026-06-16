@@ -91,3 +91,28 @@ public class MergeIntervals {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Merge Intervals** deals with overlapping intervals. After sorting by start time, any interval that overlaps with the previous one (its start ≤ previous end) can be merged by extending the end. A single left-to-right scan after sorting handles all merges in O(n).
+
+Visualise intervals as horizontal bars on a timeline. Once sorted by left edge, you walk left to right: if the new bar overlaps the current merged bar, extend the merged bar; otherwise, seal the current bar and start a new one.
+
+### Code Walkthrough
+
+The solution is implemented in `merge(int[][] intervals)`:
+
+1. Sort intervals by their start value.
+2. Initialise the result list with the first interval.
+3. For each subsequent interval, compare its start with the end of the last interval in the result.
+4. If they overlap (start ≤ last.end), update last.end = max(last.end, current.end).
+5. Otherwise, append the current interval as a new merged interval.
+
+> **Note:** This solution also uses the **greedy — make the locally optimal choice at each step** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
+- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.

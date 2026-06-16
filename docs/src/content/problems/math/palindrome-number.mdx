@@ -70,3 +70,23 @@ public class PalindromeNumber {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Palindrome Number** is a math problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(log n)` time and `O(1)` space.
+
+### Code Walkthrough
+
+The solution is implemented in `isPalindrome(int x)`:
+
+1. **Initialise** the necessary data structures (`original`, `reversed`, `digit`).
+2. **Iterate** over the input using a iterative loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

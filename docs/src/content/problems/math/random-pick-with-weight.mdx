@@ -112,3 +112,28 @@ public class RandomPickWithWeight {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Random Pick with Weight** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+
+Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+
+### Code Walkthrough
+
+The solution is implemented in `pickIndex()`:
+
+1. Define left and right boundaries covering all possible answers.
+2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
+3. Evaluate the predicate at mid to decide which half to discard.
+4. Narrow the range: move left = mid + 1 or right = mid - 1.
+5. Repeat until left > right; the answer is typically left (or right + 1).
+
+> **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n) build / O(log n) pick`** — see the analysis for full details.
+- **Space Complexity: `O(n)`** — the prefix sum array has the same length as the input.

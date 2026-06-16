@@ -69,3 +69,25 @@ public class PowOfXAndN {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Pow(x, n)** follows the classic divide-and-conquer pattern: split the problem into smaller independent sub-problems, solve each recursively, then combine the results. This typically yields O(n log n) time because each level of recursion does O(n) work and there are O(log n) levels.
+
+Merge Sort is the canonical example: split the array in half, sort each half independently, then merge the two sorted halves in linear time. The "combine" step is where the real work happens.
+
+### Code Walkthrough
+
+The solution is implemented in `myPow(double x, int n)`:
+
+1. Define the base case (array of size 0 or 1 is already solved).
+2. Split the input roughly in half (or by another natural partition).
+3. Recursively solve each half.
+4. Merge or combine the two results to produce the answer for the full input.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
+- **Space Complexity: `O(log n)`** — the recursion call stack grows to O(log n) depth.

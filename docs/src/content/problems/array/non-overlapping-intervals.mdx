@@ -85,3 +85,28 @@ public class NonOverlappingIntervals {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Non-overlapping Intervals** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+
+The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+
+### Code Walkthrough
+
+The solution is implemented in `eraseOverlapIntervals(int[][] intervals)`:
+
+1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
+2. Sort or arrange the input according to this criterion.
+3. Iterate and make the greedy decision at each step without revisiting previous choices.
+4. Update state (current end, running sum, remaining capacity) after each decision.
+5. Return the accumulated result.
+
+> **Note:** This solution also uses the **sort intervals by start time, then merge overlapping ones in one pass** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

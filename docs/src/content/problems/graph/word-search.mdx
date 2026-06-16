@@ -94,3 +94,28 @@ public class WordSearch {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Word Search** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+
+### Code Walkthrough
+
+The solution is implemented in `exist(char[][] board, String word)`:
+
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
+
+> **Note:** This solution also uses the **backtracking — explore all candidates and prune invalid paths early** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(m·n·4^L)`** — see the analysis for full details.
+- **Space Complexity: `O(L)`** — auxiliary space proportional to the input is required.

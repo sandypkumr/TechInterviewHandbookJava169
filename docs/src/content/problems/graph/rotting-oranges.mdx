@@ -116,3 +116,26 @@ public class RottingOranges {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Rotting Oranges** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+
+Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+
+### Code Walkthrough
+
+The solution is implemented in `orangesRotting(int[][] grid)`:
+
+1. Add the source node(s) to a queue and mark them visited.
+2. While the queue is non-empty, poll the front node.
+3. Process the current node (update answer, record level, etc.).
+4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
+5. The first time you reach the target, you have the shortest path.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
+- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.

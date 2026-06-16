@@ -129,3 +129,28 @@ public class AlienDictionary {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Alien Dictionary** models dependencies as a Directed Acyclic Graph (DAG) and asks for a valid ordering — exactly what topological sort provides. Kahn's algorithm uses in-degree counts: start with all nodes that have no prerequisites (in-degree 0), process them, and decrement the in-degree of their successors.
+
+Think of it as a task scheduler: you can only start a task once all tasks it depends on are finished. Kahn's BFS-based approach naturally detects cycles (if the processed count is less than the total node count, a cycle exists).
+
+### Code Walkthrough
+
+The solution is implemented in `alienOrder(String[] words)`:
+
+1. Build an adjacency list and compute in-degree for every node.
+2. Enqueue all nodes with in-degree 0.
+3. Poll a node, add it to the result, and decrement the in-degree of its neighbours.
+4. Enqueue any neighbour whose in-degree drops to 0.
+5. If the result size equals the total node count, the ordering is valid; otherwise a cycle exists.
+
+> **Note:** This solution also uses the **BFS to explore nodes level by level** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(C)`** — see the analysis for full details.
+- **Space Complexity: `O(U)`** — auxiliary space proportional to the input is required.

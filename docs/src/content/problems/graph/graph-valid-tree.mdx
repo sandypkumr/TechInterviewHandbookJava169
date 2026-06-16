@@ -115,3 +115,27 @@ public class GraphValidTree {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Graph Valid Tree** involves repeatedly merging groups and querying whether two elements belong to the same group — perfect for Union-Find. The data structure maintains a forest of trees where each tree represents a component; union merges two trees and find identifies a root.
+
+With path compression (flattening the tree on every find) and union by rank (always attaching the smaller tree under the larger), both operations run in near-constant amortised time O(α(n)), where α is the extremely slow-growing inverse Ackermann function.
+
+### Code Walkthrough
+
+The solution is implemented in `validTree(int n, int[][] edges)`:
+
+1. Initialise parent[i] = i and rank[i] = 0 for every node.
+2. find(x): recursively find the root, applying path compression along the way.
+3. union(x, y): find both roots; if different, attach the lower-rank tree under the higher-rank one.
+4. After processing all edges/queries, count distinct roots or answer connectivity queries.
+
+> **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(V+E)`** — each vertex and each edge is processed at most once in the graph traversal.
+- **Space Complexity: `O(V)`** — auxiliary space proportional to the input is required.

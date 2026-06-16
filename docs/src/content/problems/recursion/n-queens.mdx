@@ -97,3 +97,26 @@ public class NQueens {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**N-Queens** requires enumerating all valid combinations/permutations/subsets. Backtracking systematically tries every candidate and immediately abandons ("prunes") any branch that cannot possibly lead to a valid solution, making it far faster than brute-force enumeration in practice.
+
+Think of solving a sudoku: you place a digit, recursively try to solve the rest, and if you reach a contradiction you erase that digit (backtrack) and try the next. The key is that pruning can cut enormous branches of the search tree early.
+
+### Code Walkthrough
+
+The solution is implemented in `solveNQueens(int n)`:
+
+1. Define what constitutes a valid complete solution (base case).
+2. At each step, iterate over all possible next choices.
+3. Apply a choice (mutate state), then recurse.
+4. After recursion returns, undo the choice (backtrack) to restore state.
+5. Apply a pruning condition to skip choices that cannot lead to a valid solution.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n!)`** — see the analysis for full details.
+- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.

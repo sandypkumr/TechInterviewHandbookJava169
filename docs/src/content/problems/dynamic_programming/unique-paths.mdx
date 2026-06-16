@@ -72,3 +72,26 @@ public class UniquePaths {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Unique Paths** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+
+Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+
+### Code Walkthrough
+
+The solution is implemented in `uniquePaths(int m, int n)`:
+
+1. Define the state: what does dp[i] (or dp[i][j]) represent?
+2. Write the recurrence relation that builds dp[i] from previously computed states.
+3. Identify and set the base cases (dp[0], dp[1], etc.).
+4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
+5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+
+### Complexity Analysis
+
+- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
+- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.

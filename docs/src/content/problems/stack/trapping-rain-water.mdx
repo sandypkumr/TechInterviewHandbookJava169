@@ -67,3 +67,26 @@ public class TrappingRainWater {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Trapping Rain Water** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+
+Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+
+### Code Walkthrough
+
+The solution is implemented in `trap(int[] height)`:
+
+1. Initialise left and right pointers both at index 0.
+2. Expand the window by advancing the right pointer and updating the window state.
+3. When the window violates the constraint, shrink from the left until it is valid again.
+4. At each valid state, update the global answer (max length, min size, etc.).
+5. Continue until the right pointer reaches the end of the input.
+
+### Complexity Analysis
+
+- **Time Complexity: `?`** — see analysis above.
+- **Space Complexity: `?`** — see analysis above.

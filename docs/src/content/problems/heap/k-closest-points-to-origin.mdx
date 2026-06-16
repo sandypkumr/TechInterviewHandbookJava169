@@ -78,3 +78,26 @@ public class KClosestPointsToOrigin {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**K Closest Points to Origin** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+
+A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+
+### Code Walkthrough
+
+The solution is implemented in `kClosest(int[][] points, int k)`:
+
+1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
+2. Insert elements as you process them.
+3. Poll the top element when you need the current minimum/maximum.
+4. For "top-K" problems, keep the heap size bounded at K to save memory.
+5. After processing, the remaining heap elements or the polled sequence is your answer.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n log k)`** — see the analysis for full details.
+- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.

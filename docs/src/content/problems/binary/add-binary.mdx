@@ -60,3 +60,23 @@ public class AddBinary {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Add Binary** is a binary problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (StringBuilder) to achieve the target complexities of `O(max(m,n))` time and `O(max(m,n))` space.
+
+### Code Walkthrough
+
+The solution is implemented in `addBinary(String a, String b)`:
+
+1. **Initialise** the necessary data structures (`i`, `sum`).
+2. **Iterate** over the input using a iterative loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(max(m,n))`** — see the analysis for full details.
+- **Space Complexity: `O(max(m,n))`** — auxiliary space proportional to the input is required.

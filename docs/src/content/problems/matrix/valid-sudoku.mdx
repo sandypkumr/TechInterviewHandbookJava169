@@ -110,3 +110,26 @@ public class ValidSudoku {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+The key insight for **Valid Sudoku** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+
+This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+
+### Code Walkthrough
+
+The solution is implemented in `isValidSudoku(char[][] board)`:
+
+1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
+2. For each element, compute what you're looking for (a complement, a count, a flag).
+3. Check the hash structure first — if the target is there, you're done.
+4. Otherwise, insert the current element (or its metadata) into the structure.
+5. Return the result after the loop if no early exit occurred.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

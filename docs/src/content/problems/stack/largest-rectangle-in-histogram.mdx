@@ -65,3 +65,25 @@ public class LargestRectangleInHistogram {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Largest Rectangle in Histogram** asks about the relationship between each element and the next element that is greater (or smaller) than it. A brute-force nested loop is O(n²); a monotonic stack solves it in O(n) by maintaining a stack that is always in increasing (or decreasing) order.
+
+As you scan left to right, every time a new element would break the stack's monotonic property, you pop elements off — each pop reveals that the current element is the "next greater" for the popped element. Each element is pushed and popped at most once, giving O(n) total time.
+
+### Code Walkthrough
+
+The solution is implemented in `largestRectangleArea(int[] heights)`:
+
+1. Initialise an empty stack (storing indices, not values, for flexibility).
+2. For each element, while the stack is non-empty and the condition is met, pop and record the answer.
+3. Push the current index onto the stack.
+4. After the full scan, remaining stack elements have no next-greater element (answer = -1 or 0).
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.

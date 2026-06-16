@@ -119,3 +119,27 @@ public class DesignAddAndSearchWordsDataStructure {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Design Add and Search Words Data Structure** involves many prefix-based string operations (insert, startsWith, search). A trie (prefix tree) stores characters along edges; words with common prefixes share nodes, making prefix checks O(L) where L is the word length — independent of the total number of stored words.
+
+Think of a trie as an autocomplete system. When you type "pre", the trie immediately navigates to the "pre" node and can enumerate all completions from there without scanning the entire dictionary.
+
+### Code Walkthrough
+
+The solution is implemented in `addWord(String word)`:
+
+1. Define a TrieNode with children[26] (or a HashMap<Character, TrieNode>) and a boolean isEnd.
+2. insert(word): traverse/create nodes character by character; mark isEnd = true at the last node.
+3. search(word): traverse nodes; return true only if all characters matched and isEnd is true.
+4. startsWith(prefix): same traversal but return true as soon as you've matched the full prefix.
+
+> **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(M·26^M)`** — see the analysis for full details.
+- **Space Complexity: `O(M)`** — auxiliary space proportional to the input is required.

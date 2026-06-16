@@ -76,3 +76,23 @@ public class MissingNumber {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Missing Number** is a binary problem. The solution iterates over the input using a enhanced for-each loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(n)` time and `O(1)` space.
+
+### Code Walkthrough
+
+The solution is implemented in `missingNumber(int[] nums)`:
+
+1. **Initialise** the necessary data structures (`n`, `expectedSum`, `actualSum`).
+2. **Iterate** over the input using a enhanced for-each loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

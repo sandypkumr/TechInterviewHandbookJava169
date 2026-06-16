@@ -99,3 +99,28 @@ public class ReorderList {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Reorder List** uses two pointers moving at different speeds — slow advances one step at a time, fast advances two. If a cycle exists, the fast pointer eventually laps the slow pointer and they meet inside the cycle. If no cycle exists, fast reaches the end first.
+
+Think of two runners on a circular track: the faster runner will always eventually overtake (lap) the slower one. If the track has no loop (i.e., it ends), the faster runner simply reaches the finish line first.
+
+### Code Walkthrough
+
+The solution is implemented in `reorderList(ListNode head)`:
+
+1. Initialise slow = head and fast = head.
+2. Advance slow by one step and fast by two steps each iteration.
+3. If fast or fast.next is null, there is no cycle.
+4. If slow == fast, a cycle is detected (meeting point is inside the cycle).
+5. To find the cycle entry point, reset one pointer to head and advance both one step at a time.
+
+> **Note:** This solution also uses the **two pointers moving toward each other** technique.
+
+### Complexity Analysis
+
+- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

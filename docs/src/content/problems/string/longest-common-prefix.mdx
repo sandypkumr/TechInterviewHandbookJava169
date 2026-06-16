@@ -66,3 +66,25 @@ public class LongestCommonPrefix {
     }
 }
 ```
+
+## Explanation
+
+### Approach
+
+**Longest Common Prefix** requires repeated range-sum queries. Computing each sum from scratch is O(n) per query; a prefix sum array precomputes cumulative totals so any range sum [l, r] reduces to prefixSum[r] - prefixSum[l - 1] — a single O(1) subtraction.
+
+Imagine a running tally of rainfall: instead of adding up each day's rain for every query, you keep a running total. The rain from day l to day r is simply totalUpToR - totalUpToL-1.
+
+### Code Walkthrough
+
+The solution is implemented in `longestCommonPrefix(String[] strs)`:
+
+1. Allocate prefix[n + 1] initialised to 0.
+2. Fill prefix[i] = prefix[i - 1] + nums[i - 1] for i from 1 to n.
+3. Answer a range query [l, r] (0-indexed) as prefix[r + 1] - prefix[l].
+4. Use a HashMap from prefix-sum → first index to detect subarrays with a target sum.
+
+### Complexity Analysis
+
+- **Time Complexity: `?`** — see analysis above.
+- **Space Complexity: `?`** — see analysis above.
