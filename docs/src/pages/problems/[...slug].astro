@@ -6,13 +6,34 @@ import Footer from '../../components/layout/Footer.astro';
 
 export async function getStaticPaths() {
   const problems = await getCollection('problems');
-  return problems.map(entry => ({
-    params: { slug: entry.slug },
-    props: { entry },
-  }));
+
+  const byTopic: Record<string, typeof problems> = {};
+  for (const p of problems) {
+    const t = p.data.topic;
+    if (!byTopic[t]) byTopic[t] = [];
+    byTopic[t].push(p);
+  }
+  for (const topic in byTopic) {
+    byTopic[topic].sort((a, b) => a.data.title.localeCompare(b.data.title));
+  }
+
+  return problems.map(entry => {
+    const group = byTopic[entry.data.topic];
+    const idx = group.findIndex(p => p.slug === entry.slug);
+    const prev = idx > 0
+      ? { title: group[idx - 1].data.title, slug: group[idx - 1].slug }
+      : null;
+    const next = idx < group.length - 1
+      ? { title: group[idx + 1].data.title, slug: group[idx + 1].slug }
+      : null;
+    return {
+      params: { slug: entry.slug },
+      props: { entry, prev, next },
+    };
+  });
 }
 
-const { entry } = Astro.props;
+const { entry, prev, next } = Astro.props;
 const { Content } = await entry.render();
 const d = entry.data;
 
@@ -110,6 +131,23 @@ const diffVar    = d.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard';
       <div class="prose-wrapper">
         <Content />
       </div>
+
+      <!-- Prev/Next navigation -->
+      <nav class="problem-nav">
+        {prev ? (
+          <a href={`${base}/problems/${prev.slug}`} class="nav-btn nav-prev">
+            <span class="nav-label">← PREVIOUS</span>
+            <span class="nav-title">{prev.title}</span>
+          </a>
+        ) : <div class="nav-placeholder" />}
+        <span class="nav-topic">{topicLabel}</span>
+        {next ? (
+          <a href={`${base}/problems/${next.slug}`} class="nav-btn nav-next">
+            <span class="nav-label">NEXT →</span>
+            <span class="nav-title">{next.title}</span>
+          </a>
+        ) : <div class="nav-placeholder" />}
+      </nav>
     </div>
   </div>
 
@@ -338,6 +376,56 @@ const diffVar    = d.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard';
     color: var(--color-text-2);
   }
 
+  /* ── Prev/Next navigation ── */
+  .problem-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .nav-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 1.125rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    text-decoration: none;
+    max-width: 210px;
+    min-width: 120px;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .nav-btn:hover { border-color: var(--color-accent); background: var(--color-accent-bg); }
+  .nav-label {
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+  .nav-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nav-next { text-align: right; }
+  .nav-topic {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .nav-placeholder { min-width: 120px; }
+
   /* ── Responsive ── */
   @media (max-width: 900px) {
     .problem-layout { flex-direction: column; }
@@ -354,5 +442,8 @@ const diffVar    = d.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard';
     }
     .meta-section { min-width: 120px; }
     .problem-content { padding: 1.5rem 1.25rem 3rem; }
+    .problem-nav { flex-wrap: wrap; }
+    .nav-btn { max-width: 100%; min-width: 0; flex: 1; }
+    .nav-topic { width: 100%; text-align: center; order: -1; }
   }
 </style>
