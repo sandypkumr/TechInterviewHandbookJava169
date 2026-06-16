@@ -13,8 +13,14 @@ export async function getStaticPaths() {
     if (!byTopic[t]) byTopic[t] = [];
     byTopic[t].push(p);
   }
+  const DIFF_ORDER: Record<string, number> = { Easy: 0, Medium: 1, Hard: 2 };
   for (const topic in byTopic) {
-    byTopic[topic].sort((a, b) => a.data.title.localeCompare(b.data.title));
+    byTopic[topic].sort((a, b) => {
+      const da = DIFF_ORDER[a.data.difficulty] ?? 0;
+      const db = DIFF_ORDER[b.data.difficulty] ?? 0;
+      if (da !== db) return da - db;
+      return a.data.title.localeCompare(b.data.title);
+    });
   }
 
   return problems.map(entry => {
