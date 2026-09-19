@@ -92,25 +92,97 @@ public class CombinationSum {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for all unique combinations whose values add up to `target`, and each candidate may be reused unlimited times. The challenge is not just finding one answer, but exploring all valid sums without generating invalid order-based duplicates.
+
+It is a standard interview backtracking problem because it tests recursive state management, pruning, and how to avoid duplicate combination structures.
+
 ### Approach
+The code builds combinations incrementally in `curList` and recursively subtracts chosen values from `target`. Instead of restarting from index `0` every time, it continues from `index`, which keeps combinations in nondecreasing candidate order.
 
-**Combination Sum** requires enumerating all valid combinations/permutations/subsets. Backtracking systematically tries every candidate and immediately abandons ("prunes") any branch that cannot possibly lead to a valid solution, making it far faster than brute-force enumeration in practice.
+This is preferable to brute force because:
+- we stop immediately when `target < 0`
+- we capture a result as soon as `target == 0`
+- we avoid duplicate permutations such as `[2,3,2]` and `[3,2,2]` by never going backward in the candidate list
 
-Think of solving a sudoku: you place a digit, recursively try to solve the rest, and if you reach a contradiction you erase that digit (backtrack) and try the next. The key is that pruning can cut enormous branches of the search tree early.
+### Pattern Used
+Backtracking
+
+### Key Insight
+Passing `i` back into the recursive call allows reuse of the same candidate, while the `index` boundary prevents the same combination from being generated in different orders.
 
 ### Code Walkthrough
+`combinationSum(int[] candidates, int target)` creates `result` and starts the search with:
+- an empty current combination: `new ArrayList<>()`
+- the full `target`
+- `index = 0`
 
-The solution is implemented in `combinationSum(int[] candidates, int target)`:
+The real work happens in `backtrack(...)`.
 
-1. Define what constitutes a valid complete solution (base case).
-2. At each step, iterate over all possible next choices.
-3. Apply a choice (mutate state), then recurse.
-4. After recursion returns, undo the choice (backtrack) to restore state.
-5. Apply a pruning condition to skip choices that cannot lead to a valid solution.
+Base cases:
+- `if (target == 0)` → a valid combination is complete, so the code adds `new ArrayList<>(curList)` to `result`
+- `if (target < 0)` → this path overshot the sum, so it returns immediately
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+The loop `for (int i = index; i < candidates.length; i++)` tries every candidate from the current index onward.
+
+For each choice:
+- `curList.add(candidates[i]);` includes the candidate in the current path
+- `backtrack(result, curList, candidates, target - candidates[i], i);` recurses with a smaller remaining target
+- the recursive call uses `i`, not `i + 1`, so the same number can be chosen again
+- after recursion, `curList.removeLast();` undoes the choice so the next candidate can be tried cleanly
+
+That add → recurse → remove pattern is the essence of backtracking.
+
+### Example Walkthrough
+Use Example 1: `candidates = [2,3,6,7]`, `target = 7`.
+
+Start with `curList = []`, `target = 7`, `index = 0`.
+
+Choose `2` at `i = 0`:
+- `curList = [2]`, remaining `target = 5`
+- choose `2` again
+- `curList = [2,2]`, remaining `target = 3`
+- choose `2` again
+- `curList = [2,2,2]`, remaining `target = 1`
+- choose `2` again → remaining `target = -1`, so this branch returns
+
+Backtrack and try `3` from the `[2,2]` state:
+- `curList = [2,2,3]`, remaining `target = 0`
+- valid combination found, so `[2,2,3]` is copied into `result`
+
+Continue backtracking until the top level tries `7`:
+- `curList = [7]`, remaining `target = 0`
+- valid combination found, so `[7]` is added
+
+No other branches produce `0`, so the output is `[[2,2,3],[7]]`.
+
+### Key Variables Explained
+- `result`: all completed combinations collected so far
+- `curList`: the current combination being built along one recursive path
+- `candidates`: available numbers to choose from
+- `target`: remaining sum still needed on the current path
+- `index`: lowest candidate position allowed for the next choice
+- `i`: loop variable that selects the next candidate to try
+
+### Why This Works
+The recursion explores every allowed combination because each call tries every candidate from `index` onward. Reusing `i` in the recursive call makes unlimited reuse possible.
+
+Correctness also depends on the ordering rule:
+- the code never revisits earlier candidate positions
+- so a combination is generated in exactly one structural order
+- which prevents duplicate permutations without needing a set
+
+Whenever `target == 0`, the current path sums exactly to the original goal, so copying `curList` is correct.
+
+### Trick Used
+Use `index` to enforce nondecreasing candidate choices, and recurse with `i` instead of `i + 1` so the same candidate can be reused
+
+### Edge Cases Handled
+- `target` becomes negative: `if (target < 0)` prunes the branch immediately
+- No solution, like Example 3: every branch eventually returns without adding to `result`
+- Single candidate reused many times: passing `i` into recursion allows unlimited reuse
+- Multiple valid answers: each successful path is copied before backtracking changes `curList`
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(2^n)`** — worst-case exponential — every subset of the input may need to be explored.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: exponential in the worst case** — the recursion explores many branches, and each call runs a loop from `index` to `candidates.length - 1`. The exact count depends on `target`, candidate values, and how much pruning happens.
+- **Space Complexity: `O(target / min(candidates))` auxiliary, excluding output** — the deepest recursion happens when the smallest candidate is chosen repeatedly, and `curList` grows to the same depth. The stored answers in `result` are additional output space.

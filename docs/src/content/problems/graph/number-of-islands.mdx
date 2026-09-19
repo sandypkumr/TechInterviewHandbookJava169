@@ -93,25 +93,82 @@ public class NumberOfIslands {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks you to count how many separate land masses exist in a 2D grid, where cells connect only vertically and horizontally. It is a classic interview question because it checks whether you can recognize each island as a connected component and mark an entire component once it is discovered.
+
 ### Approach
+Scan the grid cell by cell. Whenever the code finds a `'1'`, it has discovered a brand-new island, so it increments the answer and immediately runs DFS to erase that whole island from future consideration.
 
-**Number of Islands** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+This is better than trying to compare every land cell with every other land cell. Each cell is visited once, and DFS naturally expands through all connected land in four directions.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+Depth-First Search (DFS)
+
+### Key Insight
+The moment you see an unvisited `'1'`, you can count one island and flood-fill every connected `'1'` to `'0'` so that island is never counted again.
 
 ### Code Walkthrough
+In `numIslands(char[][] grid)`:
+- `rows` and `cols` store the grid size.
+- `count` starts at `0`.
+- The nested loops examine every cell `(i, j)` in the grid.
+- If `grid[i][j] == '1'`, the code has found a new island.
+- It increments `count++` and calls `dfs(grid, i, j)` to mark the full island as visited.
 
-The solution is implemented in `numIslands(char[][] grid)`:
+In `dfs(char[][] grid, int i, int j)`:
+- The first `if` is the base case.
+- It returns immediately when `(i, j)` is outside the grid or when `grid[i][j] == '0'`.
+- Otherwise, the current land cell is visited by setting `grid[i][j] = '0'`.
+- Then DFS recursively explores all four neighbors:
+  - `dfs(grid, i + 1, j)`
+  - `dfs(grid, i - 1, j)`
+  - `dfs(grid, i, j + 1)`
+  - `dfs(grid, i, j - 1)`
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+Because every connected land cell gets turned into water during that DFS, the outer loops will not count the same island twice.
 
-&gt; **Note:** This solution also uses the **BFS to explore nodes level by level** and **Union-Find (Disjoint Set Union) to track connected components** techniques.
+### Example Walkthrough
+Use Example 2:
+- `grid = [["1","1","0","0","0"],["1","1","0","0","0"],["0","0","1","0","0"],["0","0","0","1","1"]]`
+
+Start scanning from the top-left:
+- At `(0, 0)`, the code sees `'1'`.
+- `count` becomes `1`.
+- DFS marks `(0,0)`, `(0,1)`, `(1,0)`, and `(1,1)` as `'0'` because they are all connected.
+
+Continue scanning:
+- The earlier cells of that island are now `'0'`, so they are skipped.
+- At `(2, 2)`, the code finds another `'1'`.
+- `count` becomes `2`.
+- DFS marks only that single cell because it has no adjacent land.
+
+Continue scanning again:
+- At `(3, 3)`, the code finds `'1'`.
+- `count` becomes `3`.
+- DFS marks `(3,3)` and `(3,4)`.
+
+No land remains uncounted, so the final answer is `3`.
+
+### Key Variables Explained
+- `rows`, `cols`: grid dimensions used by the outer loops.
+- `count`: number of islands found so far.
+- `i`, `j`: current grid coordinates in both scanning and DFS.
+- `grid`: the input grid, reused as the visited structure by flipping land to water.
+
+### Why This Works
+Each island is a maximal group of horizontally or vertically connected `'1'` cells. The outer loops guarantee that every cell is eventually examined.
+
+When the code first reaches any cell of an island, it increments `count` once and then DFS removes that entire connected component by changing every reachable `'1'` to `'0'`. That invariant ensures one count per island and no double-counting.
+
+### Trick Used
+Marking visited land in-place by changing `grid[i][j]` from `'1'` to `'0'` instead of allocating a separate visited matrix.
+
+### Edge Cases Handled
+- Single-cell land or water grids: the loops and DFS base case handle them naturally.
+- Islands touching the border: the boundary checks in `dfs` prevent out-of-bounds recursion.
+- Multiple disconnected islands: each first unvisited `'1'` triggers a separate count.
+- Already visited land: once flipped to `'0'`, it is skipped automatically.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.
+- Time Complexity: `O(m * n)` because each cell is visited at most once by the outer scan and at most once by DFS after being turned to `'0'`.
+- Space Complexity: `O(m * n)` in the worst case due to recursion stack depth if the grid contains one very large island; no extra visited matrix is allocated.

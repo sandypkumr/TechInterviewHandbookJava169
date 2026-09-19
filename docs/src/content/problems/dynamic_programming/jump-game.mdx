@@ -63,25 +63,115 @@ public class JumpGame {
 
 ## Explanation
 
+### Problem Analysis
+
+The task is to decide whether starting at index `0` gives you enough jump capacity to eventually reach the last index.
+Each value tells you the farthest distance you can move forward from that position, so the real question is whether any prefix of the array becomes unreachable.
+This is a common interview problem because it looks like DP at first, but the strongest solution is a greedy reachability scan.
+
 ### Approach
 
-**Jump Game** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+Instead of trying every jump choice, this code keeps track of the farthest index reachable so far.
+As long as the current index is not beyond that reachable boundary, the scan can continue.
+Whenever a new index offers a farther jump, the boundary is expanded.
+If the scan ever lands on an index beyond `maxReach`, that index was never reachable, so the answer must be `false`.
 
-The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+### Pattern Used
+
+Greedy.
+
+### Key Insight
+
+You do not need to know the exact path of jumps; you only need to know the farthest index reachable after processing each position.
 
 ### Code Walkthrough
 
-The solution is implemented in `canJump(int[] nums)`:
+The method begins with:
 
-1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
-2. Sort or arrange the input according to this criterion.
-3. Iterate and make the greedy decision at each step without revisiting previous choices.
-4. Update state (current end, running sum, remaining capacity) after each decision.
-5. Return the accumulated result.
+- `int maxReach = 0;`
 
-&gt; **Note:** This solution also uses the **dynamic programming — break into overlapping subproblems and memoize** technique.
+This means the farthest reachable index is initially just the starting position.
+
+Then it scans the array from left to right:
+
+- `for (int i = 0; i < nums.length; i++)`
+
+At each index, it first checks reachability:
+
+- `if (i > maxReach) { return false; }`
+
+If `i` is already beyond `maxReach`, there is no way to stand on index `i`.
+Since every later index is even farther right, reaching the end is impossible too.
+
+If the current index is reachable, the method updates the best boundary:
+
+- `maxReach = Math.max(maxReach, i + nums[i]);`
+
+This compares:
+
+- the farthest index reachable from earlier positions, and
+- the farthest index reachable by jumping from the current position.
+
+After the loop finishes without failing, every visited index was reachable, so the last index is reachable as well:
+
+- `return true;`
+
+### Example Walkthrough
+
+Use **Example 2**: `nums = [3,2,1,0,4]`.
+
+Start:
+
+- `maxReach = 0`
+
+Process each index:
+
+- `i = 0`
+  - `0 <= maxReach`, so index `0` is reachable.
+  - Update: `maxReach = Math.max(0, 0 + 3) = 3`
+- `i = 1`
+  - `1 <= 3`, so index `1` is reachable.
+  - Update: `maxReach = Math.max(3, 1 + 2) = 3`
+- `i = 2`
+  - `2 <= 3`, so index `2` is reachable.
+  - Update: `maxReach = Math.max(3, 2 + 1) = 3`
+- `i = 3`
+  - `3 <= 3`, so index `3` is reachable.
+  - Update: `maxReach = Math.max(3, 3 + 0) = 3`
+- `i = 4`
+  - Now `4 > maxReach`.
+  - The code returns `false`.
+
+That matches the example: the zero at index `3` blocks all progress to index `4`.
+
+### Key Variables Explained
+
+- `nums`: input array where `nums[i]` is the maximum jump length from index `i`.
+- `maxReach`: farthest index reachable after processing all positions up to the current one.
+- `i`: current index being checked for reachability and used to extend the boundary.
+
+### Why This Works
+
+After processing index `i`, `maxReach` represents the farthest position reachable using jumps from any index in `0...i` that was itself reachable.
+If some index `i` is greater than `maxReach`, then no earlier jump can land there, so the array is blocked at that point.
+If the scan never hits such a gap, then every index up to the last relevant boundary is reachable, which means the last index can be reached too.
+The greedy update is safe because a farther reachable boundary always dominates a shorter one.
+
+### Trick Used
+
+The key trick is collapsing all possible jump paths into a single running boundary, `maxReach`.
+
+### Edge Cases Handled
+
+- Single-element array: the loop runs once, `i` never exceeds `maxReach`, and the method returns `true`.
+- Early dead zone: `if (i > maxReach)` stops immediately once a gap appears.
+- Large jump at the beginning: `maxReach` can leap far ahead in one update, and the loop naturally accepts that.
+- Zeros inside a reachable range: they are harmless unless they prevent `maxReach` from covering the next index.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`**
+  - The loop visits each index once and does constant work per iteration.
+- **Space Complexity: `O(1)`**
+  - Only the integer `maxReach` is maintained beyond the input array.
+

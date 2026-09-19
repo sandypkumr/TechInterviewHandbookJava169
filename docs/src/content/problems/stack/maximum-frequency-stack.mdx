@@ -100,23 +100,145 @@ public class MaximumFrequencyStack {
 
 ## Explanation
 
+### Problem Analysis
+
+This design problem asks for stack behavior with a non-standard pop rule: remove the most frequent value, and if frequencies tie, remove the one closest to the top. So we must preserve both frequency information and recency information at the same time.
+
+It is a strong interview question because it tests whether you can combine multiple data structures to satisfy two priorities efficiently.
+
 ### Approach
 
-The key insight for **Maximum Frequency Stack** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+The code separates the problem into two layers:
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+- `frequencyMap` tracks how many times each value currently appears.
+- `groupMap` stores a stack for each frequency, so all values that currently reached frequency `1`, `2`, `3`, and so on are grouped separately.
+
+`maxFrequency` tells us which frequency bucket should be popped from next. This is much better than scanning all values on every `pop()`.
+
+### Pattern Used
+
+This solution uses a **Hash Map + Stack grouping** pattern.
+
+### Key Insight
+
+If every value is pushed onto the stack for its new frequency, then the stack at `maxFrequency` automatically keeps the correct tie-break order: the most recently pushed among the most frequent values is on top.
 
 ### Code Walkthrough
 
-The solution is implemented in `push(int val)`:
+The class maintains three fields:
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+- `Map<Integer, Integer> frequencyMap;`
+- `Map<Integer, Stack<Integer>> groupMap;`
+- `int maxFrequency;`
+
+In the constructor:
+
+- both maps are initialized
+- `maxFrequency = 0`
+
+In `push(int val)`:
+
+- `int frequency = frequencyMap.getOrDefault(val, 0) + 1;`
+  - this computes the new frequency after inserting `val`
+- `frequencyMap.put(val, frequency);`
+  - store the updated count
+- `maxFrequency = Math.max(maxFrequency, frequency);`
+  - update the global highest frequency if needed
+- `groupMap.computeIfAbsent(frequency, k -> new Stack<>()).push(val);`
+  - place `val` into the stack that represents its new frequency
+
+In `pop()`:
+
+- `Stack<Integer> stack = groupMap.get(maxFrequency);`
+  - get the bucket for the current highest frequency
+- `int val = stack.pop();`
+  - remove the most recent value from that bucket
+- If that bucket becomes empty:
+  - `groupMap.remove(maxFrequency);`
+  - `maxFrequency--;`
+- Finally:
+  - `frequencyMap.put(val, frequencyMap.get(val) - 1);`
+  - decrease the stored count for the returned value
+- `return val;`
+
+### Example Walkthrough
+
+Using the given example:
+
+- `push(5)`  
+  - `frequencyMap[5] = 1`
+  - `groupMap[1] = [5]`
+  - `maxFrequency = 1`
+- `push(7)`  
+  - `frequencyMap[7] = 1`
+  - `groupMap[1] = [5, 7]`
+- `push(5)`  
+  - `frequencyMap[5] = 2`
+  - `groupMap[2] = [5]`
+  - `maxFrequency = 2`
+- `push(7)`  
+  - `frequencyMap[7] = 2`
+  - `groupMap[2] = [5, 7]`
+- `push(4)`  
+  - `frequencyMap[4] = 1`
+  - `groupMap[1] = [5, 7, 4]`
+- `push(5)`  
+  - `frequencyMap[5] = 3`
+  - `groupMap[3] = [5]`
+  - `maxFrequency = 3`
+
+Now pops:
+
+- first `pop()`  
+  - use `groupMap[3]`, pop `5`
+  - `maxFrequency` drops to `2`
+- second `pop()`  
+  - use `groupMap[2] = [5, 7]`
+  - pop `7` because it is closer to the top among frequency-2 values
+- third `pop()`  
+  - still use frequency `2`
+  - pop `5`
+- fourth `pop()`  
+  - all remaining values have frequency `1`
+  - `groupMap[1]` returns `4`, which is the most recent among them
+
+That matches the expected output `5, 7, 5, 4`.
+
+### Key Variables Explained
+
+- `frequencyMap`: current count for each value.
+- `groupMap`: maps a frequency to a stack of values that reached that frequency.
+- `maxFrequency`: highest frequency currently present in the structure.
+- `frequency`: local variable in `push(int val)` representing the new count after insertion.
+- `stack`: local variable in `pop()` representing the stack for `maxFrequency`.
+- `val`: the pushed or popped value being processed.
+
+### Why This Works
+
+`frequencyMap` guarantees that the structure always knows each value's current count. `groupMap` guarantees that values with the same count are ordered by recency, because every `push` appends the value to the stack of its new frequency.
+
+Therefore:
+
+- the correct frequency to pop from is always `maxFrequency`
+- the correct tie-break choice is always the top of `groupMap.get(maxFrequency)`
+
+When a bucket becomes empty after popping, decreasing `maxFrequency` is safe because no element with that higher count remains.
+
+### Trick Used
+
+The trick is **grouping values by frequency into stacks**, which lets the same data structure handle both priorities: highest frequency first, most recent among ties second.
+
+### Edge Cases Handled
+
+- Frequency ties: resolved automatically because each frequency bucket is a `Stack<Integer>`.
+- Transition to a lower maximum frequency: when `groupMap.get(maxFrequency)` becomes empty, the code removes that bucket and decrements `maxFrequency`.
+- Repeated pushes of the same value: `frequencyMap` correctly accumulates the count and moves the value into higher-frequency buckets.
+
+The code relies on the problem guarantee that `pop()` is only called when at least one element exists.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity: `O(1)` per `push()` and `pop()`**  
+  Each operation performs a constant number of hash map lookups/updates and stack push/pop operations.
+- **Space Complexity: `O(n)`**  
+  `frequencyMap` stores counts per distinct value, and `groupMap` collectively stores one entry for each push currently represented in the structure.

@@ -132,25 +132,139 @@ public class AlienDictionary {
 
 ## Explanation
 
+### Problem Analysis
+The input words are already sorted according to an unknown alphabet order, and we need to recover one valid character ordering. The only reliable information comes from the first position where two adjacent words differ, because that tells us which character must come before the other.
+
+This is a classic interview graph problem because it combines graph construction, invalid-input detection, and topological sorting.
+
 ### Approach
+The code builds a directed graph of character precedence rules. If comparing two adjacent words shows `c1` before `c2`, then the graph gets an edge `c1 -> c2`, meaning `c1` must appear earlier in the alien alphabet.
 
-**Alien Dictionary** models dependencies as a Directed Acyclic Graph (DAG) and asks for a valid ordering — exactly what topological sort provides. Kahn's algorithm uses in-degree counts: start with all nodes that have no prerequisites (in-degree 0), process them, and decrement the in-degree of their successors.
+At the same time, `inDegree` counts how many prerequisites each character still has. Once the graph is built, the code runs Kahn's BFS topological sort:
+- start with every character whose `inDegree` is `0`
+- remove it from the graph order
+- decrement the in-degree of its neighbors
+- enqueue any neighbor whose in-degree becomes `0`
 
-Think of it as a task scheduler: you can only start a task once all tasks it depends on are finished. Kahn's BFS-based approach naturally detects cycles (if the processed count is less than the total node count, a cycle exists).
+If the ordering is invalid because of a cycle or the prefix rule, the method returns an empty string.
+
+### Pattern Used
+Topological Sort using BFS (Kahn's algorithm).
+
+### Key Insight
+Only the first differing character between two adjacent sorted words creates a valid ordering rule; everything after that point is irrelevant for lexicographic order.
 
 ### Code Walkthrough
+The method `alienOrder(String[] words)` begins by creating:
+- `Map<Character, Set<Character>> graph = new HashMap<>();`
+- `Map<Character, Integer> inDegree = new HashMap<>();`
 
-The solution is implemented in `alienOrder(String[] words)`:
+The first loop goes through every `word` and every `char c` inside it:
+- `graph.putIfAbsent(c, new HashSet<>());`
+- `inDegree.putIfAbsent(c, 0);`
 
-1. Build an adjacency list and compute in-degree for every node.
-2. Enqueue all nodes with in-degree 0.
-3. Poll a node, add it to the result, and decrement the in-degree of its neighbours.
-4. Enqueue any neighbour whose in-degree drops to 0.
-5. If the result size equals the total node count, the ordering is valid; otherwise a cycle exists.
+This ensures even characters with no edges still appear in the final ordering.
 
-&gt; **Note:** This solution also uses the **BFS to explore nodes level by level** technique.
+Next, the code compares each adjacent pair:
+- `String word1 = words[i];`
+- `String word2 = words[i + 1];`
+
+Before comparing characters, it checks the invalid prefix case:
+- `if (word1.length() > word2.length() && word1.startsWith(word2)) { return ""; }`
+
+That catches inputs like `"abc"` before `"ab"`, which cannot be valid in lexicographic order.
+
+Then it computes:
+- `int minLength = Math.min(word1.length(), word2.length());`
+
+The inner loop scans until the first mismatch:
+- `char c1 = word1.charAt(j);`
+- `char c2 = word2.charAt(j);`
+
+When `c1 != c2`, the code adds the edge only once:
+- `if (!graph.get(c1).contains(c2))`
+- `graph.get(c1).add(c2);`
+- `inDegree.put(c2, inDegree.get(c2) + 1);`
+- `break;`
+
+The `break` is important because only the first differing pair matters.
+
+After graph construction, the code initializes the BFS queue with every character whose in-degree is zero.
+
+Then Kahn's algorithm runs:
+- poll `c` from `queue`
+- append it to `sb`
+- for each `neighbor` of `c`, decrement its in-degree
+- if a neighbor reaches zero, enqueue it
+
+At the end, this check detects cycles:
+- `if (sb.length() != inDegree.size()) { return ""; }`
+
+If fewer characters were processed than exist in the graph, some dependency cycle blocked the ordering.
+
+### Example Walkthrough
+Use the given example:
+- `wrt`
+- `wrf`
+- `er`
+- `ett`
+- `rftt`
+
+Character registration adds `w, r, t, f, e` into `graph` and `inDegree`.
+
+Compare adjacent words:
+- `wrt` vs `wrf`: first difference is `t` vs `f`, so add `t -> f`
+- `wrf` vs `er`: first difference is `w` vs `e`, so add `w -> e`
+- `er` vs `ett`: first difference is `r` vs `t`, so add `r -> t`
+- `ett` vs `rftt`: first difference is `e` vs `r`, so add `e -> r`
+
+Now the chain is:
+- `w -> e -> r -> t -> f`
+
+Initial zero in-degree character:
+- `w`
+
+BFS order building:
+- pop `w`, append `w`, reduce in-degree of `e`
+- pop `e`, append `e`, reduce in-degree of `r`
+- pop `r`, append `r`, reduce in-degree of `t`
+- pop `t`, append `t`, reduce in-degree of `f`
+- pop `f`, append `f`
+
+The final string is `wertf`, which matches the expected output.
+
+### Key Variables Explained
+- `graph`: adjacency map storing which characters must come after a given character.
+- `inDegree`: number of incoming edges for each character.
+- `word1`, `word2`: adjacent words being compared.
+- `minLength`: shared prefix length limit for the current comparison.
+- `c1`, `c2`: current characters from `word1` and `word2`.
+- `queue`: characters currently ready to appear in the ordering.
+- `sb`: the output string being built in topological order.
+- `neighbor`: a character whose prerequisite count may drop after removing `c`.
+
+### Why This Works
+The graph contains exactly the precedence constraints implied by the sorted dictionary.
+
+- The first mismatch between adjacent words is the only place where lexicographic order reveals a character relation.
+- Kahn's algorithm always selects a character with no remaining prerequisites, so appending it never violates any rule.
+- Decrementing `inDegree` after processing a character correctly models removing that prerequisite from the graph.
+- If a cycle exists, some characters can never reach in-degree zero, and the final length check correctly returns `""`.
+
+So the returned string is a valid alien ordering whenever one exists.
+
+### Trick Used
+Using a `Set` inside `graph` so duplicate edges do not inflate `inDegree` incorrectly.
+
+### Edge Cases Handled
+- Characters that never appear in any precedence rule: they are still included because of the initial registration loop.
+- Invalid prefix ordering such as a longer word before its own prefix: the `startsWith` check returns `""` immediately.
+- Duplicate precedence relations from multiple comparisons: the `contains` check prevents double-counting.
+- Cycles in the dependency graph: detected by comparing `sb.length()` with `inDegree.size()`.
 
 ### Complexity Analysis
+Let `C` be the total number of characters across all words, `U` the number of unique characters, and `E` the number of precedence edges.
 
-- **Time Complexity: `O(C)`** — see the analysis for full details.
-- **Space Complexity: `O(U)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `O(C + E + U)`, usually summarized as `O(C)`, because the code scans all characters to initialize the maps, compares adjacent words, and processes each edge once during BFS.
+- **Space Complexity:** `O(U + E)` because `graph`, `inDegree`, the queue, and the output builder store characters and precedence edges.
+

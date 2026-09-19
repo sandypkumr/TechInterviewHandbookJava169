@@ -96,25 +96,128 @@ public class FloodFill {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks you to recolor the entire connected region that starts at `(sr, sc)` and shares the same original value as that starting pixel. The connection rule is strictly four-directional, so diagonal cells do not belong to the same region.
+
+It is a standard interview problem because it tests whether you recognize a grid traversal as a graph traversal problem.
+
 ### Approach
 
-**Flood Fill** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+The solution uses recursive DFS.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+The idea is:
+- Read the starting color into `originalColor`.
+- If the starting pixel already has `newColor`, return immediately to avoid unnecessary recursion.
+- Otherwise, recursively expand in four directions from `(sr, sc)`.
+- Only continue recursion when a cell is inside bounds and still has `originalColor`.
+
+This is better than scanning the whole grid blindly because it only explores the connected component that actually needs to change.
+
+### Pattern Used
+
+Depth-First Search (DFS) on a grid.
+
+### Key Insight
+
+Recoloring a cell as soon as it is visited doubles as the “visited” mark, so the code does not need a separate boolean matrix.
 
 ### Code Walkthrough
 
-The solution is implemented in `floodFill(int[][] image, int sr, int sc, int newColor)`:
+The public method `floodFill(int[][] image, int sr, int sc, int newColor)` starts by reading `int originalColor = image[sr][sc];`.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+Then it checks `if (originalColor == newColor) { return image; }`.
+- This is important because once a cell is recolored, the recursion uses color differences to stop revisiting.
+- If the old and new colors are the same, recursion would be pointless.
 
-&gt; **Note:** This solution also uses the **BFS to explore nodes level by level** technique.
+Next, the code calls `fill(image, sr, sc, originalColor, newColor);` and finally returns the modified `image`.
+
+The helper `fill(...)` does the real DFS.
+- Its first `if` statement is the guard clause.
+- It returns immediately when:
+  - `r < 0` or `r >= image.length`
+  - `c < 0` or `c >= image[0].length`
+  - `image[r][c] != originalColor`
+
+If the cell is valid and still has the target region's old color:
+- `image[r][c] = newColor;` recolors it.
+
+Then the method recursively explores four neighbors:
+- `fill(image, r + 1, c, originalColor, newColor);` for down
+- `fill(image, r - 1, c, originalColor, newColor);` for up
+- `fill(image, r, c + 1, originalColor, newColor);` for right
+- `fill(image, r, c - 1, originalColor, newColor);` for left
+
+### Example Walkthrough
+
+Use Example 1:
+- `image = [[1,1,1],[1,1,0],[1,0,1]]`
+- `sr = 1`, `sc = 1`, `color = 2`
+
+Start:
+- `originalColor = image[1][1] = 1`
+- Since `originalColor != newColor`, DFS begins at `(1, 1)`
+
+Visit `(1, 1)`:
+- Change `image[1][1]` from `1` to `2`
+
+Recursive expansion from `(1, 1)` reaches:
+- `(2, 1)` -> value is `0`, so stop
+- `(0, 1)` -> value is `1`, recolor to `2`
+- `(1, 2)` -> value is `0`, so stop
+- `(1, 0)` -> value is `1`, recolor to `2`
+
+Continue from `(0, 1)`:
+- `(0, 0)` becomes `2`
+- `(0, 2)` becomes `2`
+
+Continue from `(1, 0)`:
+- `(2, 0)` becomes `2`
+
+Cells that remain unchanged:
+- `(1, 2)` is `0`
+- `(2, 1)` is `0`
+- `(2, 2)` is `1`
+
+Final image:
+- `[[2,2,2],[2,2,0],[2,0,1]]`
+
+That matches the expected output, and the bottom-right `1` stays unchanged because it is not four-directionally connected to the starting cell.
+
+### Key Variables Explained
+
+- `image`: the input grid being modified in place.
+- `sr`, `sc`: row and column of the starting pixel.
+- `originalColor`: the color that defines the connected region to replace.
+- `newColor`: the replacement color.
+- `r`, `c`: the current cell coordinates inside the recursive helper.
+- `fill(...)`: the DFS helper that expands through the connected component.
+
+### Why This Works
+
+The DFS visits exactly the cells that belong to the required region.
+
+That is true because:
+- The recursion only continues from cells whose value is still `originalColor`.
+- Every visited valid cell is immediately changed to `newColor`, so it will not be processed again.
+- The four recursive calls ensure every four-directionally connected neighbor is explored.
+
+Therefore, all and only the reachable cells with the starting color are recolored.
+
+### Trick Used
+
+The trick is using the in-place assignment `image[r][c] = newColor` as both the update and the visited marker.
+
+### Edge Cases Handled
+
+- Starting color already equals `newColor`: the early return avoids unnecessary recursion and infinite revisits.
+- Grid boundaries: the first condition in `fill(...)` stops recursion outside the image.
+- Different-colored neighbors: `image[r][c] != originalColor` prevents unrelated cells from being recolored.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.
+- Time Complexity: `O(m * n)` in the worst case.
+  - If the whole image is one connected region of `originalColor`, every cell is visited once.
+- Space Complexity: `O(m * n)` in the worst case due to recursion stack depth.
+  - The code does not allocate a separate visited matrix.
+  - In the worst-case snake-like or full-region traversal, recursive calls can stack up across many cells.

@@ -118,22 +118,117 @@ public class ImplementTriePrefixTree {
 
 ## Explanation
 
+### Problem Analysis
+
+We need a data structure that can insert words, check whether a full word exists, and check whether any word starts with a given prefix. Since many words can share prefixes, storing them independently would waste both time and repeated work.
+
+This is one of the most standard interview questions for tries because it highlights how prefix sharing leads directly to efficient lookups.
+
 ### Approach
 
-**Implement Trie (Prefix Tree)** involves many prefix-based string operations (insert, startsWith, search). A trie (prefix tree) stores characters along edges; words with common prefixes share nodes, making prefix checks O(L) where L is the word length — independent of the total number of stored words.
+The solution builds a trie where each node represents one prefix. Every node contains a `children` array of size 26 and an `isEndOfWord` flag.
 
-Think of a trie as an autocomplete system. When you type "pre", the trie immediately navigates to the "pre" node and can enumerate all completions from there without scanning the entire dictionary.
+The idea is:
+
+- `insert` creates missing nodes while walking the word,
+- `search` follows the word exactly and checks whether the last node marks a complete word,
+- `startsWith` follows the prefix exactly and succeeds as soon as the traversal finishes.
+
+This is better than scanning a list of stored strings because all three operations depend only on the query length, not on how many words are in the trie.
+
+### Pattern Used
+
+This solution uses the **Trie** pattern.
+
+### Key Insight
+
+A prefix is just a path in the trie, and a complete word is that same path plus the extra condition that the last node has `isEndOfWord = true`.
 
 ### Code Walkthrough
 
-The solution is implemented in `insert(String word)`:
+`TrieNode` stores:
 
-1. Define a TrieNode with `children[26]` (or a `HashMap<Character, TrieNode>`) and a boolean `isEnd`.
-2. `insert(word)`: traverse/create nodes character by character; mark `isEnd = true` at the last node.
-3. `search(word)`: traverse nodes; return true only if all characters matched and `isEnd` is true.
-4. `startsWith(prefix)`: same traversal but return true as soon as you've matched the full prefix.
+- `TrieNode[] children` for the 26 lowercase letters,
+- `boolean isEndOfWord` to mark completed words.
+
+The constructor `ImplementTriePrefixTree()` initializes `root = new TrieNode()`.
+
+In `insert(String word)`:
+
+- start with `TrieNode node = root`,
+- for each `char ch : word.toCharArray()`, compute `int index = ch - 'a'`,
+- create the child node if `node.children[index] == null`,
+- move `node` forward,
+- after the loop, set `node.isEndOfWord = true`.
+
+In `search(String word)`:
+
+- start again at `root`,
+- traverse the same way using each character's `index`,
+- if any required child is `null`, return `false`,
+- after the full word is consumed, return `node.isEndOfWord`.
+
+That last check is important because a prefix like `"app"` should not count as a stored word unless it was inserted.
+
+In `startsWith(String prefix)`:
+
+- perform the same traversal as `search`,
+- if any child is missing, return `false`,
+- if the loop finishes, return `true` immediately because the prefix path exists.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+- `insert("apple")`
+  - creates the path `a -> p -> p -> l -> e`
+  - marks the `e` node with `isEndOfWord = true`
+
+- `search("apple")`
+  - follows all five characters successfully
+  - ends on a node with `isEndOfWord = true`
+  - returns `true`
+
+- `search("app")`
+  - follows `a -> p -> p`
+  - traversal succeeds, but that node is not yet marked as an end word
+  - returns `false`
+
+- `startsWith("app")`
+  - follows `a -> p -> p`
+  - the prefix path exists, so it returns `true`
+
+- `insert("app")`
+  - follows the existing path and simply sets the last `p` node's `isEndOfWord = true`
+
+- `search("app")`
+  - now the same node is a full word ending
+  - returns `true`
+
+### Key Variables Explained
+
+- `root`: starting node for every trie operation.
+- `node`: current trie position while traversing a word or prefix.
+- `children`: fixed-size array holding next nodes for `'a'` to `'z'`.
+- `isEndOfWord`: distinguishes a complete word from a mere prefix.
+- `index`: array location computed from the current character.
+
+### Why This Works
+
+The trie maintains the invariant that each downward path from `root` spells a prefix of inserted words. `insert` preserves that invariant by creating exactly the missing nodes for the word. `search` is correct because a word exists if and only if its full path exists and the terminal node is marked as an end word. `startsWith` is correct because prefix existence only requires the path itself, not an end marker.
+
+### Trick Used
+
+Reusing existing nodes means shared prefixes like `"app"` inside `"apple"` are stored once and leveraged by all operations.
+
+### Edge Cases Handled
+
+- Searching for a word that is only a prefix of another word: rejected unless `isEndOfWord` is true.
+- Inserting overlapping words such as `"apple"` and `"app"`: handled by reusing nodes and updating the terminal marker.
+- Missing path during `search` or `startsWith`: immediately returns `false`.
+- Repeated characters in a word: handled naturally through repeated child traversal.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(L)`** — see the analysis for full details.
-- **Space Complexity: `O(L)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(L)`** for `insert`, `search`, and `startsWith`, where `L` is the length of the input word or prefix, because each method processes one character per step.
+- **Space Complexity:** the trie stores up to **`O(total inserted characters)`** nodes overall, while each individual operation uses **`O(1)`** auxiliary space.

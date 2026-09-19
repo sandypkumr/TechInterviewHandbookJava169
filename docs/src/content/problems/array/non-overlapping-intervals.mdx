@@ -88,25 +88,125 @@ public class NonOverlappingIntervals {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks for the minimum number of intervals to remove so the remaining intervals do not overlap. That is equivalent to keeping as many non-overlapping intervals as possible.
+
+It is a classic interview question because it looks like a removal problem, but the clean solution comes from a greedy interval-scheduling mindset: keep the intervals that leave the most room for future choices.
+
 ### Approach
 
-**Non-overlapping Intervals** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+The code sorts intervals by end time, not by start time. Then it greedily keeps the interval that finishes earliest and counts any later interval that starts before that end as one that must be removed.
 
-The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+This choice is important:
+
+- an interval with an earlier end blocks less future space
+- keeping it gives the best chance of fitting more intervals later
+
+That is much better than trying all subsets or dynamically deciding between every overlapping pair.
+
+### Pattern Used
+
+This solution uses the **Greedy** pattern for interval scheduling.
+
+### Key Insight
+
+When two intervals overlap, keeping the one with the smaller end time is always at least as good as keeping the one that ends later.
 
 ### Code Walkthrough
 
-The solution is implemented in `eraseOverlapIntervals(int[][] intervals)`:
+The method begins with a safety check:
 
-1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
-2. Sort or arrange the input according to this criterion.
-3. Iterate and make the greedy decision at each step without revisiting previous choices.
-4. Update state (current end, running sum, remaining capacity) after each decision.
-5. Return the accumulated result.
+- `if (intervals == null || intervals.length == 0) { return 0; }`
 
-&gt; **Note:** This solution also uses the **sort intervals by start time, then merge overlapping ones in one pass** technique.
+Then it sorts by interval end:
+
+- `Arrays.sort(intervals, Comparator.comparingInt(a -> a[1]))`
+
+After sorting, the algorithm initializes:
+
+- `int count = 0;`
+- `int end = intervals[0][1];`
+
+Here:
+
+- `count` tracks how many intervals must be removed
+- `end` stores the end time of the last interval that was kept
+
+The loop
+
+- `for (int i = 1; i < intervals.length; i++)`
+
+checks each remaining interval.
+
+For each interval:
+
+- if `intervals[i][0] < end`, it overlaps with the previously kept interval, so the code increments `count++`
+- otherwise, there is no overlap, so the interval is kept and `end = intervals[i][1]`
+
+At the end, `count` is returned as the minimum number of removals.
+
+### Example Walkthrough
+
+Using Example 1:
+
+- `intervals = [[1,2],[2,3],[3,4],[1,3]]`
+
+After sorting by end time, the order becomes:
+
+- `[[1,2],[2,3],[1,3],[3,4]]`
+
+Initialize:
+
+- `count = 0`
+- `end = 2`
+
+Now scan:
+
+- `i = 1`, interval `[2,3]`
+  - `2 < 2` is false
+  - keep it and set `end = 3`
+
+- `i = 2`, interval `[1,3]`
+  - `1 < 3` is true
+  - overlap found, so `count = 1`
+  - `end` stays `3` because the earlier-ending kept interval is still better
+
+- `i = 3`, interval `[3,4]`
+  - `3 < 3` is false
+  - keep it and set `end = 4`
+
+The method returns `1`, which matches the example.
+
+### Key Variables Explained
+
+- `intervals`: input array, sorted in place by end time
+- `count`: number of intervals removed so far
+- `end`: end time of the most recently kept non-overlapping interval
+- `i`: index scanning the remaining intervals
+
+### Why This Works
+
+After sorting by end time, the algorithm always keeps the interval that finishes earliest among the current candidates. That greedy choice is safe because any later-ending overlapping interval would only reduce the space available for future intervals.
+
+The invariant is:
+
+- before processing `intervals[i]`, all kept intervals are non-overlapping, and `end` is the smallest possible finishing time for the last kept interval among optimal choices so far
+
+If the current interval starts before `end`, removing it is optimal because keeping it instead would not improve future compatibility. If it starts at or after `end`, keeping it extends the non-overlapping set safely.
+
+### Trick Used
+
+The trick is sorting by end time so overlapping decisions can be made greedily without ever needing to backtrack.
+
+### Edge Cases Handled
+
+- `intervals == null`: returns `0`
+- `intervals.length == 0`: returns `0`
+- Touching intervals like `[1,2]` and `[2,3]`: treated as non-overlapping because the code checks strict `<`
+- Multiple identical overlapping intervals: each extra one is counted for removal
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n log n)`** because sorting by end time dominates, and the single scan afterward is `O(n)`
+- **Space Complexity: `O(log n)`** in Java due to sorting stack usage with the comparator-based sort; the method itself uses only `count`, `end`, and `i`

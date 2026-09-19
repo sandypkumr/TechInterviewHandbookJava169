@@ -74,23 +74,106 @@ public class PartitionEqualSubsetSum {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks whether the array can be split into two groups with exactly the same total sum. That immediately turns it into a subset-sum question: can we pick some numbers whose sum is half of the total?
+
+This is a very common interview problem because it tests whether you can transform a partition question into a dynamic programming state and avoid the exponential brute-force search over all subsets.
+
 ### Approach
+The code first adds every value into `totalSum`. If that sum is odd, an equal split is impossible, so it returns `false` immediately.
 
-**Partition Equal Subset Sum** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+If the total is even, the target becomes `totalSum / 2`. From there, the problem becomes: can we build exactly `target` using the numbers seen so far?
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+Instead of trying every subset recursively, the solution uses a 1-D boolean DP array where each index represents a reachable sum. That reduces the brute-force `2^n` exploration to a much more practical pseudo-polynomial solution.
+
+### Pattern Used
+Dynamic Programming, specifically 0/1 Knapsack-style subset-sum DP.
+
+### Key Insight
+If some subset sums to `totalSum / 2`, then the remaining elements automatically also sum to `totalSum / 2`, so we only need to track whether half of the total is reachable.
 
 ### Code Walkthrough
+The method `canPartition(int[] nums)` starts by computing `totalSum` with a simple loop over `nums`.
 
-The solution is implemented in `canPartition(int[] nums)`:
+Then this check handles the impossible case early:
+- `if (totalSum % 2 != 0) { return false; }`
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+Next, the code computes:
+- `int target = totalSum / 2;`
+- `boolean[] dp = new boolean[target + 1];`
+- `dp[0] = true;`
+
+Here, `dp[j]` means: using the numbers processed so far, can we form sum `j`?
+- `dp[0] = true` because sum `0` is always possible by choosing nothing.
+
+For each `num` in `nums`, the inner loop runs backward:
+- `for (int j = target; j >= num; j--)`
+
+Inside that loop, the transition is:
+- `dp[j] = dp[j] || dp[j - num];`
+
+That means sum `j` is reachable if:
+- it was already reachable before, or
+- sum `j - num` was reachable and we now include `num`
+
+The backward direction is important because each number can only be used once. Finally, the answer is returned as:
+- `return dp[target];`
+
+### Example Walkthrough
+Use Example 1: `nums = [1,5,11,5]`
+
+First, `totalSum = 22`, so `target = 11`.
+
+Initial DP state:
+- `dp[0] = true`
+- all other positions from `1` to `11` are `false`
+
+Process `1`:
+- `dp[1]` becomes `true` from `dp[0]`
+- reachable sums: `{0, 1}`
+
+Process first `5`:
+- `dp[6]` becomes `true` from `dp[1]`
+- `dp[5]` becomes `true` from `dp[0]`
+- reachable sums: `{0, 1, 5, 6}`
+
+Process `11`:
+- `dp[11]` becomes `true` from `dp[0]`
+- once `dp[11]` is true, we already know one subset can make the target
+
+Process last `5`:
+- it can also reinforce sums like `10` and `11`, but the answer is already determined
+
+Since `dp[11]` is `true`, one valid subset is `[11]`, and the remaining numbers `[1,5,5]` also sum to `11`. The method returns `true`.
+
+For Example 2, `nums = [1,2,3,5]` gives `totalSum = 11`, which is odd, so the code returns `false` immediately.
+
+### Key Variables Explained
+- `totalSum`: sum of all numbers in `nums`; used to decide whether an equal partition is even possible.
+- `target`: the half-sum we want one subset to reach.
+- `dp`: boolean array where `dp[j]` tells whether sum `j` is reachable.
+- `num`: current element being considered for inclusion.
+- `j`: current sum being updated in reverse order so the same element is not reused.
+
+### Why This Works
+The invariant is: after processing some prefix of `nums`, `dp[j]` is `true` exactly when there exists a subset of that prefix whose sum is `j`.
+
+- The base case is correct because sum `0` is always achievable.
+- For each `num`, the update `dp[j] = dp[j] || dp[j - num]` correctly captures the two choices: skip `num` or take `num`.
+- Iterating `j` from `target` down to `num` prevents the current `num` from being counted more than once in the same iteration.
+
+So when the loops finish, `dp[target]` correctly tells whether half of the total sum is achievable, which is exactly the condition for a valid partition.
+
+### Trick Used
+Reverse iteration in the inner loop so the 1-D DP behaves like a 0/1 knapsack and does not reuse the same element multiple times.
+
+### Edge Cases Handled
+- Odd total sum: `totalSum % 2 != 0` returns `false` immediately.
+- Single achievable half-sum found late in the array: the DP still captures it because every number updates all relevant sums.
+- Duplicate values such as the two `5`s in Example 1: each occurrence is processed separately, which is correct.
+- Target `0` is naturally handled by `dp[0] = true`.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(n * target)` because the outer loop processes each value in `nums`, and the inner loop may scan from `target` down to `num` for each one.
+- **Space Complexity:** `O(target)` because the algorithm stores only the 1-D array `dp` of size `target + 1`.
 
-- **Time Complexity: `O(n·W)`** — see the analysis for full details.
-- **Space Complexity: `O(W)`** — auxiliary space proportional to the input is required.

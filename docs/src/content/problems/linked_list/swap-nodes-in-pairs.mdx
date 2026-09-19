@@ -84,20 +84,102 @@ public class SwapNodesInPairs {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks us to swap every adjacent pair of nodes in a linked list without changing node values. Only the links may be modified, so the challenge is precise pointer rewiring.
 
-**Swap Nodes in Pairs** is a linked list problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(n)` time and `O(1)` space.
+It is a classic interview question because it checks whether you can manipulate local list structure safely while preserving the rest of the list.
+
+### Approach
+The code uses a dummy node and iteratively swaps one pair at a time. For each pair, it identifies the two nodes to swap, rewires three `next` pointers, and then advances to the next unswapped position.
+
+This avoids recursion overhead and avoids rebuilding the list in another structure.
+
+### Pattern Used
+Dummy Node + Iterative Pointer Manipulation.
+
+### Key Insight
+Once you keep a pointer to the node before the current pair, swapping two adjacent nodes becomes a small fixed pointer update pattern.
 
 ### Code Walkthrough
+The method `swapPairs(ListNode head)` begins with:
+- `if (head == null || head.next == null) return head;`
+If there are fewer than two nodes, nothing needs to be swapped.
 
-The solution is implemented in `swapPairs(ListNode head)`:
+Then it creates a sentinel node:
+- `ListNode dummy = new ListNode(0);`
+- `dummy.next = head;`
 
-1. **Initialise** the necessary data structures.
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+This makes head swaps easy because the first pair now also has a predecessor.
+
+Next:
+- `ListNode prev = dummy;`
+`prev` always points to the node before the pair currently being swapped.
+
+The loop condition is:
+- `while (prev.next != null && prev.next.next != null)`
+This guarantees that a full pair exists.
+
+Inside the loop:
+- `ListNode first = prev.next;`
+- `ListNode second = first.next;`
+
+Now the swap happens:
+- `first.next = second.next;` detaches `second` from after `first`
+- `second.next = first;` places `first` after `second`
+- `prev.next = second;` links the previous part of the list to the new front of the pair
+
+After swapping, `first` is the second node in the pair, so:
+- `prev = first;`
+This moves `prev` to the correct position before the next pair.
+
+At the end, return `dummy.next`.
+
+### Example Walkthrough
+Use Example 1: `head = [1,2,3,4]`.
+
+Initial structure:
+- `dummy -> 1 -> 2 -> 3 -> 4`
+- `prev = dummy`
+
+First iteration:
+- `first = 1`, `second = 2`
+- `first.next = 3`
+- `second.next = 1`
+- `prev.next = 2`
+- list becomes `dummy -> 2 -> 1 -> 3 -> 4`
+- move `prev = 1`
+
+Second iteration:
+- `first = 3`, `second = 4`
+- `first.next = null`
+- `second.next = 3`
+- `prev.next = 4`
+- list becomes `dummy -> 2 -> 1 -> 4 -> 3`
+- move `prev = 3`
+
+Loop stops because there is no next pair.
+Returned list: `[2,1,4,3]`.
+
+### Key Variables Explained
+- `dummy`: sentinel node that simplifies swaps involving the original head.
+- `prev`: node immediately before the current pair.
+- `first`: first node in the pair before swapping.
+- `second`: second node in the pair before swapping and first node after swapping.
+
+### Why This Works
+Before each loop iteration, all nodes before `prev` are already in final swapped order. The loop rewires exactly one adjacent pair and reconnects it to the already-processed prefix and the not-yet-processed suffix. Then `prev` advances to the end of that swapped pair, restoring the same invariant for the next iteration.
+
+Because the loop only runs when two nodes are available, every complete pair is swapped exactly once and any leftover single node remains untouched.
+
+### Trick Used
+Using a `dummy` node removes the special case for swapping the very first pair.
+
+### Edge Cases Handled
+- Empty list: returned immediately.
+- Single-node list: returned immediately.
+- Odd-length list: the last node remains in place because the loop stops when a full pair is unavailable.
+- Head pair swap: handled uniformly through `dummy.next`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — the loop advances through the list pair by pair, and each node is touched a constant number of times.
+- **Space Complexity: `O(1)`** — only a few pointers are used regardless of input size.

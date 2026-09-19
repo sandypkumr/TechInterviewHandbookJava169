@@ -104,25 +104,78 @@ public class LongestIncreasingPathInAMatrix {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the length of the longest path in a grid where every next cell must be strictly larger than the current one, and movement is limited to four directions. A brute-force search from every cell would repeat the same subproblems many times, which is why this is a classic interview question for combining graph traversal with memoization.
+
 ### Approach
+Treat each cell as the start of a directed path to larger neighboring cells. The code runs DFS from every position, but instead of recomputing the answer for a cell every time it is reached, it stores the best path length starting from that cell in `dp`.
 
-**Longest Increasing Path in a Matrix** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+This is much better than brute force because overlapping paths are common. Once the longest increasing path from one cell is known, every future caller can reuse it immediately.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+DFS + Dynamic Programming (memoization)
+
+### Key Insight
+The longest increasing path starting from `(x, y)` depends only on the best answers of its larger neighbors, so each cell can be solved once and cached in `dp[x][y]`.
 
 ### Code Walkthrough
+The class keeps `directions` as the four valid moves: down, up, right, and left.
 
-The solution is implemented in `longestIncreasingPath(int[][] matrix)`:
+In `longestIncreasingPath(int[][] matrix)`:
+- `rows` and `cols` store the matrix dimensions.
+- `dp = new int[rows][cols]` creates a memo table where `0` means “not computed yet”.
+- `maxLength` tracks the global best answer.
+- The nested `for` loops try every cell as a starting point.
+- For each cell, the code updates `maxLength` with `Math.max(maxLength, dfs(matrix, i, j))`.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+In `dfs(int[][] matrix, int x, int y)`:
+- The first `if (dp[x][y] != 0)` is the memoization check. If this cell was solved earlier, the method returns the cached answer immediately.
+- `maxLength` starts at `1` because the cell itself forms a path of length 1.
+- The `for (int[] dir : directions)` loop explores all four neighbors.
+- `newX` and `newY` compute the neighbor coordinates.
+- The long `if` condition ensures the neighbor is inside bounds and strictly increasing: `matrix[newX][newY] > matrix[x][y]`.
+- If valid, the code tries extending the path with `1 + dfs(matrix, newX, newY)`.
+- After checking all neighbors, `dp[x][y] = maxLength` stores the best result for this cell.
+- The method returns that stored value.
 
-&gt; **Note:** This solution also uses the **dynamic programming — break into overlapping subproblems and memoize** technique.
+### Example Walkthrough
+Use Example 1:
+- `matrix = [[9,9,4],[6,6,8],[2,1,1]]`
+
+The outer loops eventually call `dfs` for every cell.
+
+A useful chain starts at `(2, 1)` with value `1`:
+- From `1`, the code can move to `(2, 0)` with value `2` and to `(1, 1)` with value `6`.
+- Consider `(2, 0) = 2` first.
+- From `2`, it can move to `(1, 0) = 6`.
+- From `6`, it can move to `(0, 0) = 9`.
+- From `9`, there is no larger neighbor, so that call returns `1`.
+- Therefore `dp[1][0] = 2`, `dp[2][0] = 3`, and `dp[2][1] = 4`.
+
+Other cells may also lead into parts of this chain, but once `dp` is filled, those answers are reused instead of recomputed. The final `maxLength` becomes `4`.
+
+### Key Variables Explained
+- `directions`: the four allowed row/column moves.
+- `rows`, `cols`: matrix dimensions used in boundary checks.
+- `dp[x][y]`: length of the longest increasing path starting exactly at cell `(x, y)`.
+- `maxLength` in `longestIncreasingPath`: overall best answer across the whole matrix.
+- `maxLength` in `dfs`: best answer local to the current starting cell.
+- `newX`, `newY`: coordinates of the current neighbor being tested.
+
+### Why This Works
+The recursion explores every valid increasing move from a cell, so it never misses a candidate path. For each cell, `dfs` returns the best possible length beginning there because it compares all larger neighbors and takes the maximum.
+
+Memoization makes this correct and efficient at the same time. Since increasing edges only go to larger values, the recursion never needs to revisit a cell within the same path, and once `dp[x][y]` is stored, every later use of that cell gets the same correct answer.
+
+### Trick Used
+Memoizing each cell’s answer in `dp` so repeated DFS calls reuse previously solved paths.
+
+### Edge Cases Handled
+- Single-cell matrix: `dfs` finds no larger neighbor, so the answer stays `1`.
+- Flat or non-increasing neighbors: the condition `matrix[newX][newY] > matrix[x][y]` prevents invalid moves.
+- Border cells: the bounds check on `newX` and `newY` avoids stepping outside the matrix.
+- Multiple starting points sharing subpaths: `dp[x][y]` prevents duplicate work.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.
+- Time Complexity: `O(m * n)` because each cell’s `dfs` result is computed once, and each computation checks at most 4 neighbors.
+- Space Complexity: `O(m * n)` for the `dp` table, plus recursion stack space that can reach `O(m * n)` in the worst strictly increasing case.

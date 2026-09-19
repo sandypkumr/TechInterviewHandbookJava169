@@ -120,24 +120,127 @@ public class WordSearch2 {
 
 ## Explanation
 
+### Problem Analysis
+
+We must return every word from `words` that can be formed by walking adjacent cells on the board without reusing a cell in the same path. Since there can be up to `3 * 10^4` candidate words, checking each word independently against the board would repeat a lot of prefix work.
+
+This is a strong interview problem because it combines two ideas: graph-style DFS on the board and trie-based prefix pruning for many string queries at once.
+
 ### Approach
 
-**Word Search II** involves many prefix-based string operations (insert, startsWith, search). A trie (prefix tree) stores characters along edges; words with common prefixes share nodes, making prefix checks O(L) where L is the word length — independent of the total number of stored words.
+The solution first inserts all words into a trie, then starts DFS from each board cell whose character appears as a first trie edge. During DFS, the current trie node tells us whether the current board path is still a valid prefix of at least one word.
 
-Think of a trie as an autocomplete system. When you type "pre", the trie immediately navigates to the "pre" node and can enumerate all completions from there without scanning the entire dictionary.
+That pruning is the main reason this beats brute force. Without the trie, the search would explore many board paths that can never lead to any target word.
+
+### Pattern Used
+
+**Trie + DFS Backtracking**
+
+### Key Insight
+
+If the current board path is not a prefix in the trie, we can stop immediately instead of exploring the rest of that path.
 
 ### Code Walkthrough
 
-The solution is implemented in `findWords(char[][] board, String[] words)`:
+`TrieNode` stores:
 
-1. Define a TrieNode with `children[26]` (or a `HashMap<Character, TrieNode>`) and a boolean `isEnd`.
-2. `insert(word)`: traverse/create nodes character by character; mark `isEnd = true` at the last node.
-3. `search(word)`: traverse nodes; return true only if all characters matched and `isEnd` is true.
-4. `startsWith(prefix)`: same traversal but return true as soon as you've matched the full prefix.
+- `Map<Character, TrieNode> children` for outgoing letters
+- `String word = null` to mark the end of a complete word
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** and **backtracking — explore all candidates and prune invalid paths early** techniques.
+The class also keeps:
+
+- `private char[][] board;`
+- `private Set<String> result = new HashSet<>();`
+- `private int m, n;`
+
+Inside `findWords(char[][] board, String[] words)`:
+
+- The input board is saved into `this.board`
+- `m` and `n` are initialized from the board dimensions
+- `TrieNode root = new TrieNode();` creates the trie root
+
+The first `for (String word : words)` loop builds the trie:
+
+- Start from `root`
+- For each `char c`, move with `node.children.computeIfAbsent(c, k -> new TrieNode())`
+- After all letters are inserted, set `node.word = word`
+
+Next, the double loop scans every board cell:
+
+- `if (root.children.containsKey(board[i][j])) dfs(i, j, root);`
+
+That check avoids starting DFS from letters that cannot begin any word.
+
+Inside `dfs(int i, int j, TrieNode node)`:
+
+- `char c = board[i][j];`
+- `TrieNode curr = node.children.get(c);`
+- If `curr == null`, this path is not a valid prefix, so return
+
+If `curr.word != null`, a full word has been matched, so `result.add(curr.word);`
+
+Then the current board cell is marked as used with `board[i][j] = '#';`
+
+The code explores the four directions from `dirs`. For each valid neighbor that is not already `'#'`, it calls `dfs(newX, newY, curr)`.
+
+Finally, `board[i][j] = c;` restores the letter so other searches can reuse that cell later.
+
+The method returns `new ArrayList<>(result);`
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+- `board = [["o","a","a","n"],["e","t","a","e"],["i","h","k","r"],["i","f","l","v"]]`
+- `words = ["oath","pea","eat","rain"]`
+
+Trie construction stores all four words, with shared prefixes merged when possible.
+
+Board scan:
+
+- Starting at `(0,0) = 'o'`, the trie has an `'o'` child, so DFS begins
+- Path `o -> a -> t -> h` matches `"oath"`
+- At the trie node for `'h'`, `curr.word` is `"oath"`, so it is added to `result`
+
+Later, another useful start is `(1,3) = 'e'`:
+
+- DFS can follow `e -> a -> t`
+- That reaches the trie node whose `word` is `"eat"`
+- `"eat"` is added to `result`
+
+`"pea"` is never formed from adjacent cells, and `"rain"` also cannot be completed on this board.
+
+So the final result contains `["eat", "oath"]` in any order, which matches the example output.
+
+### Key Variables Explained
+
+- `root`: trie root containing all words
+- `children`: outgoing trie edges for each character
+- `word`: non-null only at trie nodes that complete a dictionary word
+- `board`: stored as a field so `dfs` can access it directly
+- `result`: `HashSet` collecting found words without duplicates
+- `m`, `n`: board dimensions
+- `curr`: trie node for the current board character
+- `dirs`: the four neighboring moves inside DFS
+
+### Why This Works
+
+Each DFS path represents one candidate string formed from adjacent board cells, and the trie node passed into recursion represents exactly the prefix matched so far. Because recursion only continues through `curr`, every explored path is consistent with at least one dictionary prefix.
+
+Marking a cell as `'#'` prevents illegal reuse within the same word path, and restoring it afterward enables other independent searches. Using a `Set<String>` for `result` ensures repeated discoveries of the same word do not create duplicates in the answer.
+
+### Trick Used
+
+The search is pruned twice: once before DFS with `root.children.containsKey(board[i][j])`, and again inside DFS with `if (curr == null) return;`.
+
+### Edge Cases Handled
+
+- **Shared prefixes among words:** naturally handled by the trie structure
+- **The same word found through multiple paths:** deduplicated by `result`
+- **Cell reuse not allowed:** enforced by temporarily writing `'#'`
+- **Dead paths:** stopped immediately when the trie has no matching child
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(m·n·4·3^(L-1))`** — see the analysis for full details.
-- **Space Complexity: `O(L)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(W + m * n * 4 * 3^(L - 1))` in the worst case** — building the trie costs `O(W)`, where `W` is the total number of characters across all words. The DFS part can, in the worst case, branch up to 4 ways initially and up to 3 ways afterward for paths of maximum length `L`.
+- **Space Complexity: `O(W + L + R)`** — the trie stores `O(W)` characters, recursion depth is at most `L`, and `result` stores the found words. This is more accurate for this code than `O(L)` alone because the trie dominates auxiliary space.

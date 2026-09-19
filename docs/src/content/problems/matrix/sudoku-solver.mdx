@@ -106,23 +106,81 @@ public class SudokuSolver {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to fill every `'.'` in a `9 x 9` Sudoku board so that all row, column, and `3 x 3` box rules are satisfied. The board must be solved in place, and the input is guaranteed to have exactly one valid solution.
+
+This is a classic interview backtracking problem because brute force alone is too expensive unless you prune invalid choices immediately.
+
 ### Approach
+The solution repeatedly finds the next empty cell, tries digits `'1'` through `'9'`, and keeps only the choices that are currently valid. Whenever a choice leads to a dead end later, it undoes that placement and tries the next candidate.
 
-**Sudoku Solver** requires enumerating all valid combinations/permutations/subsets. Backtracking systematically tries every candidate and immediately abandons ("prunes") any branch that cannot possibly lead to a valid solution, making it far faster than brute-force enumeration in practice.
+This is better than blindly generating all board fillings because `isValid(board, row, col, num)` prunes illegal moves as soon as they appear.
 
-Think of solving a sudoku: you place a digit, recursively try to solve the rest, and if you reach a contradiction you erase that digit (backtrack) and try the next. The key is that pruning can cut enormous branches of the search tree early.
+### Pattern Used
+The solution uses **Backtracking**.
+
+### Key Insight
+Solve the puzzle one empty cell at a time, and the moment a candidate violates Sudoku rules, abandon that branch before exploring deeper.
 
 ### Code Walkthrough
+`solveSudoku(char[][] board)` begins by calling `findEmptyCell(board)`.
+- if it returns `null`, the board has no empty cells left, so the puzzle is solved and the method returns
 
-The solution is implemented in `solveSudoku(char[][] board)`:
+Otherwise:
+- `row = emptyCell[0]`
+- `col = emptyCell[1]`
 
-1. Define what constitutes a valid complete solution (base case).
-2. At each step, iterate over all possible next choices.
-3. Apply a choice (mutate state), then recurse.
-4. After recursion returns, undo the choice (backtrack) to restore state.
-5. Apply a pruning condition to skip choices that cannot lead to a valid solution.
+The `for (char num = '1'; num <= '9'; num++)` loop tries every possible digit for that exact position.
+
+For each candidate:
+- `isValid(board, row, col, num)` checks whether `num` already exists in the same row or column
+- then it checks the relevant `3 x 3` box using `boxRowStart` and `boxColStart`
+
+If the digit is valid:
+- place it with `board[row][col] = num`
+- recurse using `solveSudoku(board)` to solve the rest of the puzzle
+
+After the recursive call, the code checks `if (findEmptyCell(board) == null)`.
+- if true, recursion solved the whole board, so return immediately
+- otherwise this path did not finish the puzzle, so reset the cell with `board[row][col] = '.'`
+
+`findEmptyCell(char[][] board)` scans the board row by row and returns the first empty position as `new int[]{i, j}`. If no empty cell exists, it returns `null`.
+
+### Example Walkthrough
+Use the given Example 1 board.
+
+The first empty cell found by `findEmptyCell(board)` is `(0, 2)` because row `0` starts as `['5','3','.','.','7','.','.','.','.']`.
+
+Now the method tries digits:
+- `'1'` is valid for `(0, 2)`, so the code places it and recurses
+- later, if that choice eventually causes a contradiction somewhere deeper, recursion returns and `(0, 2)` is reset back to `'.'`
+- the loop then tries `'2'`, `'3'`, and so on until it finds a candidate that can lead to a full solution
+
+As the search continues, each recursive level fills one more empty cell. Invalid numbers are rejected immediately by `isValid`, and unsuccessful paths are undone by `board[row][col] = '.'`.
+
+Because the example has a unique solution, one sequence of placements eventually removes all `'.'` cells, and then `findEmptyCell(board)` returns `null`. At that point every recursive call returns without undoing the successful placements, leaving the solved board shown in the example output.
+
+### Key Variables Explained
+- `emptyCell`: the next unfilled position returned by `findEmptyCell(board)`
+- `row`, `col`: coordinates of the cell currently being solved
+- `num`: current digit candidate from `'1'` to `'9'`
+- `boxRowStart`, `boxColStart`: top-left corner of the relevant `3 x 3` sub-box
+- `board[row][col] = '.'`: the backtracking undo step when a branch fails
+
+### Why This Works
+At every recursive level, the algorithm maintains a board where all previously filled cells satisfy Sudoku rules. `isValid` ensures a new digit is only placed if it preserves that invariant for the current row, column, and box.
+
+If a placement cannot lead to a complete solution, the recursive call eventually returns and the code restores the cell to `'.'`, so other candidates can be explored from the same valid prior state. Since the input is guaranteed to have one solution, the first branch that fills all empty cells is the correct solved board.
+
+### Trick Used
+The key trick is **pruning invalid digits immediately with `isValid(...)` before recursing**.
+
+### Edge Cases Handled
+- Already solved board: `findEmptyCell(board)` returns `null` at the start, so the method returns immediately
+- Digits conflicting in a row or column: `isValid` rejects them in the first `for (int i = 0; i < 9; i++)` loop
+- Digits conflicting in a `3 x 3` box: `isValid` rejects them in the nested box scan
+- Failed recursive branch: `board[row][col] = '.'` restores the board before trying the next digit
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(9^81)`** — see the analysis for full details.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** worst-case exponential. If `E` cells are empty, the search can try up to `9` choices per cell, so the upper bound is `O(9^E)`, and each validation/empty-cell scan costs at most `O(81)` because the board size is fixed
+- **Space Complexity:** `O(E)` recursion stack depth in the worst case, where `E` is the number of empty cells; with a standard Sudoku board, `E <= 81`

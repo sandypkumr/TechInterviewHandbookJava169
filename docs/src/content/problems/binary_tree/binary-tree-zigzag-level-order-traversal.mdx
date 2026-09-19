@@ -92,23 +92,97 @@ public class BinaryTreeZigzagLevelOrderTraversal {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks for a normal level-order traversal, but with alternating output direction: left-to-right on one level, then right-to-left on the next. The tree structure itself does not change; only how each level is written into the answer changes.
+
+This is a frequent interview question because it tests whether you can adapt standard BFS instead of rebuilding the traversal from scratch.
+
 ### Approach
+The code performs BFS so levels are processed one at a time. For each level, it uses a `LinkedList<Integer>` and either appends at the end or inserts at the front depending on the current direction.
 
-**Binary Tree Zigzag Level Order Traversal** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+That avoids reversing arrays after the fact and keeps the logic local to each level.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+### Pattern Used
+Breadth-First Search (BFS) / level-order traversal.
+
+### Key Insight
+You can keep the traversal order of the nodes unchanged and create the zigzag effect just by switching between `addLast` and `addFirst` when storing values for the current level.
 
 ### Code Walkthrough
+`zigzagLevelOrder(TreeNode root)` creates `result` as the final list of levels.
 
-The solution is implemented in `zigzagLevelOrder(TreeNode root)`:
+If `root == null`, it returns `result` immediately.
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+A `Queue<TreeNode> queue = new LinkedList<>()` is initialized, and `queue.offer(root)` starts the BFS.
+
+The boolean `leftToRight = true` tracks how the current level should be recorded.
+
+The outer `while (!queue.isEmpty())` loop processes one level at a time.
+
+`int levelSize = queue.size()` captures the exact number of nodes in the current level.
+
+For each level, the code creates `LinkedList<Integer> levelList = new LinkedList<>()`.
+
+Inside the `for (int i = 0; i < levelSize; i++)` loop, `TreeNode node = queue.poll()` removes nodes in normal BFS order.
+
+If `leftToRight` is true, the value is appended with `levelList.addLast(node.val)`.
+
+Otherwise, the value is inserted at the front with `levelList.addFirst(node.val)`.
+
+Then `node.left` and `node.right` are enqueued if they are not null.
+
+After the level is finished, `result.add(levelList)` stores that level, and `leftToRight = !leftToRight` flips the direction for the next one.
+
+### Example Walkthrough
+Use Example 1: `root = [3,9,20,null,null,15,7]`.
+
+Start with `queue = [3]`, `result = []`, and `leftToRight = true`.
+
+Level 1:
+- `levelSize = 1`
+- Poll `3`
+- `leftToRight` is true, so `levelList = [3]`
+- Enqueue `9`, `20`
+- Add `[3]` to `result`
+- Flip `leftToRight` to `false`
+
+Level 2:
+- `queue = [9,20]`, `levelSize = 2`
+- Poll `9`, use `addFirst`, so `levelList = [9]`
+- Poll `20`, use `addFirst`, so `levelList = [20,9]`
+- Enqueue `15`, `7`
+- Add `[20,9]` to `result`
+- Flip `leftToRight` to `true`
+
+Level 3:
+- `queue = [15,7]`, `levelSize = 2`
+- Poll `15`, use `addLast`, so `levelList = [15]`
+- Poll `7`, use `addLast`, so `levelList = [15,7]`
+- Add `[15,7]` to `result`
+
+Final output: `[[3],[20,9],[15,7]]`.
+
+### Key Variables Explained
+- `result`: final answer containing all levels.
+- `queue`: BFS queue holding nodes to process.
+- `leftToRight`: decides whether the current level is stored normally or reversed.
+- `levelSize`: number of nodes in the current level.
+- `levelList`: linked list used to build one level efficiently from either end.
+- `node`: current tree node being processed.
+
+### Why This Works
+BFS guarantees that nodes from the same depth are processed together. The code never changes the tree traversal order; it only changes where each value is inserted inside `levelList`.
+
+Because `leftToRight` flips after every completed level, the output direction alternates exactly once per depth, which matches the zigzag requirement.
+
+### Trick Used
+The main trick is using `LinkedList<Integer>` so the code can switch between `addLast` and `addFirst` in `O(1)` time.
+
+### Edge Cases Handled
+- Empty tree: `root == null` returns an empty list.
+- Single-node tree: one level is produced with that single value.
+- Sparse trees: children are only enqueued when non-null, so missing nodes do not break level boundaries.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — the BFS queue can hold up to O(n) nodes at the widest level.
+- Time Complexity: `O(n)` because each node is polled once, inserted into a level list once, and its children are checked once.
+- Space Complexity: `O(n)` because the queue may hold an entire level, and `result` stores all node values.

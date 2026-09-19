@@ -154,20 +154,101 @@ public class StringToIntegerAToI {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to parse a string the same way `atoi` would: skip leading spaces, read one optional sign, consume consecutive digits, and clamp the answer to the 32-bit signed integer range. The tricky part is not parsing digits itself, but stopping at exactly the right time and handling overflow before it happens.
+
+This is a common interview problem because it checks careful simulation, boundary handling, and defensive coding under many small edge cases.
+
 ### Approach
 
-**String to Integer (atoi)** is a string problem. The solution iterates over the input using a while loop with two pointers, applying the appropriate data structure (Integer.MAX/MIN_VALUE, Character utilities) to achieve the target complexities of `O(?)` time and `O(?)` space.
+The code performs one left-to-right scan using an index `i`. It first skips spaces, then determines whether the result should be negative, and finally builds the number digit by digit inside `result`.
+
+Using direct parsing is better than any brute-force substring approach because:
+
+- we never need to build extra strings,
+- we stop immediately when a non-digit appears,
+- we can detect overflow while the number is being formed instead of after parsing everything.
+
+### Pattern Used
+
+This solution primarily relies on **direct iteration / string simulation**.
+
+### Key Insight
+
+Build the number incrementally in a `long`, and after every new digit, immediately check whether the signed value has moved outside the integer range.
 
 ### Code Walkthrough
 
-The solution is implemented in `myAtoi(String s)`:
+The method starts with `int n = s.length()` and `int i = 0` so the string can be scanned by index.
 
-1. **Initialise** the necessary data structures (`n`, `i`, `isNegative`).
-2. **Iterate** over the input using a while loop with two pointers.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+The first `while (i < n && s.charAt(i) == ' ')` skips only leading spaces. If that reaches the end, `if (i == n)` returns `0` because the string contains no digits at all.
+
+`boolean isNegative = false` stores the sign. If `s.charAt(i) == '-'`, the code sets `isNegative = true` and advances `i`. If the character is `'+'`, it only advances `i`.
+
+`long result = 0` is used instead of `int` so the code can safely detect overflow before the final cast.
+
+The main parsing loop is:
+
+- `while (i < n && Character.isDigit(s.charAt(i)))`
+- multiply the current value by 10,
+- add the new digit with `s.charAt(i) - '0'`,
+- check the range immediately.
+
+The overflow checks are sign-aware:
+
+- `if (isNegative && -result < Integer.MIN_VALUE)` returns `Integer.MIN_VALUE`,
+- `if (!isNegative && result > Integer.MAX_VALUE)` returns `Integer.MAX_VALUE`.
+
+If parsing stops normally, the method returns either `(int) -result` or `(int) result` depending on `isNegative`.
+
+### Example Walkthrough
+
+Take **Example 2**, `s = "   -042"`.
+
+- Initially, `i = 0`, `n = 7`, `result = 0`, `isNegative = false`.
+- The first loop skips the three spaces, so `i` moves to the `'-'`.
+- The sign check sets `isNegative = true` and moves `i` to the `'0'`.
+- Now the digit loop begins:
+  - read `'0'`: `result = 0`
+  - read `'4'`: `result = 4`
+  - read `'2'`: `result = 42`
+- The string ends, so the method returns `-42` because `isNegative` is `true`.
+
+This matches the required output.
+
+### Key Variables Explained
+
+- `n`: cached string length so the code does not repeatedly call `s.length()`.
+- `i`: current scan position in the input string.
+- `isNegative`: remembers whether a leading `'-'` was found.
+- `result`: numeric value built from the digit prefix seen so far.
+
+### Why This Works
+
+The algorithm follows the problem statement in the exact required order:
+
+1. ignore leading spaces,
+2. read at most one sign,
+3. read digits until the first non-digit,
+4. clamp if the number leaves the 32-bit signed range.
+
+At every step, `i` points to the next unread character, and `result` always represents the integer value of the digits already consumed. Because overflow is checked immediately after each update, the method never returns an out-of-range integer.
+
+### Trick Used
+
+Using a `long` accumulator together with early overflow checks avoids complicated pre-check math on each digit and keeps the implementation simple.
+
+### Edge Cases Handled
+
+- String with only spaces: `if (i == n)` returns `0`.
+- Optional `+` or `-` sign: handled before digit parsing.
+- Leading zeroes such as `" -042"`: naturally absorbed while building `result`.
+- Non-digit after digits, such as `"1337c0d3"`: parsing stops at the first non-digit.
+- Non-digit at the start, such as `"words and 987"`: digit loop never runs, so the result stays `0`.
+- Overflow and underflow: clamped to `Integer.MAX_VALUE` or `Integer.MIN_VALUE`.
 
 ### Complexity Analysis
 
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n)`** — in the worst case, the code scans each character of `s` at most once across the space-skipping loop and the digit-reading loop.
+- **Space Complexity: `O(1)`** — it uses only a few scalar variables (`n`, `i`, `isNegative`, `result`).

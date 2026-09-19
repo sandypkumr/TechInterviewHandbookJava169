@@ -89,23 +89,104 @@ public class LongestConsecutiveSequence {
 
 ## Explanation
 
+### Problem Analysis
+We need the length of the longest run of consecutive integers in an unsorted array. Because the array is unsorted and may contain duplicates, simply scanning neighbors is not enough, and sorting would violate the required linear-time target.
+
+This is a favorite interview problem because the optimal solution depends on recognizing how to use constant-time membership checks to grow sequences only from valid starting points.
+
 ### Approach
+A brute-force solution would try, for every number, to keep checking whether `num + 1`, `num + 2`, and so on exist. Without a fast lookup structure, that becomes too slow. Sorting is simpler, but it costs `O(n log n)`.
 
-The key insight for **Longest Consecutive Sequence** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+This code stores every number in a `HashSet`, then only starts counting from numbers that are the beginning of a sequence. A number is a start only when `num - 1` is not present.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Pattern Used
+This solution uses the **Hash Set lookup** pattern and primarily relies on direct iteration over sequence starts.
+
+### Key Insight
+Only sequence starts need to be expanded; if `num - 1` exists, then the sequence containing `num` will be counted from an earlier number.
 
 ### Code Walkthrough
+The method `longestConsecutive(int[] nums)` first handles an empty input:
 
-The solution is implemented in `longestConsecutive(int[] nums)`:
+- `if (nums.length == 0) { return 0; }`
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+That avoids extra work and also prevents the default answer from being incorrect.
+
+Next it initializes:
+
+- `int longestStreak = 1;`
+- `Set<Integer> numSet = new HashSet<>();`
+
+The first `for` loop adds every value from `nums` into `numSet`.
+
+- This removes duplicates automatically.
+- It also gives `O(1)` average-time membership checks.
+
+The second loop iterates over `numSet` itself:
+
+- `for (int num : numSet)`
+
+For each `num`, the code checks:
+
+- `if (!numSet.contains(num - 1))`
+
+If true, `num` is the first value in a consecutive sequence.
+
+Then the code expands that sequence:
+
+- `int currentNum = num;`
+- `int currentStreak = 1;`
+- `while (numSet.contains(currentNum + 1)) { currentNum++; currentStreak++; }`
+
+This keeps moving forward as long as the next consecutive number exists.
+
+After finishing one sequence, the code updates:
+
+- `longestStreak = Math.max(longestStreak, currentStreak);`
+
+Finally, it returns `longestStreak`.
+
+### Example Walkthrough
+Use **Example 1**:
+
+- `nums = [100,4,200,1,3,2]`
+
+After building the set:
+
+- `numSet = {100, 4, 200, 1, 3, 2}`
+
+Now iterate:
+
+- `100`: `99` is not in the set, so start a sequence. `101` is absent, so streak is `1`.
+- `4`: `3` is in the set, so skip it because this is not a sequence start.
+- `200`: `199` is absent, so start a sequence. `201` is absent, streak is `1`.
+- `1`: `0` is absent, so start a sequence. Then `2`, `3`, and `4` are present, so `currentStreak` grows from `1` to `4`.
+- `3` and `2`: both are skipped as non-starts because their predecessors exist.
+
+The longest streak found is `4`, matching the output.
+
+### Key Variables Explained
+- `longestStreak`: best sequence length found so far.
+- `numSet`: stores all unique numbers for fast existence checks.
+- `num`: current number being considered as a possible sequence start.
+- `currentNum`: moving pointer while extending one sequence.
+- `currentStreak`: length of the current consecutive run.
+
+### Why This Works
+Every consecutive sequence has exactly one valid starting point: the first number whose predecessor is absent. The code detects only those starts, so each full sequence is counted once.
+
+Because duplicates are removed by `numSet` and no sequence is expanded from the middle, the algorithm avoids repeated work while still covering every possible consecutive run.
+
+### Trick Used
+The trick is the start-of-sequence check `!numSet.contains(num - 1)`, which prevents recounting the same chain from every element inside it.
+
+### Edge Cases Handled
+- Empty array: returned immediately as `0`.
+- Duplicate values: automatically collapsed by `numSet`.
+- Single-element array: `longestStreak` stays `1` and is returned.
+- Negative values: handled naturally because set membership works for any integer.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`** — building `numSet` is `O(n)`, and across all starts the `while` expansions visit each number at most once in total on average.
+- **Space Complexity: `O(n)`** — the `HashSet` stores up to all unique input values.
 
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.

@@ -71,23 +71,87 @@ public class RotateImage {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for an in-place 90-degree clockwise rotation of an `n x n` matrix. The important restriction is that you cannot allocate another matrix, so the transformation has to happen by rearranging values inside the same grid.
+
+It is a classic interview problem because it tests whether you can recognize a matrix transformation identity and implement it cleanly with index manipulation.
+
 ### Approach
+Instead of rotating each layer manually, the code breaks the rotation into two simpler in-place operations:
+- transpose the matrix
+- reverse every row
 
-**Rotate Image** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+Transposition swaps rows with columns, and reversing each row then turns that transposed matrix into the desired 90-degree clockwise rotation. This is much cleaner than moving four cells at a time around each layer.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+### Pattern Used
+Matrix Transpose + Two Pointers for row reversal.
+
+### Key Insight
+A 90-degree clockwise rotation is equivalent to transposing the matrix and then reversing every row.
 
 ### Code Walkthrough
+The method starts with `int n = matrix.length;` so the code can use the matrix size repeatedly.
 
-The solution is implemented in `rotate(int[][] matrix)`:
+The first nested loop performs the transpose:
+- `for (int i = 0; i < n; i++)`
+- `for (int j = i; j < n; j++)`
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+Starting `j` from `i` is important because it visits only the upper triangle and diagonal. For each pair:
+- `int temp = matrix[i][j];`
+- `matrix[i][j] = matrix[j][i];`
+- `matrix[j][i] = temp;`
+
+That swaps `matrix[i][j]` with `matrix[j][i]`, turning rows into columns.
+
+The second nested loop reverses each row:
+- outer loop: `for (int i = 0; i < n; i++)`
+- inner loop: `for (int j = 0; j < n / 2; j++)`
+
+For every row `i`, it swaps symmetric elements:
+- `matrix[i][j]`
+- `matrix[i][n - 1 - j]`
+
+Again, `temp` is used to perform the swap in place.
+
+After both phases finish, the original matrix has been rotated.
+
+### Example Walkthrough
+For **Example 1**, `matrix = [[1,2,3],[4,5,6],[7,8,9]]`:
+
+After the transpose phase:
+- swap `(0,1)` with `(1,0)` -> `[[1,4,3],[2,5,6],[7,8,9]]`
+- swap `(0,2)` with `(2,0)` -> `[[1,4,7],[2,5,6],[3,8,9]]`
+- swap `(1,2)` with `(2,1)` -> `[[1,4,7],[2,5,8],[3,6,9]]`
+
+Now reverse each row:
+- row `0`: `[1,4,7]` -> `[7,4,1]`
+- row `1`: `[2,5,8]` -> `[8,5,2]`
+- row `2`: `[3,6,9]` -> `[9,6,3]`
+
+Final matrix: `[[7,4,1],[8,5,2],[9,6,3]]`
+
+For **Example 2**, the same two-phase process transforms `[[5,1,9,11],[2,4,8,10],[13,3,6,7],[15,14,12,16]]` into `[[15,13,2,5],[14,3,4,1],[12,6,8,9],[16,7,10,11]]`.
+
+### Key Variables Explained
+- `matrix`: the input 2D array that is modified in place.
+- `n`: the dimension of the square matrix.
+- `i`: the current row index in both phases.
+- `j`: the current column index in the transpose phase, and the left-side pointer during row reversal.
+- `temp`: temporary storage used during swaps.
+
+### Why This Works
+Transposing converts every element at position `(r, c)` into position `(c, r)`. For a clockwise rotation, each transposed row then needs to be mirrored horizontally, which is exactly what the second loop does by swapping `j` with `n - 1 - j`.
+
+Because every required element movement is captured by those two deterministic transformations, the final matrix is the correct 90-degree clockwise rotation.
+
+### Trick Used
+The main trick is decomposing rotation into transpose plus row reversal, which avoids extra memory and avoids more error-prone four-way cyclic swaps.
+
+### Edge Cases Handled
+- **`n = 1`**: both loop structures still work and the single value remains unchanged.
+- **Diagonal cells during transpose**: when `i == j`, swapping a cell with itself is harmless.
+- **Odd and even matrix sizes**: `j < n / 2` correctly reverses each row by swapping only the left half.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n^2)`** — the transpose phase visits the upper triangle of the matrix and the reversal phase processes every row across half its columns; both are quadratic in total.
+- **Space Complexity: `O(1)`** — only `n`, loop indices, and `temp` are used besides the input matrix.

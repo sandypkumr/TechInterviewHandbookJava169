@@ -90,25 +90,97 @@ public class EmployeeFreeTime {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to find gaps in time where every employee is free, given each employee's working intervals. Since each employee already has sorted, non-overlapping intervals, the main task is to combine all work intervals and detect the gaps between merged busy blocks.
+
+This is a common interview topic because it tests interval reasoning: flattening many schedules, sorting by start time, and merging overlaps without missing shared free windows.
+
 ### Approach
+A brute-force approach would try to compare each employee's schedule against every other employee's schedule, which becomes messy and inefficient. This code takes the cleaner interval-merging route.
 
-**Employee Free Time** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+It first puts every working interval into one list, sorts that list by start time, and then scans from left to right. Whenever the next interval starts after the current merged end, that gap is a common free-time interval.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Pattern Used
+This solution uses the **Merge Intervals** pattern after flattening all employee schedules into one list.
+
+### Key Insight
+Once all busy intervals are sorted together, common free time is exactly the gap between the end of one merged busy block and the start of the next one.
 
 ### Code Walkthrough
+The method `employeeFreeTime(List<List<Interval>> schedule)` starts by creating `allIntervals`.
 
-The solution is implemented in `employeeFreeTime(List<List<Interval>> schedule)`:
+- `allIntervals` stores every employee's working interval in one flat list.
+- The loop `for (List<Interval> employeeSchedule : schedule)` uses `allIntervals.addAll(employeeSchedule)` to copy each employee's intervals into that list.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+Next, the code sorts the flattened intervals with:
 
-&gt; **Note:** This solution also uses the **sort intervals by start time, then merge overlapping ones in one pass** technique.
+- `allIntervals.sort(Comparator.comparingInt(a -> a.start));`
+
+This ensures intervals are processed in chronological order.
+
+Then it creates `freeTime` to store the answer and initializes:
+
+- `int end = allIntervals.getFirst().end;`
+
+`end` tracks the farthest end point of the merged busy interval seen so far.
+
+The loop `for (int i = 1; i < allIntervals.size(); i++)` processes each remaining interval.
+
+For each `current` interval:
+
+- If `current.start > end`, there is a gap between the previous merged busy block and this interval.
+- The code records that gap with `freeTime.add(new Interval(end, current.start))`.
+
+Whether there was a gap or overlap, the merged busy range must be extended if needed:
+
+- `end = Math.max(end, current.end);`
+
+At the end, `freeTime` contains all common free intervals and is returned.
+
+### Example Walkthrough
+Use the given example:
+
+- `[[[1, 3], [6, 7]], [[2, 4]], [[2, 5], [9, 12]]]`
+
+After flattening, `allIntervals` contains:
+
+- `[1,3], [6,7], [2,4], [2,5], [9,12]`
+
+After sorting by start time:
+
+- `[1,3], [2,4], [2,5], [6,7], [9,12]`
+
+Now scan:
+
+- Start with `end = 3` from `[1,3]`.
+- `current = [2,4]`: `2 > 3` is false, so no free time. Update `end = max(3, 4) = 4`.
+- `current = [2,5]`: `2 > 4` is false. Update `end = max(4, 5) = 5`.
+- `current = [6,7]`: `6 > 5` is true, so add free interval `[5,6]`, then update `end = 7`.
+- `current = [9,12]`: `9 > 7` is true, so add `[7,9]`, then update `end = 12`.
+
+So this exact implementation returns the gaps produced by the merged busy coverage built from the sorted intervals.
+
+### Key Variables Explained
+- `schedule`: input list where each employee has a list of working intervals.
+- `allIntervals`: flattened list containing every working interval from every employee.
+- `freeTime`: output list of intervals where all employees are free.
+- `end`: right boundary of the merged busy coverage so far.
+- `current`: the interval currently being compared against the merged busy block.
+
+### Why This Works
+After sorting, every interval that could overlap with the current busy block appears before any later-starting interval. The variable `end` always represents the farthest end among intervals already merged into the current busy block.
+
+So when `current.start <= end`, the intervals overlap and belong to the same busy region. When `current.start > end`, nothing in between covers that gap, which means that gap is free for everyone, so adding `new Interval(end, current.start)` is correct.
+
+### Trick Used
+The optimization is flattening all employee schedules first, then solving the problem as a standard single-list interval merge instead of comparing employees pairwise.
+
+### Edge Cases Handled
+- Overlapping busy intervals across different employees: merged by updating `end = Math.max(end, current.end)`.
+- Back-to-back or touching intervals: no free time is added because the code only adds a gap when `current.start > end`.
+- Multiple free gaps: each one is added to `freeTime` during the single pass.
 
 ### Complexity Analysis
+- **Time Complexity: `O(m log m)`** — if `m` is the total number of intervals across all employees, flattening is `O(m)`, sorting `allIntervals` is `O(m log m)`, and the final scan is `O(m)`.
+- **Space Complexity: `O(m)`** — `allIntervals` stores every interval, and `freeTime` can also grow with the number of gaps.
 
-- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.

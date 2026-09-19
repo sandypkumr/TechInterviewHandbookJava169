@@ -71,23 +71,83 @@ public class RansomNote {
 
 ## Explanation
 
+### Problem Analysis
+We need to decide whether every character required by `ransomNote` can be supplied by `magazine`, using each magazine character at most once.
+So this is really a frequency-matching problem, not a substring problem.
+It is a common interview question because it tests counting, character indexing, and recognizing when a fixed-size array is better than a hash map.
+
 ### Approach
+The code counts how many times each lowercase letter appears in `magazine`.
+Then it scans `ransomNote` and spends one count for every character it needs.
+If any required character has count `0`, the construction is impossible and the method returns `false` immediately.
+This is better than brute force, which might repeatedly search `magazine` for each ransom character and degrade toward `O(m * n)`.
+Because the input is restricted to lowercase English letters, a size-26 array is the simplest and fastest structure.
 
-The key insight for **Ransom Note** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+### Pattern Used
+Counting / Frequency Array.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Key Insight
+If `magazine` provides enough copies of every letter, then decrementing counts while reading `ransomNote` will never drop below zero.
 
 ### Code Walkthrough
+The method starts by creating `int[] charCount = new int[26]`.
+Each index represents one lowercase letter: `0` for `'a'`, `1` for `'b'`, and so on.
 
-The solution is implemented in `canConstruct(String ransomNote, String magazine)`:
+The first loop iterates over `magazine.toCharArray()`.
+For each `char c`, the code increments `charCount[c - 'a']`.
+After this loop, `charCount` holds the full supply of available letters.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+The second loop iterates over `ransomNote.toCharArray()`.
+For each needed character `c`, the code first checks `if (charCount[c - 'a'] == 0)`.
+That means the magazine has no remaining copy of that letter, so it returns `false` immediately.
+If the count is still positive, `charCount[c - 'a']--` consumes one occurrence.
+
+If the entire ransom note is processed without failing the zero-count check, the method reaches `return true`.
+That means every required letter was available in sufficient quantity.
+
+### Example Walkthrough
+Use Example 3: `ransomNote = "aa"`, `magazine = "aab"`.
+
+Start with `charCount` filled with zeros.
+
+Build counts from `magazine`:
+- Read first `'a'`: `charCount[0]` becomes `1`.
+- Read second `'a'`: `charCount[0]` becomes `2`.
+- Read `'b'`: `charCount[1]` becomes `1`.
+
+Now process `ransomNote`:
+- Need first `'a'`: `charCount[0]` is `2`, so decrement it to `1`.
+- Need second `'a'`: `charCount[0]` is `1`, so decrement it to `0`.
+
+The loop finishes successfully, so the method returns `true`.
+That matches the example because `"aab"` contains enough copies of `'a'` to build `"aa"`.
+
+For contrast, in Example 2 with `ransomNote = "aa"` and `magazine = "ab"`:
+- Counts begin as one `'a'` and one `'b'`.
+- The first `'a'` consumes the only available `'a'`.
+- The second `'a'` sees `charCount[0] == 0`, so the method returns `false`.
+
+### Key Variables Explained
+- `charCount`: size-26 frequency array storing how many copies of each lowercase letter are still available.
+- `c`: the current character from either `magazine` or `ransomNote`.
+- `c - 'a'`: converts a lowercase letter into its array index.
+
+### Why This Works
+After the first loop, `charCount[i]` exactly equals the number of available copies of the corresponding letter in `magazine`.
+During the second loop, every decrement represents using one magazine character for the ransom note.
+The invariant is that `charCount` always reflects the remaining unused supply.
+If the code ever sees a zero before decrementing, that letter is exhausted, so constructing the ransom note is impossible.
+If the loop finishes, every required character was matched one-for-one, so returning `true` is correct.
+
+### Trick Used
+Using a fixed-size array of length `26` instead of a hash map because the characters are guaranteed to be lowercase English letters.
+
+### Edge Cases Handled
+- Repeated letters in `ransomNote`: counts are decremented one use at a time, so duplicates are handled correctly.
+- Missing letters: the `== 0` check returns `false` immediately.
+- Extra letters in `magazine`: they simply remain unused in `charCount`.
+- Exact exhaustion of a letter: decrementing down to `0` is valid; failure happens only when another copy is needed afterward.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(m + n)`, where `m = magazine.length()` and `n = ransomNote.length()`, because the code makes one pass over each string.
+- Space Complexity: `O(1)` because `charCount` always has length `26`, regardless of input size.

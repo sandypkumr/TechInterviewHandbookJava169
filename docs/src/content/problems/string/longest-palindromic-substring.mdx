@@ -76,23 +76,97 @@ public class LongestPalindromicSubstring {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the longest contiguous substring that reads the same forward and backward.
+The challenge is that checking every substring would be too slow, so interviews use this problem to test whether you can exploit palindrome structure instead of brute force enumeration.
+
 ### Approach
+The code treats each index as a possible palindrome center and expands outward while the characters match.
+That is far better than checking all substrings explicitly. A palindrome is defined by its center, so the solution checks two cases at every position: odd-length palindromes centered at `i`, and even-length palindromes centered between `i` and `i + 1`.
 
-**Longest Palindromic Substring** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+### Pattern Used
+Two Pointers
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+### Key Insight
+Every palindrome can be discovered by expanding from its center, so checking all centers covers all possible palindromic substrings without generating every substring first.
 
 ### Code Walkthrough
+The method `longestPalindrome(String s)` begins with `int n = s.length();`.
+- If `n < 2`, it returns `s` immediately because a string of length `0` or `1` is already its own longest palindrome.
 
-The solution is implemented in `longestPalindrome(String s)`:
+The variables `start` and `end` store the best palindrome boundaries found so far.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+The loop `for (int i = 0; i < n; i++)` tries every position as a center.
+For each `i`, the code computes:
+- `len1 = expandAroundCenter(s, i, i)` for odd-length palindromes
+- `len2 = expandAroundCenter(s, i, i + 1)` for even-length palindromes
+
+Then it keeps `len = Math.max(len1, len2)`.
+- If `len > end - start`, the current palindrome is longer than the best one seen so far.
+- The new boundaries are computed as:
+  - `start = i - (len - 1) / 2`
+  - `end = i + len / 2`
+
+The helper `expandAroundCenter(String s, int left, int right)` does the real expansion work.
+- While `left >= 0`, `right < s.length()`, and the two characters match, it keeps moving outward.
+- Once the expansion stops, the palindrome length is `right - left - 1` because both pointers have already moved one step beyond the valid palindrome.
+
+Finally, `s.substring(start, end + 1)` returns the longest palindromic substring.
+
+### Example Walkthrough
+Use Example 1: `s = "babad"`.
+
+Start with `start = 0`, `end = 0`.
+
+At `i = 0`:
+- `len1` from `"b"` is `1`
+- `len2` from positions `(0, 1)` is `0`
+- Best remains `"b"`
+
+At `i = 1`:
+- `len1` expands around `'a'` and matches `b-a-b`, so length is `3`
+- `len2` is `0`
+- Update:
+  - `start = 1 - (3 - 1) / 2 = 0`
+  - `end = 1 + 3 / 2 = 2`
+- Best substring is now `"bab"`
+
+At `i = 2`:
+- `len1` expands to `"aba"`, also length `3`
+- Since `len > end - start` is still true for this code's comparison, boundaries can shift to `"aba"`
+- Either `"bab"` or `"aba"` is valid
+
+Later centers do not produce a longer palindrome.
+The method returns one valid longest answer of length `3`.
+
+### Key Variables Explained
+- `n`: length of the input string
+- `start`, `end`: inclusive boundaries of the best palindrome found so far
+- `i`: current center being tested
+- `len1`: palindrome length for odd center `(i, i)`
+- `len2`: palindrome length for even center `(i, i + 1)`
+- `len`: better of the two palindrome lengths at this center
+- `left`, `right`: expansion pointers inside `expandAroundCenter`
+
+### Why This Works
+Every palindrome has a center.
+- Odd-length palindromes have a single middle character
+- Even-length palindromes have a middle gap between two characters
+
+By checking both center types for every index, the code considers every possible palindrome. `expandAroundCenter` grows only while the substring remains palindromic, so the returned length is exact. The `start` and `end` updates convert that length back into real substring boundaries, ensuring the longest valid candidate is preserved.
+
+### Trick Used
+Checking both `(i, i)` and `(i, i + 1)` handles odd and even palindromes uniformly with the same helper method.
+
+### Edge Cases Handled
+- `n < 2`: immediately returns `s`, so empty or single-character strings work without extra logic
+- Even-length palindromes like `"bb"`: covered by `expandAroundCenter(s, i, i + 1)`
+- Odd-length palindromes like `"bab"`: covered by `expandAroundCenter(s, i, i)`
+- Palindromes touching string boundaries: the while condition stops safely when `left < 0` or `right == s.length()`
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(n^2)`
+  - There are `n` centers
+  - Each center expansion can scan outward up to `O(n)` characters in the worst case
+- Space Complexity: `O(1)`
+  - Only a few integer variables are used beyond the input string

@@ -102,20 +102,125 @@ public class BasicCalculator {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks us to evaluate an expression containing digits, spaces, `+`, `-`, and parentheses. The hard part is that parentheses create nested subexpressions, so a simple left-to-right total is not enough.
+
+It is a common interview topic because it tests expression parsing, stack usage, and whether you can preserve context across nested scopes.
+
 ### Approach
 
-**Basic Calculator** is a stack problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (Stack, Character utilities) to achieve the target complexities of `O(n)` time and `O(n)` space.
+The code evaluates the expression in one pass while maintaining the current subtotal in `result`, the current number in `num`, and the sign to apply in `sign`.
+
+When it sees `(`, it saves the current context on the stack:
+
+- the subtotal built so far
+- the sign that should apply to the whole parenthesized expression
+
+Then it starts a fresh inner calculation. When `)` appears, the inner result is completed and merged back into the saved outer context.
+
+This avoids recursion and avoids re-parsing any substring.
+
+### Pattern Used
+
+This solution uses the **stack-based expression parsing** pattern.
+
+### Key Insight
+
+A parenthesized expression can be evaluated independently if we save the outer `result` and `sign` before entering it, then restore that context when the closing `)` is reached.
 
 ### Code Walkthrough
 
-The solution is implemented in `calculate(String s)`:
+The method initializes:
 
-1. **Initialise** the necessary data structures (`sign`, `num`, `i`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+- `Stack<Integer> stack = new Stack<>();`
+- `int sign = 1;`
+- `int result = 0;`
+- `int num = 0;`
+
+As the loop scans each `char c = s.charAt(i)`:
+
+- if `c` is a digit, `num = num * 10 + (c - '0')`
+- if `c == '+'`, commit the previous number with `result += sign * num`, then set `sign = 1` and `num = 0`
+- if `c == '-'`, commit the previous number, then set `sign = -1` and `num = 0`
+
+When `c == '('`:
+
+- `stack.push(result);`
+- `stack.push(sign);`
+- reset `result = 0;`
+- reset `sign = 1;`
+
+That means the inner expression starts from a clean slate, but the outer context is preserved.
+
+When `c == ')'`:
+
+- first finish the current inner number with `result += sign * num`
+- `result *= stack.pop();` applies the sign that came before the parentheses
+- `result += stack.pop();` adds the saved outer subtotal
+- `num = 0;`
+
+After the loop, one final line handles any trailing number:
+
+```java
+result += sign * num;
+```
+
+Then the method returns `result`.
+
+### Example Walkthrough
+
+Use **Example 3**:
+
+```text
+(1+(4+5+2)-3)+(6+8)
+```
+
+High-level trace:
+
+- see `'('` -> push outer `result = 0`, push outer `sign = 1`
+- parse `1` -> `result` becomes `1`
+- see `'+'`, then `'('` -> save current context of the outer expression
+- inside `(4+5+2)`, the code accumulates `4`, then `9`, then `11`
+- on `')'`, that inner `11` is merged back with the saved outer state, so the surrounding level becomes `12`
+- then `-3` is processed, giving `9` for the first large parenthesized part
+- the next `')'` restores the original outer context, so that whole part remains `9`
+- then `+(6+8)` is evaluated similarly; the inner parentheses produce `14`
+- finally `9 + 14 = 23`
+
+So the method returns `23`.
+
+### Key Variables Explained
+
+- `stack` — stores the previous `result` and `sign` when entering parentheses
+- `sign` — either `1` or `-1`, meaning the current `num` should be added or subtracted
+- `result` — running total for the current parenthesis level
+- `num` — the number currently being built from consecutive digits
+- `c` — current character being examined
+
+### Why This Works
+
+At every point in the scan:
+
+- `result` contains the fully processed value for the current level, excluding the unfinished `num`
+- `sign` tells us how that unfinished `num` should be applied
+- the stack holds enough information to return to the previous level exactly
+
+Because each `(` saves the current state and each `)` restores it in reverse order, nested parentheses are handled correctly. The inner expression is fully evaluated before being combined with the outer expression, which matches arithmetic rules.
+
+### Trick Used
+
+The trick is **pushing both the previous `result` and previous `sign` before resetting state for a new parenthesized expression**.
+
+### Edge Cases Handled
+
+- **Spaces** — ignored because no branch acts on `' '`
+- **Multi-digit numbers** — built incrementally with `num = num * 10 + (c - '0')`
+- **Nested parentheses** — supported naturally by the stack
+- **Unary minus** such as `-(2 + 3)` — works because `sign` can become `-1` before `(`
+- **Final number at end of string** — handled by the last `result += sign * num`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — the string is scanned once, and each parenthesis causes constant-time stack work
+- **Space Complexity: `O(n)`** — in the worst case, the stack stores context for many nested parentheses

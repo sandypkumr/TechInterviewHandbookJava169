@@ -119,25 +119,150 @@ public class CourseSchedule2 {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks for an actual ordering of courses that satisfies all prerequisite relationships. If a cycle exists, no valid order can include every course, so the correct result is an empty array.
+
+It is a staple interview problem because it converts dependency constraints into a graph problem and tests whether you recognize topological sorting.
+
 ### Approach
 
-**Course Schedule II** models dependencies as a Directed Acyclic Graph (DAG) and asks for a valid ordering — exactly what topological sort provides. Kahn's algorithm uses in-degree counts: start with all nodes that have no prerequisites (in-degree 0), process them, and decrement the in-degree of their successors.
+The code uses Kahn's algorithm, which is a BFS-based topological sort.
 
-Think of it as a task scheduler: you can only start a task once all tasks it depends on are finished. Kahn's BFS-based approach naturally detects cycles (if the processed count is less than the total node count, a cycle exists).
+The idea is:
+- Build a directed graph where `preCourse -> course`.
+- Count how many prerequisites each course still has using `inDegree`.
+- Start with every course whose `inDegree` is `0` because those can be taken immediately.
+- Repeatedly remove ready courses, add them to the answer, and reduce the indegree of the courses unlocked by them.
+
+This is much better than brute force permutation checking, which would be completely impractical even for small `numCourses`.
+
+### Pattern Used
+
+BFS Topological Sort (Kahn's Algorithm).
+
+### Key Insight
+
+A course is ready exactly when all its prerequisites have been removed already, which is captured by its `inDegree` becoming `0`.
 
 ### Code Walkthrough
 
-The solution is implemented in `findOrder(int numCourses, int[][] prerequisites)`:
+The method begins by creating `List<List<Integer>> graph = new ArrayList<>();` and `int[] inDegree = new int[numCourses];`.
+- `graph` stores which courses depend on each prerequisite course.
+- `inDegree[course]` stores how many prerequisites are still required for that course.
 
-1. Build an adjacency list and compute in-degree for every node.
-2. Enqueue all nodes with in-degree 0.
-3. Poll a node, add it to the result, and decrement the in-degree of its neighbours.
-4. Enqueue any neighbour whose in-degree drops to 0.
-5. If the result size equals the total node count, the ordering is valid; otherwise a cycle exists.
+The first loop adds an empty adjacency list for every course.
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+The loop over `prerequisites` builds the graph.
+- `course = prerequisite[0]`
+- `preCourse = prerequisite[1]`
+- `graph.get(preCourse).add(course)` records that finishing `preCourse` unlocks `course`.
+- `inDegree[course]++` counts one more required prerequisite.
+
+Next, the code prepares `Queue<Integer> queue = new LinkedList<>();`.
+- Every course with `inDegree[i] == 0` is added to `queue` because it can be taken immediately.
+
+The result array is `int[] order = new int[numCourses];`, and `index` tracks the next insertion position.
+
+The BFS loop runs while `queue` is not empty.
+- `int course = queue.poll();` removes one currently available course.
+- `order[index++] = course;` places it into the final answer.
+
+Then the code visits `for (int nextCourse : graph.get(course))`.
+- Each such course had `course` as a prerequisite.
+- `inDegree[nextCourse]--` removes that requirement.
+- If `inDegree[nextCourse] == 0`, it is now fully unlocked and added to `queue`.
+
+After BFS finishes:
+- If `index != numCourses`, some courses were never processed, so a cycle exists and the method returns `new int[0]`.
+- Otherwise `order` is a valid topological ordering.
+
+### Example Walkthrough
+
+Use Example 2:
+- `numCourses = 4`
+- `prerequisites = [[1,0],[2,0],[3,1],[3,2]]`
+
+Build the graph:
+- `0 -> [1, 2]`
+- `1 -> [3]`
+- `2 -> [3]`
+- `3 -> []`
+
+Initial `inDegree` values:
+- course `0`: `0`
+- course `1`: `1`
+- course `2`: `1`
+- course `3`: `2`
+
+Initial queue:
+- `[0]`
+
+Step 1:
+- Poll `0`
+- `order[0] = 0`
+- Decrement `inDegree[1]` to `0`, enqueue `1`
+- Decrement `inDegree[2]` to `0`, enqueue `2`
+- Queue becomes `[1, 2]`
+
+Step 2:
+- Poll `1`
+- `order[1] = 1`
+- Decrement `inDegree[3]` from `2` to `1`
+- Queue becomes `[2]`
+
+Step 3:
+- Poll `2`
+- `order[2] = 2`
+- Decrement `inDegree[3]` from `1` to `0`, enqueue `3`
+- Queue becomes `[3]`
+
+Step 4:
+- Poll `3`
+- `order[3] = 3`
+
+Final result:
+- `order = [0, 1, 2, 3]`
+
+The example output also lists `[0,2,1,3]` as valid. That is fine because the problem accepts any topological order.
+
+### Key Variables Explained
+
+- `graph`: adjacency list where `graph.get(preCourse)` lists courses unlocked after completing `preCourse`.
+- `inDegree`: remaining prerequisite count for each course.
+- `queue`: all courses currently available to take.
+- `order`: output array storing the computed course sequence.
+- `index`: next write position inside `order`.
+- `course`: the course just removed from the queue.
+- `nextCourse`: a dependent course whose indegree may drop to zero.
+
+### Why This Works
+
+Kahn's algorithm is correct because a node enters the queue only when all incoming edges to it have been removed.
+
+In this code:
+- Incoming edges are represented by `inDegree`.
+- Removing a processed course means decrementing the indegree of every course in `graph.get(course)`.
+- So when `inDegree[nextCourse]` reaches `0`, every prerequisite of `nextCourse` has already appeared earlier in `order`.
+
+If a cycle exists, none of the courses in that cycle can ever reach indegree `0`, so `index` stays smaller than `numCourses`, and the empty-array return is correct.
+
+### Trick Used
+
+The main trick is using indegree counts plus a queue of “currently unlocked” courses, which avoids DFS cycle-state bookkeeping while still detecting impossibility.
+
+### Edge Cases Handled
+
+- No prerequisites: every course starts with indegree `0`, so the code returns all courses in numeric order.
+- Cyclic dependency: if some courses never reach indegree `0`, `index != numCourses` and the method returns `new int[0]`.
+- Multiple valid orders: the queue processes whichever zero-indegree courses were discovered, and any valid resulting order is accepted.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(V+E)`** — each vertex and each edge is processed at most once in the graph traversal.
-- **Space Complexity: `O(V+E)`** — the adjacency list and visited array together use space proportional to vertices + edges.
+- Time Complexity: `O(numCourses + prerequisites.length)`.
+  - Initializing `graph` takes `O(numCourses)`.
+  - Building edges from `prerequisites` takes `O(prerequisites.length)`.
+  - Each course is queued and dequeued at most once, and each edge is processed once in the BFS loop.
+- Space Complexity: `O(numCourses + prerequisites.length)`.
+  - `graph` stores all adjacency lists.
+  - `inDegree`, `queue`, and `order` are all bounded by the number of courses.

@@ -92,23 +92,124 @@ public class ZeroOneMatrix {
 
 ## Explanation
 
+### Problem Analysis
+For every cell containing `1`, we need the distance to the nearest `0`. Running a separate BFS from each `1` would be far too slow because the same grid area would be explored again and again.
+
+This is a standard interview problem for recognizing multi-source BFS: when many starting points are equally valid, start the search from all of them at once.
+
 ### Approach
+The code treats every `0` cell as a BFS source because each `0` already knows its answer: distance `0`.
 
-**01 Matrix** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+It pushes all zero cells into `queue` first, then marks every `1` cell as `-1` to mean “distance not assigned yet.” From there, BFS spreads outward level by level. The first time a `-1` cell is reached, that path is guaranteed to be the shortest route to any zero.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+This is much better than launching a BFS from every `1`, because each cell is finalized once.
+
+### Pattern Used
+Breadth-First Search, specifically multi-source BFS.
+
+### Key Insight
+If BFS starts simultaneously from all `0`s, then the first time a cell is reached, its assigned distance is automatically the minimum distance to the nearest `0`.
 
 ### Code Walkthrough
+The method `updateMatrix(int[][] mat)` begins by reading the grid dimensions into `rows` and `cols`.
 
-The solution is implemented in `updateMatrix(int[][] mat)`:
+Then it creates:
+- `Queue<int[]> queue = new LinkedList<>();`
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+The first nested loop scans every cell:
+- if `mat[i][j] == 0`, the coordinate `{i, j}` is pushed into `queue`
+- otherwise, `mat[i][j] = -1`
+
+That means the input matrix itself is reused as both:
+- the answer matrix, and
+- the visited marker for cells whose distance is not known yet
+
+Next, the code defines the four movement directions:
+- `int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};`
+
+The BFS loop starts with:
+- `while (!queue.isEmpty())`
+
+For each popped `cell`, it extracts:
+- `int r = cell[0];`
+- `int c = cell[1];`
+
+Then each direction in `dirs` is used to compute neighbor coordinates `nr` and `nc`.
+
+This condition is the heart of the traversal:
+- `if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && mat[nr][nc] == -1)`
+
+It ensures the neighbor is:
+- inside the grid, and
+- still unresolved
+
+When that happens, the neighbor distance is assigned by:
+- `mat[nr][nc] = mat[r][c] + 1;`
+
+So a neighbor gets exactly one more than the current cell's distance, and then it is added to `queue` for further expansion.
+
+Finally, the updated `mat` is returned.
+
+### Example Walkthrough
+Use Example 2: `mat = [[0,0,0],[0,1,0],[1,1,1]]`
+
+Initial scan:
+- all zero cells are added to `queue`: `(0,0)`, `(0,1)`, `(0,2)`, `(1,0)`, `(1,2)`
+- all ones become `-1`
+
+The matrix becomes:
+- `[0, 0, 0]`
+- `[0, -1, 0]`
+- `[-1, -1, -1]`
+
+BFS processing:
+- From `(0,1)`, the middle cell `(1,1)` is `-1`, so it becomes `1`
+- From `(1,0)`, the cell `(2,0)` becomes `1`
+- From `(1,2)`, the cell `(2,2)` becomes `1`
+
+Now the matrix is:
+- `[0, 0, 0]`
+- `[0, 1, 0]`
+- `[1, -1, 1]`
+
+Continue BFS:
+- When `(1,1)` is processed, `(2,1)` is still `-1`, so it becomes `2`
+
+Final matrix:
+- `[0, 0, 0]`
+- `[0, 1, 0]`
+- `[1, 2, 1]`
+
+That matches the expected output.
+
+### Key Variables Explained
+- `rows`, `cols`: dimensions of the matrix.
+- `queue`: BFS queue storing cells whose neighbors still need to be processed.
+- `mat[i][j]`: reused in place; holds `0` for sources, `-1` for unresolved cells, and final distances once assigned.
+- `dirs`: the four possible row/column moves.
+- `r`, `c`: current cell removed from the queue.
+- `nr`, `nc`: neighbor coordinates being checked.
+
+### Why This Works
+The queue always processes cells in nondecreasing order of distance from the nearest zero.
+
+- All `0` cells start in the queue with correct distance `0`.
+- Any unresolved neighbor gets assigned `current distance + 1` the first time it is seen.
+- Because BFS explores layer by layer, that first assignment is the shortest possible path to a zero.
+- Marking resolved cells by replacing `-1` prevents revisiting and prevents a longer path from overwriting a shorter one.
+
+So every cell ends up with exactly its minimum distance to any zero.
+
+### Trick Used
+In-place marking with `-1` so the input matrix doubles as both the answer array and the visited structure.
+
+### Edge Cases Handled
+- Cells that are already `0`: they start in `queue` and keep distance `0`.
+- Border and corner cells: boundary checks on `nr` and `nc` prevent out-of-bounds access.
+- Multiple nearest zeros: multi-source BFS still assigns the correct minimum because the first reach is shortest.
+- A matrix where many `1`s depend on the same frontier: `mat[nr][nc] == -1` ensures each cell is processed once.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(rows * cols)` because the initial scan touches every cell once, and each cell can enter the queue at most once during BFS.
+- **Space Complexity:** `O(rows * cols)` in the worst case for the queue when many cells are waiting to be processed.
 
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.

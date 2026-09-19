@@ -68,25 +68,120 @@ public class MeetingRooms2 {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks for the minimum number of rooms needed so that every meeting can be scheduled without overlap. In other words, we need the maximum number of meetings happening at the same time.
+
+It is a common interview question because it tests interval reasoning, overlap detection, and the ability to convert a scheduling problem into an efficient sweep over sorted events.
+
 ### Approach
 
-**Meeting Rooms II** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+Instead of checking every meeting against every other meeting, this solution separates all start times and end times, sorts both lists, and then walks through them with two pointers.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+That lets the code simulate the timeline of meetings:
+
+- when the next meeting starts before the earliest current meeting ends, a new room is needed
+- otherwise, one meeting has already ended, so that room can be reused
+
+This is chosen over brute force because pairwise overlap checks would do unnecessary repeated work, while the sorted timeline view captures exactly when room usage changes.
+
+### Pattern Used
+
+This solution uses the **Two Pointers** pattern on top of sorted start and end times, which is also a form of **sweep line / interval processing**.
+
+### Key Insight
+
+The minimum number of rooms is exactly the largest number of active meetings at any moment, so tracking how `roomCount` changes while scanning sorted starts and ends gives the answer.
 
 ### Code Walkthrough
 
-The solution is implemented in `minMeetingRooms(List<Interval> intervals)`:
+The method starts with a guard clause:
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+- `if (intervals == null || intervals.isEmpty())` returns `0` because no meetings means no rooms
 
-&gt; **Note:** This solution also uses the **greedy — make the locally optimal choice at each step** and **sort intervals by start time, then merge overlapping ones in one pass** techniques.
+Next, it builds two separate lists:
+
+- `startTimes` stores every `interval.start`
+- `endTimes` stores every `interval.end`
+
+The `for (Interval interval : intervals)` loop extracts those values from the input intervals.
+
+Then the code sorts both lists:
+
+- `Collections.sort(startTimes)`
+- `Collections.sort(endTimes)`
+
+After sorting, the method initializes:
+
+- `startPointer` to scan the next meeting start
+- `endPointer` to scan the earliest meeting end
+- `roomCount` for the number of rooms currently in use
+- `maxRooms` for the best answer seen so far
+
+The main work happens in:
+
+- `while (startPointer < intervals.size())`
+
+Inside that loop:
+
+- if `startTimes.get(startPointer) < endTimes.get(endPointer)`, the next meeting begins before the earliest active one ends, so `roomCount++` and `startPointer++`
+- otherwise, a meeting has already ended by the time this start is reached, so `roomCount--` and `endPointer++`
+
+After either branch, `maxRooms = Math.max(maxRooms, roomCount)` records the highest simultaneous room usage seen so far.
+
+Finally, the method returns `maxRooms`.
+
+### Example Walkthrough
+
+This MDX file does not include a concrete example input, so there is no existing example block to trace numerically.
+
+What the code would do on any valid input is:
+
+- place all starts into `startTimes`
+- place all ends into `endTimes`
+- sort both lists
+- move `startPointer` forward whenever a meeting begins
+- move `endPointer` forward whenever a room becomes free
+- keep the largest value ever reached by `roomCount` in `maxRooms`
+
+That is the exact state transition the algorithm uses to compute the answer.
+
+### Key Variables Explained
+
+- `startTimes`: sorted list of when meetings begin
+- `endTimes`: sorted list of when meetings finish
+- `startPointer`: index of the next start event to process
+- `endPointer`: index of the earliest end event not yet consumed
+- `roomCount`: number of rooms currently occupied
+- `maxRooms`: maximum value of `roomCount`, which becomes the final answer
+
+### Why This Works
+
+Once starts and ends are sorted independently, every comparison between `startTimes.get(startPointer)` and `endTimes.get(endPointer)` tells us which event happens next on the timeline.
+
+The algorithm maintains this invariant:
+
+- `roomCount` always equals the number of meetings that have started but not yet ended among the processed events
+
+So:
+
+- a start before the next end must increase active meetings by one
+- an end at or before the next start means one room can be released first
+
+Because `maxRooms` records the peak value of this invariant, it correctly captures the minimum number of rooms required.
+
+### Trick Used
+
+The key trick is splitting intervals into separately sorted `startTimes` and `endTimes` arrays so the code can count overlaps without explicitly storing active meetings in a heap.
+
+### Edge Cases Handled
+
+- `intervals == null`: returns `0`
+- `intervals.isEmpty()`: returns `0`
+- Meetings that end exactly when another starts: handled by the `else` branch, because equality does not require a new room
+- Fully overlapping chains of meetings: `roomCount` keeps increasing and `maxRooms` captures the peak
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n log n)`** because the method fills two lists in `O(n)`, sorts `startTimes` and `endTimes` in `O(n log n)`, and then advances `startPointer` through the meetings once in `O(n)`
+- **Space Complexity: `O(n)`** because `startTimes` and `endTimes` each store `n` values outside the input

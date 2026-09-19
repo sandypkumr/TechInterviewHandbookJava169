@@ -125,25 +125,157 @@ public class MaximumProfitInJobScheduling {
 
 ## Explanation
 
+### Problem Analysis
+
+Each job has a start time, end time, and profit, and we want the maximum total profit from non-overlapping jobs.  
+The difficulty is that a locally profitable job may block a better combination later, so greedy selection alone is not enough.  
+This is a classic interview problem because it combines weighted interval scheduling with binary search and dynamic programming.
+
 ### Approach
 
-**Maximum Profit in Job Scheduling** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The code first converts the input arrays into `Job` objects and sorts them by end time.  
+Then it builds a DP array where `dp[i]` stores the best profit using jobs from index `0` through `i` in the sorted order.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+For each job `i`, there are only two meaningful choices:
+
+- skip it and keep `dp[i - 1]`
+- take it and add its profit to the best compatible job before it
+
+The helper `binarySearch(jobs, i)` finds that last compatible job efficiently, so we avoid scanning backward linearly for every job.
+
+### Pattern Used
+
+Dynamic Programming + Binary Search.
+
+### Key Insight
+
+Once jobs are sorted by end time, the best answer ending at position `i` is the better of skipping `jobs[i]` or taking it plus the best profit from the last non-conflicting job.
 
 ### Code Walkthrough
 
-The solution is implemented in `jobScheduling(int[] startTime, int[] endTime, int[] profit)`:
+The nested `Job` class stores:
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+- `start`
+- `end`
+- `profit`
 
-&gt; **Note:** This solution also uses the **dynamic programming — break into overlapping subproblems and memoize** technique.
+Inside `jobScheduling(int[] startTime, int[] endTime, int[] profit)`:
+
+- `int n = startTime.length;`
+- `Job[] jobs = new Job[n];`
+
+The first `for` loop fills `jobs[i]` with `new Job(startTime[i], endTime[i], profit[i])`.
+
+Next:
+
+- `Arrays.sort(jobs, Comparator.comparingInt(j -> j.end));`
+
+Sorting by `end` is important because it makes compatibility searchable by end time.
+
+Then:
+
+- `int[] dp = new int[n];`
+- `dp[0] = jobs[0].profit;`
+
+So the best profit using only the first sorted job is just that job's profit.
+
+For each later job:
+
+- `int include = jobs[i].profit;`
+- `int lastNonConflict = binarySearch(jobs, i);`
+
+If a compatible earlier job exists:
+
+- `include += dp[lastNonConflict];`
+
+Then the code compares:
+
+- `dp[i] = Math.max(dp[i - 1], include);`
+
+That means:
+
+- either keep the best answer without the current job
+- or include the current job and combine it with the best compatible prefix
+
+Finally:
+
+- `return dp[n - 1];`
+
+The helper `binarySearch(Job[] jobs, int index)` searches in the range `0` to `index - 1` for the last job whose `end <= jobs[index].start`.
+
+- If `jobs[mid].end <= jobs[index].start`, it tries to move right to find a later compatible job.
+- Otherwise, it moves left.
+- Returning `-1` means no earlier job can be paired with the current one.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+- `startTime = [1,2,3,3]`
+- `endTime = [3,4,5,6]`
+- `profit = [50,10,40,70]`
+
+After building and sorting by end time, the jobs stay in this order:
+
+- `(1,3,50)`
+- `(2,4,10)`
+- `(3,5,40)`
+- `(3,6,70)`
+
+Initialize:
+
+- `dp[0] = 50`
+
+For `i = 1`, job `(2,4,10)`:
+
+- `include = 10`
+- `binarySearch(jobs, 1)` returns `-1` because job `0` ends at `3`, which is greater than start `2`
+- `dp[1] = max(50, 10) = 50`
+
+For `i = 2`, job `(3,5,40)`:
+
+- `include = 40`
+- `binarySearch(jobs, 2)` returns `0` because job `0` ends at `3`, which is allowed
+- `include = 40 + dp[0] = 90`
+- `dp[2] = max(50, 90) = 90`
+
+For `i = 3`, job `(3,6,70)`:
+
+- `include = 70`
+- `binarySearch(jobs, 3)` returns `0`
+- `include = 70 + dp[0] = 120`
+- `dp[3] = max(90, 120) = 120`
+
+Return `dp[3] = 120`.
+
+### Key Variables Explained
+
+- `jobs`: combined representation of each job's start, end, and profit.
+- `n`: number of jobs.
+- `dp[i]`: maximum profit considering sorted jobs from `0` through `i`.
+- `include`: profit if the current `jobs[i]` is chosen.
+- `lastNonConflict`: index of the latest earlier job that does not overlap with `jobs[i]`.
+- `low`, `high`, `mid`: binary search pointers inside `binarySearch`.
+
+### Why This Works
+
+After sorting by end time, every valid schedule that uses `jobs[i]` must pair it with jobs that finish no later than `jobs[i].start`.  
+`binarySearch(jobs, i)` finds the latest such job, and `dp[lastNonConflict]` already stores the best profit achievable up to that compatible point.  
+So `include` correctly represents the best schedule that includes `jobs[i]`, while `dp[i - 1]` represents the best schedule that excludes it.  
+Taking `Math.max(dp[i - 1], include)` ensures `dp[i]` is optimal for the prefix ending at `i`.
+
+### Trick Used
+
+Sorting by job end time and then binary-searching the last compatible job instead of scanning backward for every position.
+
+### Edge Cases Handled
+
+- Jobs that touch at endpoints: compatibility uses `jobs[mid].end <= jobs[index].start`, so ending at `X` and starting at `X` is allowed.
+- No compatible earlier job: `binarySearch` returns `-1`, and the code uses only `jobs[i].profit`.
+- A single highly profitable job beating many smaller ones: `Math.max(dp[i - 1], include)` naturally preserves the better choice.
+- Single-job input: `dp[0] = jobs[0].profit` immediately gives the answer.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
-- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).
+- **Time Complexity: `O(n log n)`** — sorting `jobs` costs `O(n log n)`, and the loop runs `n - 1` times with an `O(log n)` `binarySearch` inside.
+- **Space Complexity: `O(n)`** — the `jobs` array and `dp` array both scale linearly with the number of jobs.

@@ -80,23 +80,87 @@ public class BalancedBinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+A binary tree is height-balanced if, at every node, the left and right subtree heights differ by at most `1`. The challenge is not just computing heights, but doing it without recomputing the same subtree heights again and again.
+
+This is a popular interview question because it checks whether you can combine validation and height calculation into one postorder traversal.
+
 ### Approach
+The code uses a bottom-up DFS.
 
-**Balanced Binary Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+- For each node, first compute the height of its left and right subtrees.
+- If either subtree is already unbalanced, immediately propagate failure upward.
+- Otherwise, compare the two heights and return the current subtree height.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+This avoids the brute-force approach where height is recomputed separately for many nodes, which can degrade to `O(n^2)`.
+
+### Pattern Used
+This solution uses **postorder DFS recursion**.
+
+### Key Insight
+Return the subtree height when it is balanced, and return `-1` as a sentinel as soon as any imbalance is found.
 
 ### Code Walkthrough
+The public method is `isBalanced(TreeNode root)`.
 
-The solution is implemented in `isBalanced(TreeNode root)`:
+- It calls `checkBalance(root) != -1`.
+- That means the helper does two jobs at once:
+  - returns a valid height when the subtree is balanced,
+  - returns `-1` when the subtree is not balanced.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+Inside `checkBalance(TreeNode node)`:
+
+- `if (node == null) { return 0; }`
+  - An empty subtree has height `0` and is balanced.
+- `int leftHeight = checkBalance(node.left);`
+  - Recursively compute the left subtree height.
+- `if (leftHeight == -1) { return -1; }`
+  - If the left subtree is already unbalanced, stop immediately.
+- `int rightHeight = checkBalance(node.right);`
+  - Compute the right subtree height only if the left side was valid.
+- `if (rightHeight == -1) { return -1; }`
+  - Propagate right-side failure upward as well.
+- `if (Math.abs(leftHeight - rightHeight) > 1) { return -1; }`
+  - The current node breaks the balance condition.
+- `return Math.max(leftHeight, rightHeight) + 1;`
+  - Otherwise return the current subtree height.
+
+### Example Walkthrough
+Use **Example 2**: `root = [1,2,2,3,3,null,null,4,4]`.
+
+Starting from the bottom:
+- Leaf nodes `4` and `4` return height `1`.
+- Their parent `3` sees `leftHeight = 1` and `rightHeight = 1`, so it returns `2`.
+- The next node `3` above it has one subtree of height `2` and the other of height `0`.
+- `Math.abs(2 - 0) = 2`, which is greater than `1`.
+- So that node returns `-1`.
+- Once `-1` is returned, every caller immediately propagates `-1` upward.
+- Finally, `isBalanced(root)` checks `checkBalance(root) != -1`, which becomes `false`.
+
+### Key Variables Explained
+- `root`: the original tree root checked by `isBalanced`.
+- `node`: the current subtree root in `checkBalance`.
+- `leftHeight`: height of `node.left`, or `-1` if that subtree is unbalanced.
+- `rightHeight`: height of `node.right`, or `-1` if that subtree is unbalanced.
+- `-1`: sentinel value meaning “this subtree is not balanced.”
+
+### Why This Works
+The recursion processes children before their parent, so when a node is evaluated, both subtree heights are already known. If either child subtree is unbalanced, the parent must also be unbalanced, so returning `-1` upward is correct.
+
+If both subtrees are balanced and their height difference is at most `1`, then the current subtree is balanced, and its correct height is `max(leftHeight, rightHeight) + 1`. This invariant holds for every node, so the final boolean answer is correct.
+
+### Trick Used
+The trick is the **sentinel value `-1` to combine balance checking and height computation in one traversal**.
+
+### Edge Cases Handled
+- Empty tree: `checkBalance(null)` returns `0`, so `isBalanced` returns `true`.
+- Leaf nodes: both child calls return `0`, so the leaf height becomes `1`.
+- Unbalance deep in one subtree: early `-1` propagation prevents unnecessary work above it.
+- Trees balanced on one side and shallow on the other: handled by `Math.abs(leftHeight - rightHeight) > 1`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)`**
+  - Each node is visited once, and only constant work is done per visit.
+- **Space Complexity: `O(h)`**
+  - The extra space is the recursion stack for height `h`.
+  - In the worst skewed tree, this can become `O(n)`.

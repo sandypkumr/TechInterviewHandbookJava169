@@ -69,23 +69,104 @@ public class GenerateParentheses {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to generate every well-formed string that can be built from `n` pairs of parentheses. The main challenge is that many possible strings are invalid, so generating everything and filtering later would waste a lot of work.
+
+It is a classic interview problem because it tests recursive state building, pruning, and the ability to encode validity constraints during generation.
+
 ### Approach
+The brute-force approach would generate all `2^(2n)` strings of length `2n` made from `'('` and `')'`, then keep only the valid ones. This solution is much better because it builds only prefixes that can still become valid.
 
-**Generate Parentheses** requires enumerating all valid combinations/permutations/subsets. Backtracking systematically tries every candidate and immediately abandons ("prunes") any branch that cannot possibly lead to a valid solution, making it far faster than brute-force enumeration in practice.
+The recursive method tracks:
+- `current`: the string built so far
+- `open`: how many `'('` have been used
+- `close`: how many `')'` have been used
+- `max`: the total number of pairs allowed
 
-Think of solving a sudoku: you place a digit, recursively try to solve the rest, and if you reach a contradiction you erase that digit (backtrack) and try the next. The key is that pruning can cut enormous branches of the search tree early.
+At each step:
+- add `'('` only if `open < max`
+- add `')'` only if `close < open`
+
+Those two rules guarantee that every recursive branch stays valid.
+
+### Pattern Used
+The solution uses **Backtracking**.
+
+### Key Insight
+A partial string is only worth exploring if it never uses more than `n` opening brackets and never lets closing brackets exceed opening brackets.
 
 ### Code Walkthrough
+`generateParenthesis(int n)` creates `List<String> result = new ArrayList<>()`, then starts recursion with:
+- `current = ""`
+- `open = 0`
+- `close = 0`
+- `max = n`
 
-The solution is implemented in `generateParenthesis(int n)`:
+The helper `backtrack(List<String> result, String current, int open, int close, int max)` does all the work.
 
-1. Define what constitutes a valid complete solution (base case).
-2. At each step, iterate over all possible next choices.
-3. Apply a choice (mutate state), then recurse.
-4. After recursion returns, undo the choice (backtrack) to restore state.
-5. Apply a pruning condition to skip choices that cannot lead to a valid solution.
+Base case:
+- if `current.length() == max * 2`, the string has used all `n` pairs
+- add `current` to `result`
+- return
+
+First recursive choice:
+- if `open < max`, call `backtrack(result, current + "(", open + 1, close, max)`
+- this means we can still place another opening bracket
+
+Second recursive choice:
+- if `close < open`, call `backtrack(result, current + ")", open, close + 1, max)`
+- this ensures we never create an invalid prefix like `")("` or `"())"` midway
+
+Because `current` is passed as a new string each time, there is no explicit undo step in the code. Each recursive call simply receives its own version of the partial answer.
+
+### Example Walkthrough
+Use Example 1 with `n = 3`.
+
+Start:
+- `current = ""`, `open = 0`, `close = 0`
+
+From there:
+- add `'('` → `current = "("`, `open = 1`, `close = 0`
+- add `'('` again → `"(("`, `open = 2`
+- add `'('` again → `"((("`, `open = 3`
+- now `open == max`, so only `')'` is allowed
+- add `')'` three times to reach `"((()))"`, length `6`
+- base case adds `"((()))"` to `result`
+
+Backtracking explores the next valid branches:
+- from `"(("`, it can choose `')'` to form `"(()"`
+- that leads to `"(()())"` and `"(())()"`
+- from `"("`, another valid branch leads to `"()(())"` and `"()()()"`
+
+Invalid prefixes are never built:
+- the code never adds `')'` when `close == open`
+- so strings like `")..."` or `"())..."` do not appear in the recursion tree
+
+That produces exactly the example output list.
+
+### Key Variables Explained
+- `result`: collects all complete valid strings
+- `current`: the partial parenthesis string for the current recursive state
+- `open`: number of opening parentheses already used in `current`
+- `close`: number of closing parentheses already used in `current`
+- `max`: target number of pairs, equal to `n`
+
+### Why This Works
+The recursion maintains two invariants:
+- `open` never exceeds `max`, so we never use too many `'('`
+- `close` never exceeds `open`, so every prefix remains balanced enough to still be completable
+
+Once `current.length() == max * 2`, the string contains exactly `n` openings and `n` closings and has never violated prefix validity, so it must be well formed. Since every valid choice is explored, all valid combinations are generated.
+
+### Trick Used
+The key trick is **pruning invalid prefixes early with `open < max` and `close < open`**.
+
+### Edge Cases Handled
+- `n = 1`: recursion quickly builds only `"()"`
+- No invalid starting `')'`: prevented because `close < open` is false at the beginning
+- No overuse of `'('`: prevented by `open < max`
+- No incomplete strings added: only strings with length `max * 2` are pushed into `result`
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(4^n / sqrt(n))`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity:** `O(C_n * n)`, where `C_n` is the `n`th Catalan number, because the algorithm generates each valid string and each completed string has length `2n`; this is commonly written as `O(4^n / sqrt(n))` up to polynomial factors
+- **Space Complexity:** `O(n)` auxiliary recursion depth, since at most `2n` characters are on the current path; the output list itself requires `O(C_n * n)` space to store all generated strings

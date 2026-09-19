@@ -65,23 +65,78 @@ public class SymmetricTree {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks whether the left half of the tree is a mirror image of the right half. A valid answer requires both value symmetry and shape symmetry.
+
+It is a classic interview problem because it tests whether you can reason about two recursive pointers moving through a tree in mirrored positions.
+
 ### Approach
+Instead of comparing nodes on the same side, the code compares opposite sides of the tree at the same time. The left child of one side must match the right child of the other side, and vice versa.
 
-**Symmetric Tree** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+This avoids unnecessary storage or level-order bookkeeping. A recursive mirror check is the most natural way to encode the definition of symmetry.
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Pattern Used
+This solution uses **Depth-First Search (DFS)** with mirrored recursion.
+
+### Key Insight
+A tree is symmetric exactly when **every pair of mirrored nodes has the same value and their outer and inner children also mirror each other**.
 
 ### Code Walkthrough
+`isSymmetric(TreeNode root)` is the entry point.
 
-The solution is implemented in `isSymmetric(TreeNode root)`:
+- `return isMirror(root.left, root.right);`
+  - The tree is symmetric if the left and right subtrees of the root mirror each other.
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+`isMirror(TreeNode left, TreeNode right)` performs the actual comparison.
+
+- `if (left == null && right == null) { return true; }`
+  - Two empty mirrored positions are symmetric.
+- `if (left == null || right == null) { return false; }`
+  - If only one side exists, the shape is not mirrored.
+- `return left.val == right.val && isMirror(left.left, right.right) && isMirror(left.right, right.left);`
+  - The current values must match.
+  - `left.left` is compared with `right.right` for the outer mirror.
+  - `left.right` is compared with `right.left` for the inner mirror.
+
+### Example Walkthrough
+Use **Example 1**:
+
+- `root = [1,2,2,3,4,4,3]`
+
+Step by step:
+
+- `isSymmetric(root)` calls `isMirror(root.left, root.right)`.
+- First comparison: nodes `2` and `2`.
+  - values match, so continue.
+- Outer comparison: `isMirror(3, 3)`.
+  - values match.
+  - their children are mirrored `null` pairs, so this returns `true`.
+- Inner comparison: `isMirror(4, 4)`.
+  - values match.
+  - their children are mirrored `null` pairs, so this also returns `true`.
+- Since both mirrored branches are `true`, the whole tree is symmetric.
+
+So the method returns `true`, which matches the example output.
+
+### Key Variables Explained
+- `root`: the original tree root; its left and right children start the mirror check.
+- `left`: the current node from the left side of the tree.
+- `right`: the current node from the right side of the tree.
+
+### Why This Works
+The recursive invariant is: `isMirror(left, right)` returns `true` only if the subtree rooted at `left` is the mirror image of the subtree rooted at `right`. The base cases correctly handle empty positions and shape mismatches.
+
+The recursive calls preserve the mirror relationship by pairing `left.left` with `right.right` and `left.right` with `right.left`. If every mirrored pair satisfies that condition, the whole tree is symmetric.
+
+### Trick Used
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+- Mirrored `null` children on both sides: treated as symmetric by the first base case.
+- One side missing and the other present: rejected by `if (left == null || right == null)`.
+- Value mismatch at mirrored positions: rejected by `left.val == right.val`.
+- A single-node tree works because both `root.left` and `root.right` are `null`, so `isMirror` returns `true`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity:** `O(n)` because each node is visited once through the mirror recursion.
+- **Space Complexity:** `O(h)` for the recursion stack, where `h` is the height of the tree. In the worst case of a skewed tree, this can be `O(n)`.

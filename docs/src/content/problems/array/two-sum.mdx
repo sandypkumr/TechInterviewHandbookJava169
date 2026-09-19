@@ -75,23 +75,90 @@ public class TwoSum {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the indices of two numbers whose values add up to `target`. The important detail is that the answer must use two different positions, and the problem guarantees exactly one valid pair.
+
+It is one of the most common interview warm-up questions because it checks whether you can reduce a nested-loop search to constant-time lookups with a hash map.
+
 ### Approach
+The brute-force solution checks every pair and costs `O(n^2)`. This implementation scans the array once and remembers previously seen numbers in a map.
 
-The key insight for **Two Sum** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+For each `nums[i]`, the code computes the needed complement `diff = target - nums[i]`.
+- If `diff` is already in `numMap`, the answer has been found.
+- Otherwise, the current value and index are stored for later elements.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+This works because any valid pair can be detected the moment the second number is reached.
+
+### Pattern Used
+Hash Map.
+
+### Key Insight
+Instead of searching the rest of the array for a complement, store earlier values in `numMap` so each complement check becomes an `O(1)` lookup.
 
 ### Code Walkthrough
+Inside `twoSum(int[] nums, int target)`:
 
-The solution is implemented in `twoSum(int[] nums, int target)`:
+- `int[] result = new int[2];` prepares the answer array.
+- `Map<Integer, Integer> numMap = new HashMap<>();` stores `value -> index` for numbers already processed.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+Then the loop `for (int i = 0; i < nums.length; i++)` examines each number.
+
+For each index:
+- `int diff = target - nums[i];` computes the matching value needed.
+- `if (numMap.containsKey(diff))` checks whether that complement appeared earlier.
+- If it did:
+  - `result[0] = numMap.get(diff);`
+  - `result[1] = i;`
+  - `return result;`
+
+If not found yet:
+- `numMap.put(nums[i], i);` records the current number and its index.
+
+If the loop somehow finishes without finding a pair, the method returns `null`. In normal problem constraints, that fallback should never be used because one solution is guaranteed.
+
+### Example Walkthrough
+Use Example 1: `nums = [2,7,11,15]`, `target = 9`.
+
+Initial state:
+- `numMap = {}`
+
+- `i = 0`, `nums[0] = 2`
+  - `diff = 9 - 2 = 7`
+  - `7` is not in `numMap`
+  - store `2 -> 0`
+  - `numMap = {2=0}`
+
+- `i = 1`, `nums[1] = 7`
+  - `diff = 9 - 7 = 2`
+  - `2` is in `numMap` at index `0`
+  - set `result[0] = 0`, `result[1] = 1`
+  - return `[0,1]`
+
+That matches the expected output.
+
+For Example 3, `nums = [3,3]`, the first `3` is stored, and the second `3` finds it as the complement, so duplicate values are handled correctly.
+
+### Key Variables Explained
+- `result`: array of size `2` that stores the answer indices.
+- `numMap`: maps a number already seen to its index.
+- `i`: current index in the loop.
+- `diff`: complement needed so that `nums[i] + diff == target`.
+- `target`: required sum given by the problem.
+
+### Why This Works
+Before processing index `i`, `numMap` contains exactly the numbers from earlier positions. If the correct partner for `nums[i]` appears earlier, `numMap.containsKey(diff)` finds it immediately.
+
+Checking the map before inserting `nums[i]` is also important: it prevents the same element from being matched with itself. Because the problem guarantees exactly one solution, returning as soon as the complement is found is correct.
+
+### Trick Used
+Check `numMap` before calling `numMap.put(nums[i], i)` so the same array element is never reused.
+
+### Edge Cases Handled
+- Duplicate values, such as `[3,3]`: the first index is stored and the second finds it.
+- Solution appearing early: the method returns immediately once the pair is found.
+- Negative numbers or zero: handled naturally because the complement formula still works.
+- No-solution fallback: `return null` covers inputs outside the stated guarantee.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity: `O(n)`** — the loop runs once over `nums`, and each map lookup or insertion is `O(1)` amortized.
+- **Space Complexity: `O(n)`** — in the worst case, `numMap` stores nearly every element before the answer is found.

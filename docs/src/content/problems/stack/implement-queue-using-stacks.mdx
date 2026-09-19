@@ -101,20 +101,110 @@ public class ImplementQueueUsingStacks {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks us to simulate queue behavior, which is FIFO, using only stack operations, which are naturally LIFO. The challenge is not just storing values, but making sure `push`, `pop`, `peek`, and `empty` all behave exactly like a real queue.
+
+This is a common interview topic because it tests whether you understand how to combine simple data structures to recreate a different access pattern.
+
 ### Approach
 
-**Implement Queue using Stacks** is a stack problem. The solution iterates over the input using a queue/stack loop, applying the appropriate data structure (Stack) to achieve the target complexities of `O(1) amortized` time and `O(n)` space.
+The code uses two stacks:
+
+- `stack1` collects newly pushed elements.
+- `stack2` serves elements in queue order.
+
+Instead of reordering elements on every `push`, the solution delays the transfer until `pop()` or `peek()` needs the front element and `stack2` is empty. That lazy transfer is what avoids the brute-force cost of moving elements back and forth on every operation.
+
+### Pattern Used
+
+This solution primarily relies on **stack simulation / amortized design** using two stacks.
+
+### Key Insight
+
+If all elements are moved from `stack1` to `stack2` only when `stack2` becomes empty, their order is reversed exactly once, which makes the oldest inserted element appear on top of `stack2`.
 
 ### Code Walkthrough
 
-The solution is implemented in `push(int x)`:
+The constructor creates two empty stacks:
 
-1. **Initialise** the necessary data structures.
-2. **Iterate** over the input using a queue/stack loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+- `stack1 = new Stack<>();`
+- `stack2 = new Stack<>();`
+
+In `push(int x)`, the code simply does `stack1.push(x)`. That keeps insertion cheap and postpones any expensive work.
+
+In `pop()`:
+
+- If `stack2.isEmpty()`, the code moves everything from `stack1` into `stack2` with:
+  - `while (!stack1.isEmpty()) { stack2.push(stack1.pop()); }`
+- After that transfer, the front queue element is on top of `stack2`.
+- `return stack2.pop();` removes and returns that front element.
+
+In `peek()`:
+
+- It uses the same transfer logic when `stack2` is empty.
+- Instead of removing the value, it returns `stack2.peek()`.
+
+In `empty()`:
+
+- The queue is empty only when both stacks are empty.
+- That is why the code returns `stack1.isEmpty() && stack2.isEmpty()`.
+
+### Example Walkthrough
+
+Using the given sequence:
+
+- `push(1)`  
+  - `stack1 = [1]`, `stack2 = []`
+- `push(2)`  
+  - `stack1 = [1, 2]`, `stack2 = []`
+- `peek()`  
+  - `stack2` is empty, so transfer from `stack1` to `stack2`
+  - move `2`, then `1`
+  - now `stack1 = []`, `stack2 = [2, 1]`
+  - `stack2.peek()` returns `1`
+- `pop()`  
+  - `stack2` is not empty, so no transfer is needed
+  - `stack2.pop()` returns `1`
+  - queue now effectively contains only `2`
+- `empty()`  
+  - `stack1` is empty, but `stack2` still contains `2`
+  - result is `false`
+
+That matches the expected output.
+
+### Key Variables Explained
+
+- `stack1`: holds the newest elements in insertion order.
+- `stack2`: holds elements in the order needed for queue removal and front access.
+- `x`: the value passed into `push(int x)`.
+
+The important state change is that elements move from `stack1` to `stack2` only when `stack2` runs out.
+
+### Why This Works
+
+At any moment:
+
+- values still in `stack2` are the oldest queue elements that must be served first,
+- values in `stack1` are newer elements waiting for their turn.
+
+When `stack2` becomes empty, transferring all elements from `stack1` reverses their order. That reversal makes the oldest among them appear on top, which restores FIFO behavior. Because the code never mixes partial transfer logic, the queue order stays correct across all operations.
+
+### Trick Used
+
+The main trick is **lazy transfer**: move elements from `stack1` to `stack2` only when `stack2` is empty.
+
+### Edge Cases Handled
+
+- Multiple consecutive `push()` calls: all new values safely accumulate in `stack1`.
+- Repeated `pop()` or `peek()` calls: as long as `stack2` still has items, no unnecessary transfer happens.
+- Empty-state check: `empty()` correctly handles cases where one stack is empty and the other is not.
+
+The code assumes `pop()` and `peek()` are called only when the queue is valid to read, which matches the problem contract.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(1) amortized`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(1)` amortized per operation**  
+  `push()` is always `O(1)`. A single call to `pop()` or `peek()` can trigger a transfer that takes `O(n)`, but each element is moved from `stack1` to `stack2` at most once and popped at most once overall, so across many operations the average cost is `O(1)` each.
+- **Space Complexity: `O(n)`**  
+  Across `stack1` and `stack2`, the queue stores at most `n` elements total.

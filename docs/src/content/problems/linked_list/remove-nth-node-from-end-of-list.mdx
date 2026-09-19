@@ -83,23 +83,100 @@ public class RemoveNthNodeFromEndOfList {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks us to delete the `n`th node from the end of a singly linked list and return the updated head. The follow-up asks for a one-pass solution, which means we should avoid first computing the total length.
+
+This is a standard interview problem because it tests whether you can manage pointer gaps carefully and handle head deletion cleanly.
+
 ### Approach
+A two-pass solution would first count the nodes, then walk again to the node just before the one we want to remove. This solution is better because it does the job in one traversal using two pointers.
 
-**Remove Nth Node From End of List** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+The idea is to keep `first` and `second` separated by `n + 1` nodes. Then, when `first` reaches the end, `second` will be just before the node that must be removed.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+### Pattern Used
+This solution uses the **Two Pointers** pattern with a fixed gap, plus a dummy node.
+
+### Key Insight
+Advancing `first` exactly `n + 1` steps from `dummy` guarantees that `second` lands on the predecessor of the target node when `first` becomes `null`.
 
 ### Code Walkthrough
+The method `removeNthFromEnd(ListNode head, int n)` starts by creating:
+- `ListNode dummy = new ListNode(0);`
+- `dummy.next = head;`
 
-The solution is implemented in `removeNthFromEnd(ListNode head, int n)`:
+This extra node is important because it lets the code remove the original head node using the same logic as any other node.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+Then it initializes:
+- `ListNode first = dummy;`
+- `ListNode second = dummy;`
+
+Next comes the gap-creation loop:
+- `for (int i = 0; i <= n; i++) { first = first.next; }`
+
+Because the loop runs from `0` through `n`, `first` moves `n + 1` times ahead of `second`.
+
+After that, the main traversal runs:
+- `while (first != null)`
+- inside it, both pointers move one step:
+  - `first = first.next;`
+  - `second = second.next;`
+
+When this loop ends, `second` is exactly one node before the node to remove.
+
+The deletion is done by:
+- `second.next = second.next.next;`
+
+That skips the target node.
+
+Finally, the method returns `dummy.next`, which is the possibly updated head.
+
+### Example Walkthrough
+Use Example 1:
+- `head = [1,2,3,4,5]`
+- `n = 2`
+
+Initial state:
+- `dummy -> 1 -> 2 -> 3 -> 4 -> 5`
+- `first = dummy`
+- `second = dummy`
+
+Move `first` ahead `n + 1 = 3` steps:
+- step 1: `first = 1`
+- step 2: `first = 2`
+- step 3: `first = 3`
+
+Now move both pointers together:
+- move 1: `first = 4`, `second = 1`
+- move 2: `first = 5`, `second = 2`
+- move 3: `first = null`, `second = 3`
+
+Now `second.next` is node `4`, which is the 2nd node from the end.
+- `second.next = second.next.next` changes `3 -> 4 -> 5` into `3 -> 5`
+- result is `[1,2,3,5]`
+
+For Example 2, `head = [1]` and `n = 1`, so `second` stays on `dummy` and the only node is removed. For Example 3, `head = [1,2]`, `n = 1`, so the last node is skipped and `[1]` remains.
+
+### Key Variables Explained
+- `dummy`: artificial node before `head`, used to simplify removal logic.
+- `first`: leading pointer that creates the `n + 1` node gap.
+- `second`: trailing pointer that eventually stops right before the target node.
+- `n`: how far from the end the node to remove is.
+
+### Why This Works
+The invariant after the `for` loop is that `first` is exactly `n + 1` nodes ahead of `second`. The `while` loop preserves that gap while both pointers move forward together.
+
+So when `first` reaches `null`, `second` must be immediately before the `n`th node from the end. Reassigning `second.next` to `second.next.next` removes exactly that node, and returning `dummy.next` correctly handles whether or not the head changed.
+
+### Trick Used
+Using a **dummy node** is the key trick because it makes removing the head node follow the same pointer-update rule as every other case.
+
+### Edge Cases Handled
+- Removing the head node: `dummy` allows `second` to stay before `head`, so deletion still works.
+- Removing the last node: `second.next = second.next.next` sets the previous node's `next` to `null`.
+- Single-node list: the method returns `null` after skipping the only node.
+- Valid `n` equal to list length: the code correctly removes the first real node.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(n)`, because `first` is advanced a total of at most the list length plus one, and then both pointers move through the remaining list once.
+- **Space Complexity:** `O(1)`, because only `dummy`, `first`, and `second` are used beyond the input list.
 
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

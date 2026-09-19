@@ -88,23 +88,125 @@ public class TimeBasedKeyValueStore {
 
 ## Explanation
 
+### Problem Analysis
+
+We must support multiple values for the same key at different timestamps, then answer queries for the most recent value whose timestamp is less than or equal to the requested time. So this is not just key lookup; it is key lookup plus ordered historical lookup.
+
+This is a frequent interview design problem because it mixes data-structure choice with efficient retrieval under ordering constraints.
+
 ### Approach
 
-**Time Based Key-Value Store** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The code stores each key in a `HashMap`, and for that key it keeps a `TreeMap<Integer, String>` from timestamp to value. That gives fast access to one key and fast ordered lookup within that key's timeline.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+This is better than brute force because scanning all older timestamps for a key would be too slow when many operations are performed. `TreeMap.floorEntry(timestamp)` directly gives the latest valid timestamp.
+
+### Pattern Used
+
+Primarily relies on Hash Map + Balanced BST (`TreeMap`) lookup.
+
+### Key Insight
+
+For each key, the only value we need during `get` is the greatest stored timestamp that does not exceed the query timestamp, which is exactly what `floorEntry` returns.
 
 ### Code Walkthrough
 
-The solution is implemented in `set(String key, String value, int timestamp)`:
+The class declares:
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+```java
+private Map<String, TreeMap<Integer, String>> map;
+```
+
+This means:
+
+- the outer `map` locates a key quickly
+- the inner `TreeMap` keeps that key's timestamps sorted
+
+The constructor initializes the outer map:
+
+```java
+map = new HashMap<>();
+```
+
+In `set(String key, String value, int timestamp)`, the code does:
+
+```java
+map.computeIfAbsent(key, k -> new TreeMap<>()).put(timestamp, value);
+```
+
+That line has two jobs:
+
+- create a new `TreeMap` if `key` has never been seen before
+- store `value` at `timestamp` for that key
+
+In `get(String key, int timestamp)`:
+
+1. If `key` does not exist in `map`, return `""`.
+2. Otherwise fetch that key's `TreeMap` into `tree`.
+3. Call `tree.floorEntry(timestamp)` to find the closest timestamp `<= timestamp`.
+4. If such an entry exists, return `entry.getValue()`.
+5. If not, return `""`.
+
+### Example Walkthrough
+
+Use the given example operations:
+
+```text
+set("foo", "bar", 1)
+get("foo", 1)
+get("foo", 3)
+set("foo", "bar2", 4)
+get("foo", 4)
+get("foo", 5)
+```
+
+Step by step:
+
+1. `set("foo", "bar", 1)`
+   - `map` becomes:
+     - `"foo" -> {1 = "bar"}`
+2. `get("foo", 1)`
+   - `tree.floorEntry(1)` returns `(1, "bar")`
+   - answer is `"bar"`
+3. `get("foo", 3)`
+   - timestamps for `"foo"` are still `{1 = "bar"}`
+   - `tree.floorEntry(3)` still returns `(1, "bar")`
+   - answer is `"bar"`
+4. `set("foo", "bar2", 4)`
+   - `map` becomes:
+     - `"foo" -> {1 = "bar", 4 = "bar2"}`
+5. `get("foo", 4)`
+   - `tree.floorEntry(4)` returns `(4, "bar2")`
+   - answer is `"bar2"`
+6. `get("foo", 5)`
+   - `tree.floorEntry(5)` also returns `(4, "bar2")`
+   - answer is `"bar2"`
+
+### Key Variables Explained
+
+- `map`: outer `HashMap` from a key like `"foo"` to that key's full timestamp history.
+- `TreeMap<Integer, String>`: sorted timeline for one specific key.
+- `tree`: local reference to the selected key's `TreeMap` inside `get`.
+- `entry`: result of `tree.floorEntry(timestamp)`, which represents the most recent valid timestamp-value pair.
+
+### Why This Works
+
+For each key, all of its versions are stored in sorted timestamp order inside a `TreeMap`. During `get`, any answer must come from that key's own timeline, and among valid timestamps we specifically need the largest one that is still `<= timestamp`.
+
+`floorEntry` returns exactly that candidate, so the returned value is correct. If there is no such candidate, returning `""` is also correct.
+
+### Trick Used
+
+Using `TreeMap.floorEntry(timestamp)` avoids implementing manual binary search while still getting the exact predecessor timestamp in sorted order.
+
+### Edge Cases Handled
+
+- **Key was never inserted**: `if (!map.containsKey(key)) return "";`
+- **Query timestamp earlier than the first stored timestamp**: `floorEntry` returns `null`, so the method returns `""`.
+- **Multiple updates for the same key**: each timestamp is stored in that key's `TreeMap`, and later queries can retrieve the latest valid one.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity:**  
+  - `set`: `O(log k)` for inserting into that key's `TreeMap`, where `k` is the number of timestamps stored for that key  
+  - `get`: `O(log k)` for `floorEntry(timestamp)`
+- **Space Complexity: `O(n)`** — across all keys, the data structure stores one entry per `set` call.

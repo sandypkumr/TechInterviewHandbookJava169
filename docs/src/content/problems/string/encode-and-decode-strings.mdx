@@ -84,20 +84,83 @@ public class EncodeAndDecodeStrings {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks us to convert a list of strings into one encoded string and later recover the exact original list.
+The challenge is not just joining strings together, but doing it in a way that still works when strings contain spaces, punctuation, or even the delimiter character.
+This is a common interview topic because it tests robust string encoding design rather than raw algorithmic speed.
 
-**Encode and Decode Strings** is a string problem. The solution iterates over the input using a while loop with two pointers, applying the appropriate data structure (ArrayList, StringBuilder, Integer.parseInt) to achieve the target complexities of `O(n)` time and `O(n)` space.
+### Approach
+The code uses length-prefixed encoding.
+For each string, it writes its length, then a separator `'#'`, then the string content itself.
+During decoding, it reads characters until `'#'` to get the length, then takes exactly that many characters as the next original string.
+This is more reliable than using only a delimiter, because the string itself may contain that delimiter.
+
+### Pattern Used
+This solution primarily relies on direct iteration and string parsing.
+
+### Key Insight
+Once each string is stored as `length + '#' + content`, the decoder always knows exactly where the next string begins and ends.
 
 ### Code Walkthrough
+The `encode(String[] strs)` method builds the output with `StringBuilder sb = new StringBuilder()`.
+Then the loop `for (String str : strs)` processes every input string.
+For each `str`, the code appends three pieces in order:
+- `str.length()`
+- `'#'`
+- `str`
 
-The solution is implemented in `encode(String[] strs)`:
+So `"Hello"` becomes `"5#Hello"`, and all such pieces are concatenated into one encoded string.
+Finally, `return sb.toString()` returns the full payload.
 
-1. **Initialise** the necessary data structures (`sb`, `i`, `j`).
-2. **Iterate** over the input using a while loop with two pointers.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+The `decode(String s)` method reconstructs the list.
+It starts with `int i = 0` and `List<String> result = new ArrayList<>()`.
+The loop `while (i < s.length())` keeps decoding one string at a time.
+
+Inside the loop:
+- `int j = s.indexOf('#', i)` finds the separator for the current length field.
+- `int length = Integer.parseInt(s.substring(i, j))` converts the digits before `'#'` into the string length.
+- `result.add(s.substring(j + 1, j + 1 + length))` extracts exactly that many characters as the original string.
+- `i = j + 1 + length` jumps to the next encoded segment.
+
+When `i` reaches the end of `s`, all strings have been decoded.
+
+### Example Walkthrough
+Use the example input `["Hello", "World", "this is a test"]`.
+
+Encoding:
+- Start with `sb = ""`.
+- Append `"Hello"` as `5#Hello`, so `sb = "5#Hello"`.
+- Append `"World"` as `5#World`, so `sb = "5#Hello5#World"`.
+- Append `"this is a test"` as `14#this is a test`, so the final encoded string is `"5#Hello5#World14#this is a test"`.
+
+Decoding that string:
+- `i = 0`, `j` finds `'#'` after `5`, so `length = 5`; extract `"Hello"`; move `i` to `7`.
+- `i = 7`, `j` finds the next `'#'`; `length = 5`; extract `"World"`; move `i` forward again.
+- `i` now points to `14`; parse `length = 14`; extract `"this is a test"`.
+- `i` reaches the end, so `result = ["Hello", "World", "this is a test"]`.
+
+### Key Variables Explained
+- `sb`: accumulates the encoded output string.
+- `str`: the current input string being encoded.
+- `i`: current reading position while decoding.
+- `j`: index of the next `'#'`, which separates the length prefix from the content.
+- `length`: number of characters that belong to the current decoded string.
+- `result`: list collecting the decoded strings.
+
+### Why This Works
+Every encoded piece contains its own size before the content starts.
+That means decoding never has to guess where a string ends, even if the content contains spaces or `'#'` characters.
+Because `i` always moves to the exact start of the next segment, the decoder partitions the encoded string into the same strings that the encoder wrote.
+
+### Trick Used
+The trick is length-prefix encoding: the delimiter marks where the length ends, and the parsed length tells the decoder exactly how many characters to read next.
+
+### Edge Cases Handled
+- Empty input array: the `for` loop in `encode` adds nothing, so the encoded result is `""`.
+- Empty encoded string: in `decode`, `while (i < s.length())` never runs, so an empty list is returned.
+- Empty individual strings: they are encoded as `0#`, which still decodes correctly.
+- Strings containing spaces or `'#'`: decoding relies on the parsed `length`, not on searching for content delimiters.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(T)`** — across `encode` and `decode`, each character is appended, scanned, or extracted a constant number of times, where `T` is the total number of characters involved.
+- **Space Complexity: `O(T)`** — the encoded string and decoded output together store characters proportional to the total input size.

@@ -69,22 +69,75 @@ public class LongestCommonPrefix {
 
 ## Explanation
 
+### Problem Analysis
+We need the longest prefix shared by every string in the array.
+The answer can only get shorter as we compare more strings, so the main task is to keep trimming a candidate prefix until every string agrees with it.
+This is a popular interview question because it looks simple but rewards careful boundary handling and efficient prefix checking.
+
 ### Approach
+The code starts with the entire first string as the current candidate prefix.
+Then it compares that candidate against each later string.
+If the current string does not start with `prefix`, the code removes the last character from `prefix` and tries again.
+That continues until the current string starts with `prefix` or `prefix` becomes empty.
+This is better than checking every possible prefix from scratch for every string.
 
-**Longest Common Prefix** requires repeated range-sum queries. Computing each sum from scratch is O(n) per query; a prefix sum array precomputes cumulative totals so any range sum [l, r] reduces to prefixSum[r] - prefixSum[l - 1] — a single O(1) subtraction.
+### Pattern Used
+This solution primarily relies on direct iteration with progressive prefix reduction.
 
-Imagine a running tally of rainfall: instead of adding up each day's rain for every query, you keep a running total. The rain from day l to day r is simply totalUpToR - totalUpToL-1.
+### Key Insight
+The common prefix never grows; it can only stay the same or shrink as more strings are processed.
 
 ### Code Walkthrough
+The method begins with `String prefix = strs[0]`.
+That treats the first string as the longest possible starting candidate.
 
-The solution is implemented in `longestCommonPrefix(String[] strs)`:
+The outer loop `for (int i = 1; i < strs.length; i++)` compares this candidate against every remaining string.
+For each `strs[i]`, the inner loop checks `while (strs[i].indexOf(prefix) != 0)`.
+That condition means the current string does not start with `prefix`.
 
-1. Allocate prefix[n + 1] initialised to 0.
-2. Fill prefix[i] = prefix[i - 1] + nums[i - 1] for i from 1 to n.
-3. Answer a range query [l, r] (0-indexed) as prefix[r + 1] - prefix[l].
-4. Use a HashMap from prefix-sum → first index to detect subarrays with a target sum.
+When the prefix does not match the start of `strs[i]`, the code shrinks it using:
+- `prefix = prefix.substring(0, prefix.length() - 1)`
+
+After shrinking, it checks `if (prefix.isEmpty())`.
+- If true, there is no common prefix at all, so it returns `""` immediately.
+
+If the `while` loop ends, then `strs[i]` starts with the current `prefix`, so the algorithm moves on to the next string.
+After all strings are processed, `return prefix` gives the longest common prefix shared by the full array.
+
+### Example Walkthrough
+Use Example 1: `strs = ["flower","flow","flight"]`.
+- Start with `prefix = "flower"`.
+- Compare with `"flow"`:
+  - `"flow".indexOf("flower") != 0`, so shrink to `"flowe"`.
+  - Still not at index `0`, shrink to `"flow"`.
+  - Now `"flow".indexOf("flow") == 0`, so stop shrinking.
+- Compare with `"flight"`:
+  - `"flight".indexOf("flow") != 0`, shrink to `"flo"`.
+  - Still no match, shrink to `"fl"`.
+  - `"flight".indexOf("fl") == 0`, so stop.
+
+All strings share `"fl"`, so the method returns `"fl"`.
+
+### Key Variables Explained
+- `prefix`: current best candidate for the common prefix across all strings processed so far.
+- `i`: index of the string currently being compared against `prefix`.
+- `strs[i]`: the current string that may force `prefix` to shrink.
+
+### Why This Works
+After processing each index `i`, `prefix` is guaranteed to be a prefix of every string from `strs[0]` through `strs[i]`.
+If `strs[i]` does not start with the current `prefix`, removing the last character is safe because any valid common prefix must be shorter.
+The loop keeps shrinking until the invariant is restored.
+When the algorithm finishes, no longer prefix could work for all strings, so the remaining `prefix` is the longest common prefix.
+
+### Trick Used
+The trick is progressive prefix shrinking: instead of building candidate prefixes upward, the code starts with the maximum possible prefix and trims only when necessary.
+
+### Edge Cases Handled
+- No common prefix, such as `["dog","racecar","car"]`: `prefix` shrinks to empty and returns `""`.
+- Single string array: the outer loop never runs, so the first string is returned.
+- One string shorter than the first: repeated shrinking adjusts `prefix` down to the valid shared portion.
+- Empty string in the array: the `while` loop shrinks `prefix` to empty and returns `""`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n · m^2)` in the worst case** — for each of the `n - 1` remaining strings, the code may shrink `prefix` one character at a time, and each `indexOf(prefix)` plus `substring(...)` operation can cost up to `O(m)`, where `m` is the length of the first string.
+- **Space Complexity: `O(m)`** — the algorithm stores the current `prefix`, and shrinking via `substring` creates new prefix strings whose maximum length is at most `m`.

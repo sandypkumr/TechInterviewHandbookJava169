@@ -97,25 +97,127 @@ public class WordSearch {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to determine whether a given word can be formed by walking through adjacent cells of the board, moving only up, down, left, or right, and never reusing the same cell in one path. This is not just a simple search for characters — the same letter can appear many times, so the algorithm must explore paths carefully.
+
+Interviewers like this problem because it tests recursive thinking, backtracking, and your ability to manage visited state without breaking future searches.
+
 ### Approach
 
-**Word Search** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+The code tries every cell as a possible starting point, then uses DFS to match the word one character at a time. Whenever a cell matches the current character, it is temporarily marked as used so the recursion cannot revisit it in the same path.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+This is better than brute-force path enumeration because mismatches are rejected immediately. As soon as the path cannot match `word.charAt(index)`, recursion stops on that branch.
+
+### Pattern Used
+
+**DFS + Backtracking**
+
+### Key Insight
+
+Mark the current cell as visited in place, explore all four directions for the next character, and then restore the cell so other starting paths can still use it.
 
 ### Code Walkthrough
 
-The solution is implemented in `exist(char[][] board, String word)`:
+`exist(char[][] board, String word)` begins by reading `rows` and `cols`.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+It then uses two nested loops to try every `(i, j)` as a start position:
 
-&gt; **Note:** This solution also uses the **backtracking — explore all candidates and prune invalid paths early** technique.
+- `if (dfs(board, word, i, j, 0)) return true;`
+
+If none of the starts work, the method returns `false`.
+
+The helper `dfs(char[][] board, String word, int r, int c, int index)` does the real search.
+
+First base case:
+
+- `if (index == word.length()) return true;`
+
+That means all characters have already been matched.
+
+Next, the method rejects invalid states:
+
+- out-of-bounds coordinates
+- character mismatch with `word.charAt(index)`
+
+This is done by:
+
+- `if (r < 0 || r >= board.length || c < 0 || c >= board[0].length || board[r][c] != word.charAt(index)) return false;`
+
+When the character matches:
+
+- Save it in `temp`
+- Mark the cell as used with `board[r][c] = '#'`
+
+Then compute:
+
+- `boolean found = dfs(board, word, r + 1, c, index + 1) || ...`
+
+The code tries all four directions for the next character.
+
+After recursion, `board[r][c] = temp;` restores the original letter before returning `found`.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+- `board = [["A","B","C","E"],["S","F","C","S"],["A","D","E","E"]]`
+- `word = "ABCCED"`
+
+Start from `(0,0)`:
+
+- `board[0][0] = 'A'` matches `word.charAt(0)`
+- Mark it as `'#'` and search for `'B'`
+
+Move right to `(0,1)`:
+
+- `'B'` matches `word.charAt(1)`
+
+Move right to `(0,2)`:
+
+- `'C'` matches `word.charAt(2)`
+
+Move down to `(1,2)`:
+
+- `'C'` matches `word.charAt(3)`
+
+Move down to `(2,2)`:
+
+- `'E'` matches `word.charAt(4)`
+
+Move left to `(2,1)`:
+
+- `'D'` matches `word.charAt(5)`
+
+Now `index` reaches `word.length()`, so DFS returns `true` all the way back up the recursion stack. Therefore, `exist` returns `true`.
+
+### Key Variables Explained
+
+- `rows`, `cols`: board dimensions used to iterate all start positions
+- `index`: current character position in `word`
+- `r`, `c`: current board position in DFS
+- `temp`: original board character saved before marking the cell as visited
+- `found`: whether any of the four recursive directions completes the word
+
+### Why This Works
+
+At each recursive call, the algorithm maintains the invariant that characters `word[0...index-1]` have already been matched by the current path. If the current cell matches `word.charAt(index)`, the search only needs to solve the smaller subproblem of matching the suffix from one of the four neighbors.
+
+The in-place `'#'` marking guarantees the same cell cannot be reused in the same path, which matches the problem constraint. Restoring the cell after recursion ensures this temporary choice does not affect other search branches.
+
+### Trick Used
+
+In-place visitation marking with `board[r][c] = '#'` avoids allocating a separate visited matrix.
+
+### Edge Cases Handled
+
+- **Complete match found:** `if (index == word.length()) return true;`
+- **Out-of-bounds moves:** rejected immediately in the boundary check
+- **Character mismatch:** the same guard clause returns `false`
+- **Multiple possible starting cells:** the outer loops try all positions
+- **Cell reuse prevention:** the temporary `'#'` marker blocks revisiting the same cell in one path
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(m·n·4^L)`** — see the analysis for full details.
-- **Space Complexity: `O(L)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(rows * cols * 4^L)`** — in the worst case, DFS can be started from every cell, and each search may branch up to 4 ways across a word of length `L`. A tighter bound is often written with `3^(L-1)` after the first step, but `O(rows * cols * 4^L)` is a valid upper bound for this code.
+- **Space Complexity: `O(L)`** — no extra visited matrix is used; the recursion stack depth is at most the word length.

@@ -75,20 +75,83 @@ public class ReverseInteger {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks you to reverse the decimal digits of a signed 32-bit integer while returning `0` if the reversed value would overflow the valid `int` range. The hard part is that the solution must detect overflow before it happens, not after.
 
-**Reverse Integer** is a math problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (Integer.MAX/MIN_VALUE) to achieve the target complexities of `O(log n)` time and `O(1)` space.
+It is a standard interview problem because it tests careful arithmetic reasoning, handling of negative values, and defensive boundary checks.
+
+### Approach
+The code repeatedly removes the last digit of `x` and appends it to `rev`. This naturally builds the reversed number from right to left.
+
+Before appending, the method checks whether `rev * 10 + digit` would go past `Integer.MAX_VALUE` or below `Integer.MIN_VALUE`. That allows the solution to stay within 32-bit integer rules without using a larger numeric type.
+
+### Pattern Used
+This solution primarily relies on direct iteration over digits with overflow guards.
+
+### Key Insight
+The critical idea is to validate `rev` before doing `rev = rev * 10 + digit`, because overflow must be prevented rather than repaired.
 
 ### Code Walkthrough
+The method initializes `int rev = 0;` to store the reversed number as it is built.
 
-The solution is implemented in `reverse(int x)`:
+The `while (x != 0)` loop processes one digit at a time:
+- `int digit = x % 10;` extracts the last digit of `x`
+- `x /= 10;` removes that digit from the input
 
-1. **Initialise** the necessary data structures (`rev`, `digit`).
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+Before updating `rev`, the code performs two overflow checks.
+
+For positive overflow:
+- `rev > Integer.MAX_VALUE / 10` means multiplying by `10` would already exceed the limit
+- `rev == Integer.MAX_VALUE / 10 && digit > 7` handles the exact boundary, since the largest valid final digit for a positive `int` is `7`
+
+For negative overflow:
+- `rev < Integer.MIN_VALUE / 10` means multiplying by `10` would already go below the limit
+- `rev == Integer.MIN_VALUE / 10 && digit < -8` handles the exact lower boundary, since the smallest valid final digit for a negative `int` is `-8`
+
+If either overflow condition is true, the method returns `0` immediately.
+
+Otherwise, `rev = rev * 10 + digit;` safely appends the digit and continues.
+
+When the loop finishes, `rev` is returned.
+
+### Example Walkthrough
+For **Example 1**, `x = 123`:
+- Start: `rev = 0`
+- Iteration 1: `digit = 3`, `x = 12`, overflow checks pass, `rev = 3`
+- Iteration 2: `digit = 2`, `x = 1`, overflow checks pass, `rev = 32`
+- Iteration 3: `digit = 1`, `x = 0`, overflow checks pass, `rev = 321`
+- Return `321`
+
+For **Example 2**, `x = -123`:
+- Iteration 1: `digit = -3`, `rev = -3`
+- Iteration 2: `digit = -2`, `rev = -32`
+- Iteration 3: `digit = -1`, `rev = -321`
+- Return `-321`
+
+For **Example 3**, `x = 120`:
+- Iteration 1: `digit = 0`, `rev = 0`
+- Iteration 2: `digit = 2`, `rev = 2`
+- Iteration 3: `digit = 1`, `rev = 21`
+- Return `21`
+
+### Key Variables Explained
+- `x`: the remaining part of the input still left to process.
+- `rev`: the reversed number built so far.
+- `digit`: the last digit extracted from `x` in the current iteration.
+
+### Why This Works
+After each loop iteration, `rev` is the reverse of the digits already removed from `x`. The method preserves this invariant by always taking the current last digit and appending it to `rev` in the correct decimal place.
+
+The overflow checks guarantee that every update to `rev` stays within the signed 32-bit range. So when the loop ends, the method either returns the correct reversed integer or `0` if a valid reversal is impossible.
+
+### Trick Used
+The main trick is the pre-check against `Integer.MAX_VALUE / 10` and `Integer.MIN_VALUE / 10`, including the final-digit cutoffs `7` and `-8`.
+
+### Edge Cases Handled
+- **Negative numbers**: `% 10` and `/ 10` still work correctly in Java, so values like `-123` reverse to `-321`.
+- **Trailing zeroes**: numbers like `120` naturally become `21` because leading zeroes are not stored in integers.
+- **Overflowing reversals**: the two boundary checks return `0` before `rev` can overflow.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log10 |x|)`** — each loop iteration removes one decimal digit from `x`.
+- **Space Complexity: `O(1)`** — only `rev` and `digit` are used in addition to the input.

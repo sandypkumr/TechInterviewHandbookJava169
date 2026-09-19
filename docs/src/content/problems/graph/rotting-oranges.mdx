@@ -119,23 +119,119 @@ public class RottingOranges {
 
 ## Explanation
 
+### Problem Analysis
+
+We need the minimum number of minutes for rot to spread through a grid where each rotten orange affects its 4-directional neighbors every minute. If some fresh orange can never be reached, the answer must be `-1`.
+
+This is a classic interview problem because it turns a matrix into an unweighted graph and tests whether you recognize that "spread over time" maps naturally to BFS levels.
+
 ### Approach
 
-**Rotting Oranges** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+The code treats every initially rotten orange as a starting point and runs a **multi-source BFS**. Instead of simulating minute-by-minute with repeated full-grid scans, it pushes all rotten oranges into `queue` first and lets the queue process one BFS layer per minute.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+This is much better than brute force because each cell is handled only when it actually changes state. The `fresh` counter also lets the code immediately detect whether all oranges were eventually reached.
+
+### Pattern Used
+
+**Multi-source BFS**
+
+### Key Insight
+
+All oranges that are rotten at the same time should be processed in the same BFS layer, so one complete queue layer corresponds to exactly one minute of spreading.
 
 ### Code Walkthrough
 
-The solution is implemented in `orangesRotting(int[][] grid)`:
+The method starts by reading `rows` and `cols`, then scanning the entire grid once.
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+- If `grid[i][j] == 2`, that position is pushed into `queue` because it is already rotten at minute `0`.
+- If `grid[i][j] == 1`, `fresh++` counts a fresh orange that still needs to be infected.
+
+After the scan, `if (fresh == 0) return 0;` handles the case where there is nothing to rot.
+
+`minutes` is initialized to `-1`, and `directions` stores the four legal moves: right, down, left, and up.
+
+The outer `while (!queue.isEmpty())` runs the BFS. For each round:
+
+- `int size = queue.size();` freezes the current layer size.
+- `minutes++;` advances time by one minute for that layer.
+- The inner loop processes exactly those `size` rotten oranges.
+
+For each polled `current`, the code extracts `x` and `y`, then tries all entries in `directions`.
+
+- `newX` and `newY` are the neighbor coordinates.
+- The long `if` condition checks bounds and confirms that the neighbor is currently fresh.
+- When a fresh orange is found, the code sets `grid[newX][newY] = 2`, decrements `fresh`, and enqueues that position so it spreads rot in the next minute.
+
+After BFS ends, `return fresh == 0 ? minutes : -1;` distinguishes between "all oranges rotted" and "some were unreachable."
+
+### Example Walkthrough
+
+Use **Example 1**: `grid = [[2,1,1],[1,1,0],[0,1,1]]`
+
+- Initial scan:
+  - `queue = [(0,0)]`
+  - `fresh = 6`
+- Start BFS with `minutes = -1`
+
+Minute `0` layer:
+
+- Process `(0,0)`
+- Its fresh neighbors `(0,1)` and `(1,0)` become rotten
+- Now `queue = [(0,1),(1,0)]`, `fresh = 4`, `minutes = 0`
+
+Minute `1` layer:
+
+- Process `(0,1)` and `(1,0)`
+- Newly rotten orange is `(0,2)` and `(1,1)`
+- Now `queue = [(0,2),(1,1)]`, `fresh = 2`, `minutes = 1`
+
+Minute `2` layer:
+
+- Process `(0,2)` and `(1,1)`
+- Newly rotten orange is `(2,1)`
+- Now `queue = [(2,1)]`, `fresh = 1`, `minutes = 2`
+
+Minute `3` layer:
+
+- Process `(2,1)`
+- Newly rotten orange is `(2,2)`
+- Now `queue = [(2,2)]`, `fresh = 0`, `minutes = 3`
+
+Minute `4` layer:
+
+- Process `(2,2)`
+- No new oranges rot
+- Queue becomes empty, `minutes = 4`
+
+Since `fresh == 0`, the method returns `4`.
+
+### Key Variables Explained
+
+- `queue`: BFS frontier containing oranges that are rotten at the current or upcoming minute.
+- `fresh`: number of fresh oranges still not infected.
+- `minutes`: elapsed time measured in BFS layers.
+- `directions`: the four row/column deltas for neighbor traversal.
+- `current`: the rotten orange currently being expanded.
+- `newX`, `newY`: coordinates of a candidate neighboring cell.
+
+### Why This Works
+
+The queue invariant is: every orange currently in `queue` became rotten at the same minute. Processing exactly `size` items before incrementing to the next layer ensures newly infected oranges do not spread again until the next minute, which matches the problem statement exactly.
+
+Also, each fresh orange is converted to rotten only once because the code immediately writes `grid[newX][newY] = 2`. That prevents duplicate processing and makes `fresh` a reliable indicator of whether any unreachable fresh oranges remain.
+
+### Trick Used
+
+Using `minutes = -1` avoids special-case logic for the initial rotten layer, because the first BFS level increments it to `0`.
+
+### Edge Cases Handled
+
+- **No fresh oranges initially:** `if (fresh == 0) return 0;`
+- **Unreachable fresh oranges:** the final `fresh == 0 ? minutes : -1` returns `-1`
+- **Empty cells:** `0` cells are ignored during the initial scan and never enqueued
+- **Boundary cells:** the bounds check on `newX` and `newY` prevents invalid access
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.
+- **Time Complexity: `O(rows * cols)`** — the grid is scanned once initially, and each cell can be enqueued and processed at most one time.
+- **Space Complexity: `O(rows * cols)`** — in the worst case, the queue can hold a large fraction of the grid at once.

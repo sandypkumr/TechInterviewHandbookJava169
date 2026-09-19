@@ -82,20 +82,98 @@ public class AddTwoNumbers {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+Each linked list stores one integer in reverse digit order, so the head contains the ones place, the next node contains the tens place, and so on. We need to add the two numbers exactly as elementary addition works, including carry propagation.
 
-**Add Two Numbers** is a linked list problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(?)` time and `O(?)` space.
+This is a classic interview question because it tests pointer handling, iterative list construction, and whether you can translate grade-school addition into linked-list form.
+
+### Approach
+The code walks through both lists together, digit by digit, while maintaining a `carry`. At each step it adds the current digits that exist, creates one new node for the current output digit, and moves forward.
+
+This avoids converting the lists into integers or strings, which would be awkward for large inputs and unnecessary because the reverse order already matches left-to-right iteration of place values.
+
+### Pattern Used
+Linked List simulation with direct iteration.
+
+### Key Insight
+Because digits are stored in reverse order, we can add from the heads forward and carry overflow exactly the same way we do manual addition from right to left.
 
 ### Code Walkthrough
+`addTwoNumbers(ListNode l1, ListNode l2)` starts by preparing result construction:
 
-The solution is implemented in `addTwoNumbers(ListNode l1, ListNode l2)`:
+- `ListNode dummy = new ListNode(0);` gives a stable node before the real answer.
+- `ListNode current = dummy;` tracks the tail of the output list.
+- `int carry = 0;` stores any overflow from the previous digit addition.
 
-1. **Initialise** the necessary data structures (`carry`, `sum`).
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+The main loop is:
+
+- `while (l1 != null || l2 != null || carry != 0)`
+- This continues as long as there is a remaining digit in either list or an unfinished carry.
+
+Inside the loop:
+
+- `int sum = carry;` starts the digit sum with any carried value.
+- If `l1 != null`, the code adds `l1.val` and advances `l1 = l1.next`.
+- If `l2 != null`, the code adds `l2.val` and advances `l2 = l2.next`.
+- `carry = sum / 10;` computes the carry for the next position.
+- `current.next = new ListNode(sum % 10);` stores the current output digit.
+- `current = current.next;` advances the output tail.
+
+After the loop ends:
+
+- `return dummy.next;`
+- `dummy.next` is the true head of the sum list.
+
+### Example Walkthrough
+Use Example 1: `l1 = [2,4,3]`, `l2 = [5,6,4]`.
+
+Step 1:
+
+- `sum = carry = 0`
+- Add `2` and `5` -> `sum = 7`
+- `carry = 7 / 10 = 0`
+- Create node `7`
+- Result so far: `[7]`
+
+Step 2:
+
+- Add `4` and `6` with carry `0` -> `sum = 10`
+- `carry = 1`
+- Create node `0`
+- Result so far: `[7,0]`
+
+Step 3:
+
+- Add `3` and `4` with carry `1` -> `sum = 8`
+- `carry = 0`
+- Create node `8`
+- Result so far: `[7,0,8]`
+
+Now both `l1` and `l2` are `null` and `carry` is `0`, so the loop stops. The returned list is `[7,0,8]`, representing `807`.
+
+### Key Variables Explained
+- `l1`, `l2`: moving pointers over the two input linked lists.
+- `dummy`: helper node used so the first real result node is easy to attach.
+- `current`: the tail pointer of the result list.
+- `carry`: overflow from the previous digit sum that must be added into the next digit.
+- `sum`: the current column total before splitting it into digit and carry.
+
+### Why This Works
+Every loop iteration computes exactly one digit of the sum for the current place value. Because the lists are reversed, the first iteration handles the ones place, the second handles the tens place, and so on. The code preserves the same invariant throughout: `dummy.next` stores the correct partial answer for all processed digits, and `carry` stores the overflow that must be applied to the next place.
+
+When the loop finishes, all digits from both lists and any remaining carry have been processed, so the constructed list is the exact sum.
+
+### Trick Used
+The useful trick is keeping `carry != 0` in the loop condition so a final leftover carry automatically becomes a new node without separate post-processing.
+
+### Edge Cases Handled
+- Lists of different lengths: each list is checked with `if (l1 != null)` and `if (l2 != null)` before reading a digit.
+- Final carry after both lists end: handled by `|| carry != 0` in the `while` condition.
+- Input like `[0]` and `[0]`: one iteration creates a single `0` node correctly.
+- Very long numbers: the code never converts them to numeric primitives, so it is safe for large digit counts.
 
 ### Complexity Analysis
+Let `m` and `n` be the lengths of the two linked lists.
 
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity:** `O(max(m, n))` because the loop advances through each node of `l1` and `l2` at most once.
+- **Space Complexity:** `O(max(m, n))` for the newly created output list nodes. The auxiliary working space beyond the returned list is `O(1)`.

@@ -77,23 +77,103 @@ public class CoinChange {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the minimum number of coins needed to make exactly `amount`, using unlimited copies of each value in `coins`. If no combination can form the amount, the answer must be `-1`.
+
+It is a classic interview DP problem because you must model an optimization question over repeated choices while correctly handling unreachable states.
+
 ### Approach
+The code builds the answer for every value from `0` up to `amount`. For each coin, it tries to improve the best known answer for every reachable amount that can include that coin.
 
-**Coin Change** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+This is better than brute-force recursion because recursive branching over all coin choices causes heavy repeated work. Bottom-up DP computes each state once and reuses earlier answers.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+This solution uses **Dynamic Programming**, specifically bottom-up 1-D DP for an unbounded knapsack-style optimization.
+
+### Key Insight
+If `dp[i - coin]` already stores the minimum coins needed for the smaller amount, then **`dp[i - coin] + 1` is a candidate answer for `dp[i]`**.
 
 ### Code Walkthrough
+`coinChange(int[] coins, int amount)` starts by creating a sentinel value:
 
-The solution is implemented in `coinChange(int[] coins, int amount)`:
+- `int max = amount + 1;`
+  - This acts like an impossible large answer, because any reachable solution for `amount` can never need more than `amount` coins.
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+Then it builds the DP array:
+
+- `int[] dp = new int[amount + 1];`
+  - `dp[i]` will store the minimum number of coins needed to make amount `i`.
+- `for (int i = 1; i <= amount; i++) { dp[i] = max; }`
+  - Initialize every positive amount as unreachable for now.
+  - `dp[0]` stays `0`, which is the base case.
+
+Next, the nested loops fill the table:
+
+- `for (int coin : coins)`
+  - process each denomination
+- `for (int i = coin; i <= amount; i++)`
+  - only amounts at least as large as `coin` can use it
+- `dp[i] = Math.min(dp[i], dp[i - coin] + 1);`
+  - either keep the old best answer or use one more `coin` on top of the best solution for `i - coin`
+
+Finally:
+
+- `return dp[amount] > amount ? -1 : dp[amount];`
+  - if the state never improved from the sentinel, the amount is impossible
+
+### Example Walkthrough
+Use **Example 1**:
+
+- `coins = [1,2,5]`
+- `amount = 11`
+
+Initialization:
+
+- `max = 12`
+- `dp[0] = 0`
+- `dp[1..11] = 12`
+
+Processing coin `1`:
+
+- every amount becomes reachable using only ones
+- after this pass, `dp[11] = 11`
+
+Processing coin `2`:
+
+- `dp[2] = min(2, dp[0] + 1) = 1`
+- `dp[4] = min(4, dp[2] + 1) = 2`
+- `dp[10]` becomes `5`
+- `dp[11]` improves to `6` using five `2` coins and one `1`
+
+Processing coin `5`:
+
+- `dp[5] = 1`
+- `dp[10] = min(5, dp[5] + 1) = 2`
+- `dp[11] = min(6, dp[6] + 1) = 3`
+
+So the final answer is `3`, corresponding to `5 + 5 + 1`.
+
+### Key Variables Explained
+- `coins`: available denominations.
+- `amount`: target value to build.
+- `max`: sentinel value representing an unreachable state.
+- `dp`: 1-D array where `dp[i]` is the minimum number of coins needed for amount `i`.
+- `coin`: the denomination currently being applied in the outer loop.
+- `i`: the current amount being updated.
+
+### Why This Works
+The invariant is that when updating `dp[i]`, the expression `dp[i - coin]` already represents the best known way to form the remaining amount using processed choices. Adding one current coin produces a valid candidate solution for `i`.
+
+Taking `Math.min` over all such candidates ensures `dp[i]` ends as the smallest possible number of coins. Since `dp[0] = 0` is correct and every larger state is built from smaller states, the final `dp[amount]` is correct.
+
+### Trick Used
+The trick is the **sentinel initialization** with `max = amount + 1`, which lets the code distinguish unreachable states without needing extra boolean arrays.
+
+### Edge Cases Handled
+- `amount = 0`: `dp[0]` remains `0`, so the method returns `0`.
+- Unreachable totals, such as `coins = [2]` and `amount = 3`: `dp[amount]` stays larger than `amount`, so the method returns `-1`.
+- Coins larger than the current amount are naturally skipped because the inner loop starts at `i = coin`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n·m)`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).
+- **Time Complexity:** `O(coins.length * amount)` because the outer loop iterates over each coin and the inner loop can scan from that coin up to `amount`.
+- **Space Complexity:** `O(amount)` because the algorithm stores one DP array of size `amount + 1`.

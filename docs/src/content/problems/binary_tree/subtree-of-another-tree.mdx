@@ -73,23 +73,84 @@ public class SubtreeOfAnotherTree {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks whether `subRoot` appears somewhere inside `root` with the exact same structure and node values. Matching just the values is not enough; the left and right children must also line up exactly.
+
+This is a common interview tree question because it combines two core skills: traversing a binary tree and comparing two trees recursively.
+
 ### Approach
+The idea is to treat every node in `root` as a possible starting point of the subtree. At each node, the code checks whether the tree rooted there is identical to `subRoot`.
 
-**Subtree of Another Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+This is better than a brute-force "serialize everything and compare blindly" approach because the recursion directly expresses the structure of the trees. We only do a full comparison when a node in `root` could be the root of the answer.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+This solution uses **Depth-First Search (DFS)** with recursive tree comparison.
+
+### Key Insight
+A subtree match exists if and only if **some node in `root` starts an exact same-tree match with `subRoot`**.
 
 ### Code Walkthrough
+`isSubtree(TreeNode root, TreeNode subRoot)` drives the search.
 
-The solution is implemented in `isSubtree(TreeNode root, TreeNode subRoot)`:
+- `if (root == null) { return false; }`
+  - Once the main tree is exhausted, there is no place left to match `subRoot`.
+- `if (isSameTree(root, subRoot)) { return true; }`
+  - Before going deeper, the code checks whether the current node already starts a valid subtree.
+- `return isSubtree(root.left, subRoot) || isSubtree(root.right, subRoot);`
+  - If the current node does not match, search both children recursively.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+`isSameTree(TreeNode p, TreeNode q)` verifies structural equality.
+
+- `if (p == null && q == null) { return true; }`
+  - Two empty branches match perfectly.
+- `if (p == null || q == null) { return false; }`
+  - If only one side is missing, the shapes differ.
+- `return p.val == q.val && isSameTree(p.left, q.left) && isSameTree(p.right, q.right);`
+  - The current values must match, and both left and right subtrees must also match.
+
+### Example Walkthrough
+Use **Example 1**:
+
+- `root = [3,4,5,1,2]`
+- `subRoot = [4,1,2]`
+
+Step by step:
+
+- Start at node `3` in `root`.
+- `isSameTree(3, 4)` fails immediately because `3 != 4`.
+- Recurse into `root.left`, which is node `4`.
+- `isSameTree(4, 4)` now checks the full subtree:
+  - current values match: `4 == 4`
+  - compare left children: `1 == 1`
+  - compare right children: `2 == 2`
+  - both subtrees finish with matching `null` children
+- Since `isSameTree(root.left, subRoot)` returns `true`, `isSubtree` returns `true`.
+
+That matches the expected output.
+
+### Key Variables Explained
+- `root`: the current node in the main tree where we are trying to start a subtree match.
+- `subRoot`: the tree we are searching for; it stays fixed across the recursion.
+- `p`, `q`: the two nodes currently being compared inside `isSameTree`.
+
+### Why This Works
+The recursion checks every possible subtree root in `root`, so no valid starting position is missed. For each candidate node, `isSameTree` enforces the exact condition required by the problem: same value at the current node, same left subtree, and same right subtree.
+
+Because the code only returns `true` when a full structural match is confirmed, and because it eventually explores both `root.left` and `root.right`, the final answer is correct.
+
+### Trick Used
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+- `root == null`: `isSubtree` returns `false` because there is no subtree left to inspect.
+- Mismatched structure such as one child being `null` and the other non-`null`: `isSameTree` returns `false`.
+- Leaf comparisons: when both nodes become `null`, `isSameTree` returns `true`, which correctly ends a matching branch.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n·m)`** — see the analysis for full details.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `O(n * m)` in the worst case, where `n` is the number of nodes in `root` and `m` is the number of nodes in `subRoot`.
+  - `isSubtree` may visit every node in `root`.
+  - At each node, `isSameTree` can compare up to all `m` nodes of `subRoot`.
+- **Space Complexity:** `O(h_root + h_subRoot)` for the recursion stack.
+  - `isSubtree` contributes the search depth in `root`.
+  - `isSameTree` adds comparison depth from both trees.
+  - In the worst case of skewed trees, this can grow to `O(n + m)`.

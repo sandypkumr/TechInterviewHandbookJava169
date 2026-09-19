@@ -104,23 +104,114 @@ public class InsertDeleteGetRandomO1 {
 
 ## Explanation
 
+### Problem Analysis
+This class must support `insert`, `remove`, and `getRandom` in average `O(1)` time.
+That combination is tricky because sets give fast lookup, but random access is not direct, while arrays give random access, but deleting from the middle is expensive.
+This is a classic interview design problem because it tests whether you can combine data structures to satisfy conflicting requirements.
+
 ### Approach
+The solution combines an `ArrayList` with a `HashMap`.
+The list stores the current values so `getRandom()` can pick any index uniformly.
+The map stores `value -> index` so membership checks and index lookup stay constant time.
+The hard part is deletion, because removing from the middle of an array list would shift many elements.
+Instead, the code swaps the element to delete with the last element, updates the moved element's index in the map, and then removes the last slot.
+That turns removal into constant work instead of `O(n)` shifting.
 
-The key insight for **Insert Delete GetRandom O(1)** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+### Pattern Used
+Hash Map + Dynamic Array design pattern.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Key Insight
+To delete in `O(1)`, never remove a middle element directly from `list`; move the last element into that position first, then delete the tail.
 
 ### Code Walkthrough
+The constructor `InsertDeleteGetRandomO1()` initializes three fields:
+- `list` stores all active values.
+- `map` records where each value currently lives inside `list`.
+- `rand` generates random indices for uniform selection.
 
-The solution is implemented in `insert(int val)`:
+In `insert(int val)`, the first check is `map.containsKey(val)`.
+If the value already exists, the method returns `false` because this structure behaves like a set.
+Otherwise, `map.put(val, list.size())` stores the index where the new value will be placed.
+Then `list.add(val)` appends it, and the method returns `true`.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+In `remove(int val)`, the method first rejects missing values with `!map.containsKey(val)`.
+For an existing value, `index = map.get(val)` finds its current position.
+`lastElement = list.get(list.size() - 1)` reads the value at the end of the list.
+`list.set(index, lastElement)` overwrites the removed slot with that last value.
+`map.put(lastElement, index)` updates the moved value so the map still matches the list.
+Next, `list.remove(list.size() - 1)` deletes the old tail position.
+Finally, `map.remove(val)` erases the removed value from the map.
+
+In `getRandom()`, `rand.nextInt(list.size())` chooses an index from `0` through `list.size() - 1`.
+Because every active element occupies exactly one slot in `list`, `list.get(randomIndex)` gives each value equal probability.
+
+### Example Walkthrough
+Use the example sequence:
+`insert(1)`, `remove(2)`, `insert(2)`, `getRandom()`, `remove(1)`, `insert(2)`, `getRandom()`.
+
+Start with `list = []` and `map = {}`.
+
+After `insert(1)`:
+- `1` is not in `map`.
+- Store `map[1] = 0` and append `1`.
+- State: `list = [1]`, `map = {1=0}`.
+- Return `true`.
+
+After `remove(2)`:
+- `2` is not in `map`.
+- Nothing changes.
+- Return `false`.
+
+After `insert(2)`:
+- `2` is not present.
+- Store `map[2] = 1` and append `2`.
+- State: `list = [1, 2]`, `map = {1=0, 2=1}`.
+- Return `true`.
+
+During `getRandom()`:
+- `randomIndex` is either `0` or `1`.
+- The returned value is either `1` or `2` with equal chance.
+
+After `remove(1)`:
+- `index = 0` and `lastElement = 2`.
+- `list.set(0, 2)` makes the list look like `[2, 2]` briefly.
+- `map.put(2, 0)` updates `2` to its new position.
+- Removing the last slot leaves `list = [2]`.
+- `map.remove(1)` leaves `map = {2=0}`.
+- Return `true`.
+
+After `insert(2)` again:
+- `map.containsKey(2)` is true.
+- Return `false`.
+
+Final `getRandom()`:
+- `list.size()` is `1`, so `randomIndex` must be `0`.
+- The method always returns `2`.
+
+### Key Variables Explained
+- `list`: stores all current elements so they can be accessed by index in constant time.
+- `map`: maps each value to its current index inside `list`.
+- `rand`: random number generator used by `getRandom()`.
+- `index`: the position of the value being removed.
+- `lastElement`: the value currently at the end of `list`, used to fill the removed slot.
+- `randomIndex`: the randomly chosen valid index into `list`.
+
+### Why This Works
+The core invariant is that every active value appears exactly once in `list`, and `map` always stores that value's exact index.
+`insert()` preserves the invariant by appending a new value and recording its new position.
+`remove()` preserves it by moving `lastElement` into the deleted slot and immediately updating `map` before shrinking the list.
+Since `getRandom()` selects uniformly among list indices, and each value occupies one index, each value is chosen with equal probability.
+That is why all three operations stay correct while meeting the required average constant-time behavior.
+
+### Trick Used
+Swap-with-last deletion to avoid `ArrayList` middle-element shifting.
+
+### Edge Cases Handled
+- Duplicate insertion: `map.containsKey(val)` returns `false` immediately.
+- Removing a value that does not exist: `remove` returns `false` without changing state.
+- Removing the last remaining element: the same swap logic still works because `index` and the last index are identical.
+- Random selection after deletions: `map` and `list` stay synchronized, so `getRandom()` only accesses valid elements.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- Time Complexity: `insert`, `remove`, and `getRandom` are each average `O(1)` because they use hash-map lookups, tail append/remove on `ArrayList`, and one random index computation.
+- Space Complexity: `O(n)` because `list` and `map` both store all current elements in the set.

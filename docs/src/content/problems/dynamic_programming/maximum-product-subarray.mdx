@@ -76,23 +76,143 @@ public class MaximumProductSubarray {
 
 ## Explanation
 
+### Problem Analysis
+
+The problem asks for the largest product among all contiguous subarrays.
+Unlike maximum-sum problems, a negative number can completely change the answer because multiplying by it can turn a very small negative product into a very large positive one.
+This is a common interview question because it tests whether you notice that both the current maximum and current minimum product matter.
+
 ### Approach
 
-**Maximum Product Subarray** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+A brute-force solution would examine every subarray and multiply its elements, which is too slow.
+This code scans once through the array while tracking two rolling values at each position:
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+- the largest product ending at the current index, and
+- the smallest product ending at the current index.
+
+The minimum is necessary because a negative number can flip it into the next maximum.
+
+### Pattern Used
+
+Dynamic Programming.
+
+### Key Insight
+
+Because multiplying by a negative swaps extremes, the best product ending here depends on both the previous `maxProduct` and the previous `minProduct`.
 
 ### Code Walkthrough
 
-The solution is implemented in `maxProduct(int[] nums)`:
+The method initializes from the first element:
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+- `int maxProduct = nums[0];`
+- `int minProduct = nums[0];`
+- `int result = nums[0];`
+
+These mean:
+
+- `maxProduct`: largest product of a subarray ending at the current index.
+- `minProduct`: smallest product of a subarray ending at the current index.
+- `result`: best product seen anywhere so far.
+
+The loop starts from the second element:
+
+- `for (int i = 1; i < nums.length; i++)`
+
+Before updating products, the code checks:
+
+- `if (nums[i] < 0)`
+
+If the current number is negative, multiplying by it flips signs, so the roles of the previous max and min reverse.
+That is why the code swaps them:
+
+- `int temp = maxProduct;`
+- `maxProduct = minProduct;`
+- `minProduct = temp;`
+
+Then it computes the new products ending at `i`:
+
+- `maxProduct = Math.max(nums[i], maxProduct * nums[i]);`
+- `minProduct = Math.min(nums[i], minProduct * nums[i]);`
+
+Each line decides whether to:
+
+- start a new subarray at `nums[i]`, or
+- extend the previous subarray product.
+
+After that, the global answer is updated:
+
+- `result = Math.max(result, maxProduct);`
+
+Finally:
+
+- `return result;`
+
+### Example Walkthrough
+
+Use **Example 1**: `nums = [2,3,-2,4]`.
+
+Start:
+
+- `maxProduct = 2`
+- `minProduct = 2`
+- `result = 2`
+
+Now iterate:
+
+- `i = 1`, `nums[i] = 3`
+  - Positive, so no swap.
+  - `maxProduct = Math.max(3, 2 * 3) = 6`
+  - `minProduct = Math.min(3, 2 * 3) = 3`
+  - `result = Math.max(2, 6) = 6`
+- `i = 2`, `nums[i] = -2`
+  - Negative, so swap previous extremes.
+  - After swap: previous effective `maxProduct = 3`, `minProduct = 6`
+  - `maxProduct = Math.max(-2, 3 * -2) = -2`
+  - `minProduct = Math.min(-2, 6 * -2) = -12`
+  - `result` stays `6`
+- `i = 3`, `nums[i] = 4`
+  - Positive, no swap.
+  - `maxProduct = Math.max(4, -2 * 4) = 4`
+  - `minProduct = Math.min(4, -12 * 4) = -48`
+  - `result = Math.max(6, 4) = 6`
+
+The final answer is `6`, produced by subarray `[2,3]`.
+
+### Key Variables Explained
+
+- `nums`: input array.
+- `maxProduct`: maximum product of a subarray ending at the current index.
+- `minProduct`: minimum product of a subarray ending at the current index.
+- `result`: best product found across all endings.
+- `temp`: temporary variable used only when swapping `maxProduct` and `minProduct` for a negative value.
+- `i`: current index in the scan.
+
+### Why This Works
+
+At each index, any best subarray ending there must be either:
+
+- the single element `nums[i]`, or
+- an extension of a previous subarray ending at `i - 1`.
+
+Because multiplication by a negative can turn the smallest product into the largest one, the code must preserve both extremes from the previous step.
+After the optional swap, the recurrence correctly computes the new best and worst products ending at `i`.
+Tracking `result` over all `maxProduct` values guarantees the maximum product over every contiguous subarray.
+
+### Trick Used
+
+The trick is swapping `maxProduct` and `minProduct` whenever `nums[i]` is negative before computing the new state.
+
+### Edge Cases Handled
+
+- Single-element array: initialization from `nums[0]` makes the answer that element.
+- Negative values: the swap logic handles sign flips correctly.
+- Zero values: `Math.max(nums[i], maxProduct * nums[i])` and `Math.min(...)` can reset the running product to `0`, effectively starting fresh after a break.
+- All-negative arrays: the running min/max tracking still finds the best valid product.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`**
+  - The loop scans the array once with constant work per index.
+- **Space Complexity: `O(1)`**
+  - Only a few integer variables are used regardless of input size.
+

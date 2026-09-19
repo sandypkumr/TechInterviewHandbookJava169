@@ -68,22 +68,127 @@ public class LargestRectangleInHistogram {
 
 ## Explanation
 
+### Problem Analysis
+
+We need the largest rectangular area that can be formed using consecutive bars in the histogram. For each bar, the useful question is: how far can this bar extend left and right before a shorter bar stops it?
+
+This is a classic interview problem because the brute-force idea is easy to see, but the real challenge is recognizing how to avoid recomputing widths for every bar.
+
 ### Approach
 
-**Largest Rectangle in Histogram** asks about the relationship between each element and the next element that is greater (or smaller) than it. A brute-force nested loop is O(n²); a monotonic stack solves it in O(n) by maintaining a stack that is always in increasing (or decreasing) order.
+The code uses a monotonic increasing stack of indices. As long as heights keep increasing, indices are pushed. When a shorter bar appears, it means the taller bars on the stack can no longer extend to this position, so their maximum rectangle can be finalized immediately.
 
-As you scan left to right, every time a new element would break the stack's monotonic property, you pop elements off — each pop reveals that the current element is the "next greater" for the popped element. Each element is pushed and popped at most once, giving O(n) total time.
+This is much better than checking every possible left-right range, which would take `O(n^2)`.
+
+### Pattern Used
+
+This solution uses a **Monotonic Stack**.
+
+### Key Insight
+
+When index `i` reaches a bar shorter than `heights[stack.peek()]`, the current index `i` is the first smaller bar on the right for the popped height, and the new `stack.peek()` becomes the first smaller bar on the left.
 
 ### Code Walkthrough
 
-The solution is implemented in `largestRectangleArea(int[] heights)`:
+The method starts with:
 
-1. Initialise an empty stack (storing indices, not values, for flexibility).
-2. For each element, while the stack is non-empty and the condition is met, pop and record the answer.
-3. Push the current index onto the stack.
-4. After the full scan, remaining stack elements have no next-greater element (answer = -1 or 0).
+- `Stack<Integer> stack = new Stack<>();`
+- `int maxArea = 0;`
+- `int n = heights.length;`
+
+The `for` loop runs from `i = 0` to `i = n`, not just `n - 1`:
+
+- `for (int i = 0; i <= n; i++)`
+
+At `i == n`, the code sets `h = 0`:
+
+- `int h = (i == n) ? 0 : heights[i];`
+
+That extra zero-height sentinel forces all remaining bars to be processed by the end.
+
+Inside the loop:
+
+- While the stack is not empty and `h < heights[stack.peek()]`, the current bar is shorter than the bar at the top index.
+- The code pops that taller bar:
+  - `int height = heights[stack.pop()];`
+- It computes the rectangle width:
+  - `int width = stack.isEmpty() ? i : i - stack.peek() - 1;`
+
+Why this width works:
+
+- If the stack becomes empty, the popped bar can extend all the way from index `0` to `i - 1`, so width is `i`.
+- Otherwise, after popping, `stack.peek()` is the nearest smaller bar on the left, so the valid width is between `stack.peek() + 1` and `i - 1`.
+
+Then the area is updated:
+
+- `maxArea = Math.max(maxArea, height * width);`
+
+After all necessary pops, the current index `i` is pushed onto the stack.
+
+### Example Walkthrough
+
+Use Example 1: `heights = [2,1,5,6,2,3]`
+
+- `i = 0`, `h = 2`  
+  - stack becomes `[0]`
+- `i = 1`, `h = 1`  
+  - `1 < heights[0] = 2`, so pop `0`
+  - `height = 2`, `width = 1`, area = `2`
+  - `maxArea = 2`
+  - push `1`
+- `i = 2`, `h = 5`  
+  - push `2`
+- `i = 3`, `h = 6`  
+  - push `3`
+- `i = 4`, `h = 2`  
+  - pop `3`: `height = 6`, `width = 1`, area = `6`
+  - pop `2`: `height = 5`, `width = 2`, area = `10`
+  - `maxArea = 10`
+  - push `4`
+- `i = 5`, `h = 3`  
+  - push `5`
+- `i = 6`, sentinel `h = 0`  
+  - pop `5`: area = `3 * 1 = 3`
+  - pop `4`: area = `2 * 4 = 8`
+  - pop `1`: area = `1 * 6 = 6`
+
+The best area found is `10`.
+
+For Example 2, `heights = [2,4]`, the best rectangle is either width `1` at height `4` or width `2` at height `2`, so the answer is `4`.
+
+### Key Variables Explained
+
+- `stack`: stores indices of bars in increasing height order.
+- `maxArea`: the best rectangle area seen so far.
+- `n`: array length, used for iteration and the sentinel pass.
+- `i`: current position being processed.
+- `h`: current bar height, or `0` during the final flush.
+- `height`: the height of the bar just popped and finalized.
+- `width`: how many consecutive bars can support that popped `height`.
+
+### Why This Works
+
+The stack invariant is that indices in `stack` correspond to non-decreasing bar heights. Because of that:
+
+- a bar stays on the stack until we discover its first strictly smaller bar on the right,
+- after popping, the new stack top gives the first strictly smaller bar on the left.
+
+Those two boundaries are exactly what we need to compute the largest rectangle where that popped bar is the limiting height. Since every bar is pushed once and popped once, every candidate rectangle is handled exactly when its full width becomes known.
+
+### Trick Used
+
+The key trick is the **sentinel pass** at `i == n` with `h = 0`, which flushes all remaining bars from the stack without needing separate cleanup code.
+
+### Edge Cases Handled
+
+- Single-bar histograms: the bar is finalized during the sentinel iteration.
+- Increasing heights like `[1,2,3,4]`: none are popped during the main scan, but the sentinel processes them correctly.
+- Decreasing heights like `[4,3,2,1]`: bars are popped immediately as smaller bars appear.
+- Zero-height bars: they naturally act as boundaries and can force rectangle finalization.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`**  
+  The `for` loop runs `n + 1` times, and each index is pushed onto `stack` once and popped at most once.
+- **Space Complexity: `O(n)`**  
+  In the worst case, such as strictly increasing heights, the stack can hold up to `n + 1` indices during processing.

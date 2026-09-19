@@ -78,25 +78,105 @@ public class LongestSubstringWithoutRepeatingCharacters {
 
 ## Explanation
 
+### Problem Analysis
+The task is to find the length of the longest contiguous substring with all distinct characters.
+This is a classic interview problem because brute force checks many overlapping substrings, while the optimal solution depends on maintaining a moving valid window efficiently.
+
 ### Approach
+The code uses a sliding window and stores the most recent position of each ASCII character in `charIndex`.
+Instead of removing characters one by one when a duplicate appears, it jumps `left` directly to the first valid position after the previous occurrence. That makes the solution linear and avoids redundant work.
 
-**Longest Substring Without Repeating Characters** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+### Pattern Used
+Sliding Window
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Key Insight
+When the current character was already seen inside the active window, the only necessary fix is to move `left` just past that previous occurrence.
 
 ### Code Walkthrough
+The method `lengthOfLongestSubstring(String s)` starts by setting:
+- `int n = s.length();`
+- `int maxLength = 0;`
+- `int left = 0;`
+- `int[] charIndex = new int[128];`
 
-The solution is implemented in `lengthOfLongestSubstring(String s)`:
+`charIndex` stores the next valid position after each character's latest occurrence, not the raw index itself.
+That is why the code later writes `right + 1` instead of `right`.
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+The loop `for (int right = 0; right < n; right++)` scans the string from left to right.
+- `char currentChar = s.charAt(right);`
 
-&gt; **Note:** This solution also uses the **HashMap for O(1) average-case lookups** technique.
+Before extending the answer, the code checks:
+- `if (charIndex[currentChar] > left) { left = charIndex[currentChar]; }`
+
+This means:
+- if `currentChar` appeared before the current window, `left` stays unchanged
+- if it appeared inside the current window, `left` jumps right after its previous position
+
+Then the current character's latest seen position is recorded:
+- `charIndex[currentChar] = right + 1;`
+
+Finally, the current window length is:
+- `right - left + 1`
+
+So the best answer is updated with:
+- `maxLength = Math.max(maxLength, right - left + 1);`
+
+After the loop, the method returns `maxLength`.
+
+### Example Walkthrough
+Use Example 1: `s = "abcabcbb"`.
+
+Start with `left = 0`, `maxLength = 0`.
+
+`right = 0`, `currentChar = 'a'`
+- `charIndex['a']` is `0`, so `left` stays `0`
+- Store `charIndex['a'] = 1`
+- Window = `"a"`, `maxLength = 1`
+
+`right = 1`, `currentChar = 'b'`
+- Store `charIndex['b'] = 2`
+- Window = `"ab"`, `maxLength = 2`
+
+`right = 2`, `currentChar = 'c'`
+- Store `charIndex['c'] = 3`
+- Window = `"abc"`, `maxLength = 3`
+
+`right = 3`, `currentChar = 'a'`
+- `charIndex['a'] = 1`, which is greater than `left = 0`
+- Move `left = 1`
+- Store `charIndex['a'] = 4`
+- Window is now `"bca"`, length `3`
+
+`right = 4`, `currentChar = 'b'`
+- `charIndex['b'] = 2`, so move `left = 2`
+- Window becomes `"cab"`, length `3`
+
+The same idea continues, and the best length never exceeds `3`, so the method returns `3`.
+
+### Key Variables Explained
+- `n`: length of the input string
+- `left`: left boundary of the current duplicate-free window
+- `right`: right boundary being expanded by the loop
+- `maxLength`: maximum valid window size found so far
+- `charIndex`: last seen position table stored as `index + 1` for each ASCII character
+- `currentChar`: character currently entering the window
+
+### Why This Works
+The window `[left, right]` is always maintained so it contains no repeated characters.
+Whenever a duplicate enters, moving `left` to `charIndex[currentChar]` removes the previous occurrence in one step and keeps all remaining characters valid. Because `left` never moves backward, every character is processed in constant amortized time, and every candidate window considered by the code is a correct duplicate-free substring.
+
+### Trick Used
+Storing `right + 1` in `charIndex` avoids ambiguity with Java's default `0` values and makes the `left` jump logic clean.
+
+### Edge Cases Handled
+- Empty string: `n = 0`, the loop never runs, and the method correctly returns `0`
+- Repeated characters at the start like `"bbbbb"`: `left` keeps jumping forward, so the best length stays `1`
+- Duplicate seen before but outside the current window: the condition `charIndex[currentChar] > left` prevents `left` from moving backward
+- ASCII symbols and spaces: `charIndex` size 128 supports all ASCII inputs assumed by the code
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(n)`
+  - The loop scans each character once
+  - `left` only moves forward through previously stored positions
+- Space Complexity: `O(1)`
+  - `charIndex` is a fixed array of length 128

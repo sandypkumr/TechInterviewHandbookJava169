@@ -80,25 +80,145 @@ public class LongestIncreasingSubsequence {
 
 ## Explanation
 
+### Problem Analysis
+
+The problem asks for the length of the longest subsequence whose values are strictly increasing.
+Because it is a subsequence, elements do not need to be adjacent, but their order must stay the same.
+This is a classic interview problem because it tests whether you can define a useful DP state over prefixes and previous choices.
+
 ### Approach
 
-**Longest Increasing Subsequence** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+This implementation uses the standard `O(n^2)` dynamic programming solution.
+For every index `i`, it asks: what is the longest increasing subsequence that ends exactly at `nums[i]`?
+To answer that, it checks all earlier indices `j < i` and extends any subsequence ending at `j` when `nums[i] > nums[j]`.
+This is much better than brute force, which would try all subsequences.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+
+Dynamic Programming.
+
+### Key Insight
+
+If the LIS ends at index `i`, then its previous element must come from some earlier index `j` where `nums[j] < nums[i]`, so `dp[i]` can be built from earlier `dp[j]` values.
 
 ### Code Walkthrough
 
-The solution is implemented in `lengthOfLIS(int[] nums)`:
+The method begins with a guard clause:
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+- `if (nums == null || nums.length == 0) { return 0; }`
 
-&gt; **Note:** This solution also uses the **binary search to halve the search space each step** technique.
+So null or empty input returns `0` immediately.
+
+Then it sets up the DP state:
+
+- `int n = nums.length;`
+- `int[] dp = new int[n];`
+- `int maxLength = 1;`
+
+Here:
+
+- `dp[i]` = length of the longest increasing subsequence ending at index `i`.
+- `maxLength` = best LIS length seen anywhere so far.
+
+The outer loop iterates through each possible ending position:
+
+- `for (int i = 0; i < n; i++)`
+
+At the start of each iteration:
+
+- `dp[i] = 1;`
+
+Every element can at least form a subsequence of length `1` by itself.
+
+The inner loop checks earlier positions:
+
+- `for (int j = 0; j < i; j++)`
+
+Whenever the sequence can increase:
+
+- `if (nums[i] > nums[j])`
+- `dp[i] = Math.max(dp[i], dp[j] + 1);`
+
+This means:
+
+- take the best increasing subsequence ending at `j`, and
+- extend it by adding `nums[i]`.
+
+After finishing all `j` values, the global answer is updated:
+
+- `maxLength = Math.max(maxLength, dp[i]);`
+
+At the end:
+
+- `return maxLength;`
+
+### Example Walkthrough
+
+Use **Example 1**: `nums = [10,9,2,5,3,7,101,18]`.
+
+Track `dp[i]` as the LIS ending at each index:
+
+- `i = 0`, value `10`
+  - `dp[0] = 1`
+  - `maxLength = 1`
+- `i = 1`, value `9`
+  - Compare with `10`: `9` is not greater.
+  - `dp[1] = 1`
+- `i = 2`, value `2`
+  - Not greater than `10` or `9`.
+  - `dp[2] = 1`
+- `i = 3`, value `5`
+  - Greater than `2`, so extend `dp[2]`.
+  - `dp[3] = 2`
+  - `maxLength = 2`
+- `i = 4`, value `3`
+  - Greater than `2`, so `dp[4] = 2`
+- `i = 5`, value `7`
+  - Greater than `2`, `5`, and `3`
+  - Best extension is from a length-2 subsequence, so `dp[5] = 3`
+  - `maxLength = 3`
+- `i = 6`, value `101`
+  - Can extend the subsequence ending at `7`
+  - `dp[6] = 4`
+  - `maxLength = 4`
+- `i = 7`, value `18`
+  - Can also extend the subsequence ending at `7`
+  - `dp[7] = 4`
+
+The final answer is `4`, matching `[2,3,7,101]`.
+
+### Key Variables Explained
+
+- `nums`: input sequence.
+- `n`: length of the array.
+- `dp`: `dp[i]` stores the LIS length ending exactly at index `i`.
+- `i`: current index being treated as the subsequence ending.
+- `j`: earlier index considered as the previous element in that subsequence.
+- `maxLength`: longest subsequence length found across all endings.
+
+### Why This Works
+
+The code considers every valid earlier predecessor for each `nums[i]`.
+Because `dp[j]` already stores the optimal LIS ending at `j`, extending it by `nums[i]` gives the best subsequence ending at `i` through that predecessor.
+Taking the maximum over all such `j` values guarantees that `dp[i]` is optimal.
+Finally, the LIS for the entire array can end anywhere, so the global answer is the maximum `dp[i]`, stored in `maxLength`.
+
+### Trick Used
+
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+
+- `nums == null` or empty array: the guard clause returns `0`.
+- All values equal, like `[7,7,7,7,7,7,7]`: no `nums[i] > nums[j]` update happens, so every `dp[i]` stays `1`.
+- Strictly decreasing array: each element forms only a length-1 subsequence, which the initialization handles.
+- Single-element array: `maxLength` starts at `1`, and the loops return the correct answer.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — the dominant operation runs in O(n log n).
-- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).
+- **Time Complexity: `O(n^2)`**
+  - The outer loop runs `n` times, and for each `i`, the inner loop may scan up to `i - 1` earlier indices.
+  - This exact code does **not** implement the `O(n log n)` binary-search optimization mentioned in the frontmatter.
+- **Space Complexity: `O(n)`**
+  - The `dp` array stores one integer per index.
+

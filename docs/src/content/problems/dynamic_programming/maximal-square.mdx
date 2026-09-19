@@ -78,23 +78,118 @@ public class MaximalSquare {
 
 ## Explanation
 
+### Problem Analysis
+
+The goal is to find the area of the largest square made entirely of `'1'` cells in a binary matrix.
+A square can only grow if its top, left, and top-left neighbors can also support that larger square.
+This is a standard interview DP problem because each cell's answer depends on a small, well-defined neighborhood of previously solved cells.
+
 ### Approach
 
-**Maximal Square** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+A brute-force method would try every cell as a top-left corner and expand outward, repeatedly checking whether larger squares remain all ones.
+This solution instead uses dynamic programming so each cell computes the side length of the largest square ending at that position.
+If a cell contains `'1'`, its square size is limited by the smallest supporting square directly above, directly left, and diagonally up-left.
+That lets the answer be built in one pass over the matrix.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+
+Dynamic Programming.
+
+### Key Insight
+
+A square of side `k` can end at `(i, j)` only if the cells above, left, and diagonal-up-left can each support squares of at least side `k - 1`.
 
 ### Code Walkthrough
 
-The solution is implemented in `maximalSquare(char[][] matrix)`:
+The method first reads the matrix dimensions:
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+- `int rows = matrix.length;`
+- `int cols = matrix[0].length;`
+
+Then it creates a DP table with an extra top row and left column:
+
+- `int[][] dp = new int[rows + 1][cols + 1];`
+- `int maxSide = 0;`
+
+The extra padding means `dp[i - 1][j]`, `dp[i][j - 1]`, and `dp[i - 1][j - 1]` are always safe to access when `i` and `j` start from `1`.
+
+The nested loops scan the matrix:
+
+- `for (int i = 1; i <= rows; i++)`
+- `for (int j = 1; j <= cols; j++)`
+
+For each cell, the code checks the original matrix value:
+
+- `if (matrix[i - 1][j - 1] == '1')`
+
+If the cell is `'1'`, it computes:
+
+- `dp[i][j] = Math.min(Math.min(dp[i - 1][j], dp[i][j - 1]), dp[i - 1][j - 1]) + 1;`
+
+This means:
+
+- `dp[i - 1][j]` = largest square ending above,
+- `dp[i][j - 1]` = largest square ending to the left,
+- `dp[i - 1][j - 1]` = largest square ending diagonally up-left.
+
+The smallest of those three determines how large the current square can grow.
+Then the code updates the best side length found so far:
+
+- `maxSide = Math.max(maxSide, dp[i][j]);`
+
+If the matrix cell is `'0'`, `dp[i][j]` remains `0`, which correctly means no square of ones can end there.
+
+Finally:
+
+- `return maxSide * maxSide;`
+
+The problem asks for area, so the side length is squared.
+
+### Example Walkthrough
+
+Use **Example 1**:
+`matrix = [["1","0","1","0","0"],["1","0","1","1","1"],["1","1","1","1","1"],["1","0","0","1","0"]]`
+
+Key DP updates:
+
+- First row and first column cells with `'1'` create squares of side `1`.
+- At the cell corresponding to matrix position `(1, 3)` in zero-based indexing, the neighbors do not all support a larger square, so its DP value stays `1`.
+- At matrix position `(2, 3)` and `(2, 4)`, the surrounding cells allow a `2 x 2` square.
+  - For one of those positions, the three supporting values are all at least `1`, so `dp` becomes `2`.
+  - `maxSide` is updated to `2`.
+
+No cell can become `3` because at least one required supporting neighbor for a `3 x 3` square is too small.
+So the largest square has side `2`, and the returned area is `2 * 2 = 4`.
+
+### Key Variables Explained
+
+- `matrix`: input grid of characters `'0'` and `'1'`.
+- `rows`, `cols`: matrix dimensions.
+- `dp`: padded DP table where `dp[i][j]` is the side length of the largest all-ones square ending at `matrix[i - 1][j - 1]`.
+- `i`, `j`: loop indices over the padded DP table.
+- `maxSide`: largest square side length found anywhere in the scan.
+
+### Why This Works
+
+For a square to end at a cell, the current cell must be `'1'` and all three neighboring directions needed to complete the square must already support a smaller square.
+The minimum of those three DP values is the limiting factor, because one weak side prevents a larger square from existing.
+By adding `1`, the code extends the largest common square into the current cell.
+Since the loops process top-to-bottom and left-to-right, every dependency is computed before it is needed, making each `dp[i][j]` correct when assigned.
+
+### Trick Used
+
+The trick is the extra padded `dp` border, which removes boundary checks for the first row and first column.
+
+### Edge Cases Handled
+
+- Single-cell matrices: the loops still work, and `maxSide` becomes either `0` or `1`.
+- First row or first column containing `'1'`: the padded DP table lets those cells become side `1` without special-case code.
+- Cells with `'0'`: they naturally leave `dp[i][j]` as `0`, preventing invalid square growth through them.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.
+- **Time Complexity: `O(rows * cols)`**
+  - Every matrix cell is visited once, and each visit does constant-time work.
+- **Space Complexity: `O(rows * cols)`**
+  - The code allocates the padded `dp` table of size `(rows + 1) x (cols + 1)`.
+

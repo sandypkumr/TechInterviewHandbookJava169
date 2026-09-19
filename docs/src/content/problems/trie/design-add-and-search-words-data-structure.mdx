@@ -122,24 +122,114 @@ public class DesignAddAndSearchWordsDataStructure {
 
 ## Explanation
 
+### Problem Analysis
+
+We need a data structure that supports two operations efficiently: inserting full words and searching words where `'.'` can match any single character. Exact string storage alone is not enough, because wildcard queries like `".ad"` require exploring multiple possible next letters.
+
+This is a common interview design problem because it combines trie fundamentals with recursive search over branching choices.
+
 ### Approach
 
-**Design Add and Search Words Data Structure** involves many prefix-based string operations (insert, startsWith, search). A trie (prefix tree) stores characters along edges; words with common prefixes share nodes, making prefix checks O(L) where L is the word length — independent of the total number of stored words.
+The code stores all inserted words in a trie. Each node has `children[26]` for lowercase letters and a boolean `isEndOfWord` to mark a completed word.
 
-Think of a trie as an autocomplete system. When you type "pre", the trie immediately navigates to the "pre" node and can enumerate all completions from there without scanning the entire dictionary.
+Insertion is straightforward: follow the path for each character and create missing nodes. Searching is more interesting:
+
+- for a normal letter, move to exactly one child,
+- for `'.'`, try every non-null child recursively.
+
+This is much better than checking a wildcard query against every stored word because the trie prunes impossible prefixes immediately.
+
+### Pattern Used
+
+This solution uses a **Trie** combined with **DFS/backtracking** for wildcard search.
+
+### Key Insight
+
+A `'.'` does not mean "guess the whole word"; it only means "branch to every valid next trie child from the current node."
 
 ### Code Walkthrough
 
-The solution is implemented in `addWord(String word)`:
+`TrieNode` contains:
 
-1. Define a TrieNode with `children[26]` (or a `HashMap<Character, TrieNode>`) and a boolean `isEnd`.
-2. `insert(word)`: traverse/create nodes character by character; mark `isEnd = true` at the last node.
-3. `search(word)`: traverse nodes; return true only if all characters matched and `isEnd` is true.
-4. `startsWith(prefix)`: same traversal but return true as soon as you've matched the full prefix.
+- `TrieNode[] children` to store edges for `'a'` to `'z'`,
+- `boolean isEndOfWord` to mark that a complete inserted word ends here.
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+The constructor `DesignAddAndSearchWordsDataStructure()` initializes `root = new TrieNode()`.
+
+In `addWord(String word)`, the code starts with `TrieNode node = root`. For each `char ch : word.toCharArray()`:
+
+- compute `int index = ch - 'a'`,
+- create `node.children[index]` if it is `null`,
+- move `node` to that child.
+
+After the loop, `node.isEndOfWord = true` marks the full word as inserted.
+
+`search(String word)` simply delegates to `searchInNode(word, root)`.
+
+Inside `searchInNode(String word, TrieNode node)`:
+
+- iterate through the current `word` substring with index `i`,
+- if `ch` is a normal letter, move to `node.children[index]` or return `false` if it does not exist,
+- if `ch == '.'`, loop through every `TrieNode child : node.children` and recursively test `searchInNode(word.substring(i + 1), child)`.
+
+If any wildcard branch succeeds, the method returns `true`. If the loop finishes, the final answer is `node.isEndOfWord`, which ensures we matched a complete word, not just a prefix.
+
+### Example Walkthrough
+
+Using the example:
+
+- `addWord("bad")`, `addWord("dad")`, and `addWord("mad")` create three paths ending with `isEndOfWord = true`.
+
+Now search queries:
+
+- `search("pad")`
+  - the first character is `'p'`
+  - `root.children['p' - 'a']` is `null`
+  - return `false`
+
+- `search("bad")`
+  - follow `'b'`, then `'a'`, then `'d'`
+  - the final node has `isEndOfWord = true`
+  - return `true`
+
+- `search(".ad")`
+  - the first character is `'.'`, so the code tries each non-null child from `root`
+  - for child `'b'`, the recursive call checks `"ad"` and succeeds
+  - since one branch works, return `true`
+
+- `search("b..")`
+  - `'b'` moves to the `b` node
+  - the first `'.'` tries the available child `'a'`
+  - the next `'.'` tries child `'d'`
+  - the remaining substring is empty and that node is an end of word, so return `true`
+
+### Key Variables Explained
+
+- `root`: entry point of the trie.
+- `children`: the 26 outgoing links from a trie node.
+- `isEndOfWord`: marks whether a full inserted word ends at the current node.
+- `node`: current trie node while inserting or searching.
+- `index`: array position for the current lowercase letter.
+- `child`: candidate next node explored when a wildcard `'.'` appears.
+
+### Why This Works
+
+The trie guarantees that every path from `root` spells a prefix of some inserted word. For exact letters, following `children[index]` is correct because only that edge can continue a match. For `'.'`, trying all non-null children is correct because any letter is allowed in that position, but only existing trie branches can possibly lead to a stored word.
+
+The recursion reduces the remaining suffix each time, and returning `node.isEndOfWord` at the end ensures the algorithm accepts only complete matches.
+
+### Trick Used
+
+The wildcard logic only branches over **existing** children, which prunes impossible letters without testing all stored words explicitly.
+
+### Edge Cases Handled
+
+- Search for a word whose first missing character is absent: immediate `false`.
+- Search where `'.'` appears at any position: handled by recursive branching.
+- Prefix present but full word absent: rejected because the final return checks `node.isEndOfWord`.
+- Repeated inserts sharing prefixes: naturally reuse existing trie nodes.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(M·26^M)`** — see the analysis for full details.
-- **Space Complexity: `O(M)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `addWord` is **`O(L)`**, where `L` is the word length. `search` is **`O(26^k * L)`** in the worst case, where `k` is the number of `'.'` characters, because each wildcard can branch to up to 26 children and each recursive call continues over the remaining suffix. With the problem constraint of at most 2 dots, this stays practical.
+- **Space Complexity:** **`O(L)`** auxiliary space in the worst case for the recursion stack during `search`, and the trie itself stores up to the total number of characters inserted across all words.

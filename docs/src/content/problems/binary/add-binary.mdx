@@ -63,20 +63,95 @@ public class AddBinary {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks us to add two binary strings and return the sum as another binary string. The challenge is to simulate binary addition correctly, especially when the strings have different lengths and carries ripple across multiple positions.
 
-**Add Binary** is a binary problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (StringBuilder) to achieve the target complexities of `O(max(m,n))` time and `O(max(m,n))` space.
+This is a common interview question because it tests comfort with string traversal, digit-by-digit simulation, and understanding of how binary addition actually works.
+
+### Approach
+The code adds the strings from right to left, exactly the way we do manual addition on paper. Since the least significant bits are at the end of the strings, starting from the last character lets us compute each output bit and maintain a running `carry`.
+
+This is better than converting the strings into integers because the input length can be much larger than what numeric types can safely hold. The simulation works directly on the characters and stays linear.
+
+### Pattern Used
+This solution primarily relies on direct iteration and simulation.
+
+### Key Insight
+At every step, the current output bit is `sum % 2`, and the carry into the next position is `sum / 2`.
 
 ### Code Walkthrough
+The method starts by creating `StringBuilder result = new StringBuilder()` to build the answer efficiently.
 
-The solution is implemented in `addBinary(String a, String b)`:
+Then it initializes:
+- `i = a.length() - 1` to point at the last bit of `a`
+- `j = b.length() - 1` to point at the last bit of `b`
+- `carry = 0` to store overflow from the previous addition
 
-1. **Initialise** the necessary data structures (`i`, `sum`).
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+The loop condition is:
+- `while (i >= 0 || j >= 0 || carry != 0)`
+- This means the code keeps going as long as at least one string still has bits left, or there is a carry that still needs to be written.
+
+Inside the loop:
+- `int sum = carry;` starts the total with any carry from the previous step.
+- `if (i >= 0) sum += a.charAt(i--) - '0';` adds the current bit from `a` and moves `i` left.
+- `if (j >= 0) sum += b.charAt(j--) - '0';` does the same for `b`.
+
+After collecting the bits for this position:
+- `result.append(sum % 2);` appends the current binary digit
+- `carry = sum / 2;` stores whether this position overflowed
+
+Because digits are appended from least significant to most significant, the string is backward. The final line `result.reverse().toString()` fixes the order before returning.
+
+### Example Walkthrough
+Using Example 1: `a = "11"`, `b = "1"`
+
+Initial state:
+- `i = 1`, `j = 0`, `carry = 0`, `result = ""`
+
+First iteration:
+- `sum = 0`
+- add `a.charAt(1) = '1'` -> `sum = 1`
+- add `b.charAt(0) = '1'` -> `sum = 2`
+- append `sum % 2 = 0` -> `result = "0"`
+- update `carry = 1`
+
+Second iteration:
+- `i = 0`, `j = -1`, `carry = 1`
+- `sum = 1`
+- add `a.charAt(0) = '1'` -> `sum = 2`
+- `b` has no more bits
+- append `0` -> `result = "00"`
+- update `carry = 1`
+
+Third iteration:
+- `i = -1`, `j = -1`, `carry = 1`
+- `sum = 1`
+- append `1` -> `result = "001"`
+- update `carry = 0`
+
+The loop stops, and reversing `"001"` gives `"100"`, which matches the expected output.
+
+### Key Variables Explained
+- `result`: stores the output bits as they are produced from right to left
+- `i`: current index in string `a`
+- `j`: current index in string `b`
+- `carry`: the overflow from the previous bit addition
+- `sum`: temporary total of `carry` plus the current bits from `a` and `b`
+
+### Why This Works
+Each loop iteration computes exactly one binary column. Since `sum` includes the two current bits and any previous `carry`, `sum % 2` is always the correct bit for the current position, and `sum / 2` is always the correct carry for the next position.
+
+The loop condition guarantees that no remaining bit or carry is missed, so the final reversed string is the full binary sum.
+
+### Trick Used
+Build the answer in reverse with `StringBuilder`, then call `reverse()` once at the end instead of inserting at the front on every step.
+
+### Edge Cases Handled
+- Different-length strings: `i >= 0` and `j >= 0` checks let one string finish before the other.
+- Final carry: `|| carry != 0` ensures cases like `"11" + "1"` produce an extra leading `1`.
+- Inputs containing zeros: bits are still added normally because `'0' - '0'` contributes `0`.
+- Single-character inputs: the same loop handles them without any special branch.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(max(m,n))`** — see the analysis for full details.
-- **Space Complexity: `O(max(m,n))`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(max(m, n))` because the `while` loop processes at most one position per character of `a` and `b`, plus at most one extra iteration for a final carry.
+- Space Complexity: `O(max(m, n))` because `result` stores the output string, whose length is at most `max(m, n) + 1`.

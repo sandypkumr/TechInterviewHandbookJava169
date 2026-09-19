@@ -95,25 +95,109 @@ public class SlidingWindowMaximum {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the maximum value in every contiguous window of size `k` as that window moves one step at a time across `nums`. Recomputing the maximum from scratch for each window would be too slow for large inputs.
+
+It is a classic interview question because it tests whether you can maintain the right data structure for a moving window instead of repeatedly scanning the same elements.
+
 ### Approach
+The efficient idea is to keep a deque of indices whose corresponding values are in decreasing order. The front of the deque always points to the largest value in the current window.
 
-**Sliding Window Maximum** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+For each index `i`, the code does three things:
+- remove indices that are no longer inside the current window,
+- remove smaller or equal values from the back because they can never become a future maximum,
+- add `i` and record the front value once the first full window is formed.
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+This avoids the brute-force `O(n * k)` approach and brings the runtime down to linear time.
+
+### Pattern Used
+Sliding Window with a Monotonic Deque.
+
+### Key Insight
+If the deque stores indices in decreasing value order, then the first index is always the maximum for the current window, and any smaller element behind a larger incoming value can be discarded permanently.
 
 ### Code Walkthrough
+The method begins with a guard clause:
 
-The solution is implemented in `maxSlidingWindow(int[] nums, int k)`:
+- `if (nums == null || nums.length == 0 || k <= 0)` returns `new int[0]` for invalid input.
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+Then the main setup happens:
+- `int n = nums.length;`
+- `int[] result = new int[n - k + 1];`
+- `Deque<Integer> deque = new LinkedList<>();`
 
-&gt; **Note:** This solution also uses the **monotonic stack to find the next greater/smaller element in O(n)** technique.
+The loop `for (int i = 0; i < n; i++)` processes each element exactly once.
+
+Inside the loop:
+- `if (!deque.isEmpty() && deque.peekFirst() < i - k + 1)` removes the front index if it has slid out of the current window.
+- `while (!deque.isEmpty() && nums[deque.peekLast()] <= nums[i])` removes weaker candidates from the back. If a value is smaller than or equal to `nums[i]`, it will never be needed again while `i` stays in the window.
+- `deque.offerLast(i);` appends the current index.
+- `if (i >= k - 1)` means a full window exists, so `result[i - k + 1] = nums[deque.peekFirst()];` stores the current maximum.
+
+The method returns `result` after all windows are processed.
+
+### Example Walkthrough
+Use Example 1: `nums = [1,3,-1,-3,5,3,6,7]`, `k = 3`.
+
+- `i = 0`, value `1`:
+  - deque becomes `[0]`
+  - no output yet
+- `i = 1`, value `3`:
+  - `nums[0] <= 3`, so remove `0`
+  - deque becomes `[1]`
+  - no output yet
+- `i = 2`, value `-1`:
+  - deque becomes `[1,2]`
+  - first full window `[1,3,-1]`, max is `nums[1] = 3`
+  - `result[0] = 3`
+- `i = 3`, value `-3`:
+  - deque becomes `[1,2,3]`
+  - window `[3,-1,-3]`, max remains `3`
+  - `result[1] = 3`
+- `i = 4`, value `5`:
+  - index `1` is out of window, remove it
+  - remove `3` and `2` from back because `-3` and `-1` are smaller than `5`
+  - deque becomes `[4]`
+  - `result[2] = 5`
+- `i = 5`, value `3`:
+  - deque becomes `[4,5]`
+  - `result[3] = 5`
+- `i = 6`, value `6`:
+  - remove `5` and `4` from back because `3` and `5` are not better than `6`
+  - deque becomes `[6]`
+  - `result[4] = 6`
+- `i = 7`, value `7`:
+  - remove `6` from back because `6 <= 7`
+  - deque becomes `[7]`
+  - `result[5] = 7`
+
+Final output: `[3,3,5,5,6,7]`.
+
+### Key Variables Explained
+- `n`: length of `nums`.
+- `result`: output array storing one maximum per window.
+- `deque`: stores indices, not values, so the code can check both value order and window boundaries.
+- `i`: current index being processed.
+- `deque.peekFirst()`: index of the current window maximum.
+- `deque.peekLast()`: last candidate, used for pruning smaller values.
+
+### Why This Works
+The deque maintains two invariants throughout the loop:
+- all stored indices are inside the current window,
+- their values are in decreasing order from front to back.
+
+Because of those invariants, the largest value in the current window must be at the front. Removing smaller values from the back is safe because a newer, larger value will outlast them in future windows and dominate them for every comparison that matters.
+
+### Trick Used
+Monotonic deque pruning: discard out-of-window indices from the front and discard smaller-or-equal values from the back.
+
+### Edge Cases Handled
+- `nums == null`: returns an empty array immediately.
+- `nums.length == 0`: also returns an empty array.
+- `k <= 0`: guarded against with the same early return.
+- `k == 1`: every element becomes its own window maximum.
+- Duplicate values: `<=` in the pruning loop keeps the newer equal value, which lasts longer in upcoming windows.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — each element enters and leaves the window at most once, so the total work across all iterations is linear.
-- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)`** — each index is inserted into `deque` once and removed at most once from the front and once from the back across the entire loop.
+- **Space Complexity: `O(k)`** — the deque holds at most the indices from the current window, so its size never exceeds `k`, and `result` is required output space.

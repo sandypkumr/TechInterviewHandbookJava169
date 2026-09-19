@@ -87,23 +87,85 @@ public class LinkedListCycle {
 
 ## Explanation
 
+### Problem Analysis
+We need to determine whether following `next` pointers eventually revisits an earlier node. In other words, does the list terminate at `null`, or does it loop forever inside a cycle?
+
+This is a staple interview problem because it tests pointer reasoning and whether you know Floyd's cycle detection technique, which solves the problem in constant extra space.
+
 ### Approach
+The code uses two pointers that move at different speeds. `slow` advances one step at a time, while `fast` advances two steps at a time.
 
-**Linked List Cycle** uses two pointers moving at different speeds — slow advances one step at a time, fast advances two. If a cycle exists, the fast pointer eventually laps the slow pointer and they meet inside the cycle. If no cycle exists, fast reaches the end first.
+If there is no cycle, `fast` eventually reaches `null`. If there is a cycle, the faster pointer must eventually catch the slower pointer somewhere inside the loop.
 
-Think of two runners on a circular track: the faster runner will always eventually overtake (lap) the slower one. If the track has no loop (i.e., it ends), the faster runner simply reaches the finish line first.
+### Pattern Used
+Fast/Slow Pointers.
+
+### Key Insight
+Inside a cycle, a pointer moving two steps per turn gains one step on a pointer moving one step per turn, so the gap between them must eventually close to zero.
 
 ### Code Walkthrough
+`hasCycle(ListNode head)` begins with a quick rejection:
 
-The solution is implemented in `hasCycle(ListNode head)`:
+- `if (head == null || head.next == null)` returns `false` because an empty list or a single node without a self-loop cannot contain a traversable cycle in this code path.
 
-1. Initialise slow = head and fast = head.
-2. Advance slow by one step and fast by two steps each iteration.
-3. If fast or fast.next is null, there is no cycle.
-4. If slow == fast, a cycle is detected (meeting point is inside the cycle).
-5. To find the cycle entry point, reset one pointer to head and advance both one step at a time.
+Then both pointers are initialized:
+
+- `ListNode slow = head;`
+- `ListNode fast = head;`
+
+The main loop is:
+
+- `while (fast != null && fast.next != null)`
+- This guard ensures `fast.next.next` is safe before moving the fast pointer two steps.
+
+Inside the loop:
+
+- `slow = slow.next;` moves one node.
+- `fast = fast.next.next;` moves two nodes.
+- `if (slow == fast)` returns `true` immediately when both pointers meet.
+
+If the loop exits naturally:
+
+- `return false;`
+- That means `fast` reached the end, so there is no cycle.
+
+### Example Walkthrough
+Use Example 1: `head = [3,2,0,-4]`, `pos = 1`.
+
+The structure is:
+
+- `3 -> 2 -> 0 -> -4`
+- Then `-4.next` points back to the node with value `2`.
+
+Pointer movement:
+
+- Start: `slow = 3`, `fast = 3`
+- Iteration 1: `slow = 2`, `fast = 0`
+- Iteration 2: `slow = 0`, `fast = 2`
+- Iteration 3: `slow = -4`, `fast = -4`
+
+Now `slow == fast`, so the method returns `true`.
+
+### Key Variables Explained
+- `head`: starting node of the linked list.
+- `slow`: moves one step per iteration and represents the tortoise pointer.
+- `fast`: moves two steps per iteration and represents the hare pointer.
+- `fast != null && fast.next != null`: safety condition that prevents invalid pointer jumps.
+
+### Why This Works
+If the list has no cycle, repeatedly moving `fast` by two steps must eventually hit `null`, so the loop ends and the method correctly returns `false`. If the list has a cycle, then after both pointers enter the cycle, `fast` gains one node per iteration relative to `slow`. Since the cycle length is finite, that relative gain guarantees they will meet.
+
+That meeting can happen only when a cycle exists, so returning `true` on `slow == fast` is correct.
+
+### Trick Used
+The trick is Floyd's tortoise-and-hare method: detect a cycle without marking nodes or using a hash set.
+
+### Edge Cases Handled
+- `head == null`: immediately returns `false`.
+- `head.next == null`: a single-node non-cyclic list returns `false`.
+- Short non-cyclic lists: the `while (fast != null && fast.next != null)` guard exits safely.
+- Cycles of any length, including a self-loop reachable from the loop: the pointers eventually meet.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(n)` because each pointer advances through the list a linear number of times before either meeting or reaching the end.
+- **Space Complexity:** `O(1)` because only `slow`, `fast`, and a few constant-size checks are used.

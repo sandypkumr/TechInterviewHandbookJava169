@@ -71,25 +71,87 @@ public class FindKClosestElements {
 
 ## Explanation
 
+### Problem Analysis
+We need the `k` values closest to `x` from an already sorted array, and the returned subarray must also stay sorted.
+The sorted input is the real clue: instead of checking every subset or maintaining a heap, we can search for the best window of length `k`.
+This is a common interview problem because it tests whether you can spot hidden binary search structure beyond "find a single element."
+
 ### Approach
+Any valid answer is a contiguous window of size `k` inside `arr`.
+So the job becomes: find the best starting index for that window.
+The code binary-searches the range of possible starts, from `0` to `arr.length - k`.
+For a candidate start `mid`, it compares the two values just outside the competing windows: `arr[mid]` on the left side and `arr[mid + k]` on the right side.
+If `arr[mid + k]` is closer to `x`, the window should shift right; otherwise, it should stay at `mid` or move left.
+This avoids brute-force scanning of all windows.
 
-**Find K Closest Elements** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+### Pattern Used
+Binary Search on answer space.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+### Key Insight
+Because the array is sorted, the best length-`k` answer must be one contiguous window, and the better window between neighboring candidates can be decided by comparing only their boundary distances to `x`.
 
 ### Code Walkthrough
+The method `findClosestElements(int[] arr, int k, int x)` begins with:
+- `left = 0`, the first possible start index.
+- `right = arr.length - k`, the last possible start index for a window of length `k`.
 
-The solution is implemented in `findClosestElements(int[] arr, int k, int x)`:
+The loop `while (left < right)` performs binary search over those starts.
+Inside the loop, `mid = left + (right - left) / 2` chooses a candidate window start.
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+The comparison is:
+`if (x - arr[mid] > arr[mid + k] - x)`.
+This asks whether the left boundary of the current window is farther from `x` than the element just to the right of the window.
+If yes, then shifting the window right gives a better choice, so `left = mid + 1`.
+Otherwise, the current start is still competitive or better, so `right = mid`.
 
-&gt; **Note:** This solution also uses the **two pointers moving toward each other** technique.
+When the loop ends, `left` is the smallest valid start of the optimal window.
+The return statement `Arrays.stream(arr, left, left + k).boxed().toList()` collects exactly those `k` elements into a `List<Integer>`.
+
+### Example Walkthrough
+Use Example 1: `arr = [1,2,3,4,5]`, `k = 4`, `x = 3`.
+
+Initialize:
+- `left = 0`
+- `right = arr.length - k = 1`
+
+First iteration:
+- `mid = 0 + (1 - 0) / 2 = 0`
+- Compare `x - arr[mid] = 3 - 1 = 2`
+- Compare `arr[mid + k] - x = arr[4] - 3 = 5 - 3 = 2`
+- Since `2 > 2` is false, set `right = mid = 0`
+
+Now `left = 0` and `right = 0`, so the loop stops.
+The best window starts at index `0`.
+`Arrays.stream(arr, 0, 4)` produces `[1,2,3,4]`, which matches the expected output.
+
+Use Example 2 briefly: `arr = [1,1,2,3,4,5]`, `k = 4`, `x = -1`.
+The search keeps favoring the leftmost window because values farther right are even farther from `-1`.
+So the chosen window is `[1,1,2,3]`.
+
+### Key Variables Explained
+- `arr`: the already sorted input array.
+- `k`: required window size.
+- `x`: target value used to measure closeness.
+- `left`: smallest candidate start index still under consideration.
+- `right`: largest candidate start index still under consideration.
+- `mid`: midpoint start index tested during binary search.
+
+### Why This Works
+The invariant is that the optimal window start always lies in the range `[left, right]`.
+For two adjacent candidate windows, one starting at `mid` and one at `mid + 1`, the only difference is that one includes `arr[mid]` while the other includes `arr[mid + k]`.
+If `arr[mid]` is farther from `x` than `arr[mid + k]`, then every optimal answer must be to the right of `mid`, so discarding the left half is safe.
+Otherwise, keeping `mid` is safe because shifting right does not improve the boundary comparison.
+Repeatedly applying that rule narrows the search to the exact optimal start index.
+
+### Trick Used
+Binary search over the starting index of a fixed-size window instead of binary searching for `x` itself.
+
+### Edge Cases Handled
+- `k == arr.length`: then `right = 0`, the loop never runs, and the whole array is returned.
+- `x` smaller than all array values: the comparisons keep the answer at the leftmost window.
+- `x` larger than all array values: the comparisons push the answer to the rightmost window.
+- Tie distances: the `else` branch keeps the smaller values by favoring the left window, matching the problem's tie rule.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(log(n-k)+k)`** — see the analysis for full details.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(log(arr.length - k) + k)` because the binary search runs on the start-index range, and `Arrays.stream(arr, left, left + k).boxed().toList()` outputs `k` elements.
+- Space Complexity: `O(k)` because the returned list stores `k` boxed integers; aside from that, the search itself uses only constant extra variables.

@@ -78,25 +78,96 @@ public class ContiguousArray {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the longest contiguous subarray where the number of `0`s and `1`s is exactly the same. Because the subarray must be contiguous, we cannot just count totals globally; we need to detect balanced ranges while scanning in order.
+
+This is a classic interview problem because it looks like a counting question at first, but the efficient solution comes from recognizing a prefix-sum relationship and storing the earliest time each balance appears.
+
 ### Approach
+The brute-force idea is to try every subarray and count zeros and ones inside it, but that takes `O(n^2)` or worse. The code avoids that by turning the problem into a running balance question.
 
-The key insight for **Contiguous Array** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+Treat each `1` as `+1` and each `0` as `-1`. If the same running `count` appears at two different indices, the elements between those indices must sum to zero, which means they contain an equal number of `0`s and `1`s.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Pattern Used
+This solution uses the **Prefix Sum + Hash Map** pattern.
+
+### Key Insight
+If two prefixes have the same running `count`, the subarray between them is balanced because the net contribution between those indices is zero.
 
 ### Code Walkthrough
+The method starts by creating `maxLength`, `count`, and `map`.
 
-The solution is implemented in `findMaxLength(int[] nums)`:
+- `maxLength` stores the best answer found so far.
+- `count` is the running balance where `1` adds `1` and `0` subtracts `1`.
+- `map` stores the first index where each `count` value appeared.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+`map.put(0, -1)` is an important initialization.
 
-&gt; **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
+- It means a balance of zero exists before the array starts.
+- This lets the code correctly count a valid subarray that begins at index `0`.
+
+The `for` loop scans `nums` once.
+
+- If `nums[i] == 1`, the code does `count += 1`.
+- Otherwise, it does `count += -1`.
+
+Then the code checks `if (map.containsKey(count))`.
+
+- If this balance was seen before, the subarray from `map.get(count) + 1` to `i` is balanced.
+- Its length is `i - map.get(count)`.
+- `maxLength` is updated with `Math.max(maxLength, i - map.get(count))`.
+
+If the balance has not been seen before, the code stores it with `map.put(count, i)`.
+
+- Only the first index is saved.
+- That is important because the earliest occurrence gives the longest possible subarray for that same balance later.
+
+Finally, the method returns `maxLength`.
+
+### Example Walkthrough
+Use **Example 3**: `nums = [0,1,1,1,1,1,0,0,0]`.
+
+Start with:
+
+- `count = 0`
+- `maxLength = 0`
+- `map = {0: -1}`
+
+Step through the array:
+
+- `i = 0`, value `0` -> `count = -1`. Not in `map`, so store `-1 -> 0`.
+- `i = 1`, value `1` -> `count = 0`. Seen before at `-1`, so length is `1 - (-1) = 2`. `maxLength = 2`.
+- `i = 2`, value `1` -> `count = 1`. Store `1 -> 2`.
+- `i = 3`, value `1` -> `count = 2`. Store `2 -> 3`.
+- `i = 4`, value `1` -> `count = 3`. Store `3 -> 4`.
+- `i = 5`, value `1` -> `count = 4`. Store `4 -> 5`.
+- `i = 6`, value `0` -> `count = 3`. Seen at `4`, length is `6 - 4 = 2`.
+- `i = 7`, value `0` -> `count = 2`. Seen at `3`, length is `7 - 3 = 4`.
+- `i = 8`, value `0` -> `count = 1`. Seen at `2`, length is `8 - 2 = 6`. `maxLength = 6`.
+
+The longest balanced subarray length is `6`, which matches the output.
+
+### Key Variables Explained
+- `maxLength`: longest balanced subarray found so far.
+- `count`: running balance of ones versus zeros.
+- `map`: maps a balance value to the earliest index where it appeared.
+- `i`: current index during the single pass.
+- `nums[i]`: current bit that changes the running balance.
+
+### Why This Works
+The algorithm maintains an invariant: after processing index `i`, `count` represents the difference between the number of `1`s and `0`s in `nums[0..i]`. When the same `count` appears again, the difference between those two prefixes is zero, so the subarray between them must contain equal numbers of `0`s and `1`s.
+
+Storing the first occurrence of each `count` guarantees that when the same balance appears later, the computed distance is as large as possible.
+
+### Trick Used
+Using `map.put(0, -1)` is the key trick. It acts like a virtual prefix before the array begins, so subarrays starting at index `0` are handled without special-case code.
+
+### Edge Cases Handled
+- A balanced subarray starting at index `0`: handled by `map.put(0, -1)`.
+- Multiple repeated balances: handled by keeping the earliest index in `map` and reusing it for longer lengths.
+- Arrays with no balanced subarray beyond length `0`: `maxLength` stays `0` and is returned.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`** — the `for` loop visits each element once, and each `HashMap` lookup or insert is `O(1)` on average.
+- **Space Complexity: `O(n)`** — in the worst case, `map` stores a different `count` value for many indices.
 
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.

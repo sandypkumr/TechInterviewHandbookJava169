@@ -84,23 +84,121 @@ public class SearchA2DMatrix {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to decide whether `target` exists in a matrix where each row is sorted and every row starts with a value larger than the previous row's last value. Those two rules mean the entire matrix behaves like one globally sorted list.
+
+This is a classic interview problem because it tests whether you can spot hidden order and convert a 2D search problem into a standard binary-search problem.
+
 ### Approach
 
-**Search a 2D Matrix** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+Instead of scanning rows one by one, the code treats the matrix as if it were a single sorted array of length `rows * cols`. Once we do that, normal binary search works directly.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+This is better than brute force because a full scan takes `O(m * n)`, while binary search cuts the remaining search space in half on every iteration.
+
+### Pattern Used
+
+Binary Search over a virtually flattened 2D array.
+
+### Key Insight
+
+Because the first value of each row is greater than the last value of the previous row, index `i` in a conceptual 1D sorted array maps cleanly to `matrix[i / cols][i % cols]`.
 
 ### Code Walkthrough
 
-The solution is implemented in `searchMatrix(int[][] matrix, int target)`:
+The method starts by storing the matrix dimensions in `rows` and `cols`.
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+```java
+int rows = matrix.length;
+int cols = matrix[0].length;
+```
+
+Then it defines a binary-search range over the virtual 1D array:
+
+```java
+int left = 0;
+int right = rows * cols - 1;
+```
+
+Inside the `while (left <= right)` loop:
+
+- `mid` is computed safely with `left + (right - left) / 2`.
+- `midValue` is pulled from the matrix using:
+  - row index: `mid / cols`
+  - column index: `mid % cols`
+
+```java
+int midValue = matrix[mid / cols][mid % cols];
+```
+
+Then the code compares `midValue` with `target`:
+
+- If equal, return `true`.
+- If `midValue < target`, discard the left half with `left = mid + 1`.
+- Otherwise, discard the right half with `right = mid - 1`.
+
+If the loop finishes, the target was never found, so the method returns `false`.
+
+### Example Walkthrough
+
+Use Example 1:
+
+```text
+matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3
+```
+
+Here:
+
+- `rows = 3`
+- `cols = 4`
+- virtual sorted array is `[1,3,5,7,10,11,16,20,23,30,34,60]`
+
+Step by step:
+
+1. `left = 0`, `right = 11`
+2. `mid = 5`
+   - `mid / cols = 1`, `mid % cols = 1`
+   - `midValue = matrix[1][1] = 11`
+   - `11 > 3`, so `right = 4`
+3. `left = 0`, `right = 4`
+4. `mid = 2`
+   - `midValue = matrix[0][2] = 5`
+   - `5 > 3`, so `right = 1`
+5. `left = 0`, `right = 1`
+6. `mid = 0`
+   - `midValue = matrix[0][0] = 1`
+   - `1 < 3`, so `left = 1`
+7. `left = 1`, `right = 1`
+8. `mid = 1`
+   - `midValue = matrix[0][1] = 3`
+   - match found, return `true`
+
+### Key Variables Explained
+
+- `rows`: number of matrix rows.
+- `cols`: number of columns per row; also used for index conversion.
+- `left`: left boundary of the binary-search range in the virtual array.
+- `right`: right boundary of the binary-search range.
+- `mid`: middle index of the current search range.
+- `midValue`: actual matrix value corresponding to `mid`.
+
+### Why This Works
+
+The binary-search invariant is: if `target` exists, it must stay inside the current `[left, right]` range of the virtual sorted array. Each comparison with `midValue` removes half of the remaining candidates without removing the target's possible position.
+
+The row/column conversion is correct because every matrix position has exactly one virtual index, and the matrix's ordering guarantees those virtual indices are globally sorted.
+
+### Trick Used
+
+Virtual flattening: the code never builds a separate 1D array, but accesses the equivalent 1D position using `matrix[mid / cols][mid % cols]`.
+
+### Edge Cases Handled
+
+- **Single row or single column**: the same index conversion still works.
+- **Target smaller than all values or larger than all values**: binary search naturally exhausts the range and returns `false`.
+- **Target not present but between existing values**: the loop keeps shrinking until `left > right`, then returns `false`.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log(m·n))`** — see the analysis for full details.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log(m * n))`** — the search range starts at `rows * cols` elements and is halved each iteration.
+- **Space Complexity: `O(1)`** — only `rows`, `cols`, `left`, `right`, `mid`, and `midValue` are used.

@@ -101,20 +101,123 @@ public class MinStack {
 
 ## Explanation
 
+### Problem Analysis
+
+The stack must support normal operations like `push`, `pop`, and `top`, but also return the minimum element at any moment in constant time. The difficulty is that once elements are popped, we still need the current minimum without scanning the whole stack.
+
+This is a standard interview problem because it checks whether you can augment a familiar data structure with extra state efficiently.
+
 ### Approach
 
-**Min Stack** is a stack problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (Stack) to achieve the target complexities of `O(1)` time and `O(n)` space.
+The code keeps two stacks:
+
+- `stack` stores all values normally.
+- `minStack` stores only values that become the new minimum at the time they are pushed.
+
+That means `minStack.peek()` is always the minimum of the current stack. This avoids the brute-force alternative of searching all elements every time `getMin()` is called.
+
+### Pattern Used
+
+This solution uses a **Stack with auxiliary stack** pattern.
+
+### Key Insight
+
+Whenever a value is less than or equal to the current minimum, push it onto `minStack` too; then, when that same value is popped from the main stack, remove it from `minStack` as well.
 
 ### Code Walkthrough
 
-The solution is implemented in `push(int val)`:
+The class defines:
 
-1. **Initialise** the necessary data structures.
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+- `private final Stack<Integer> stack;`
+- `private final Stack<Integer> minStack;`
+
+In the constructor:
+
+- both stacks are initialized as empty
+
+In `push(int val)`:
+
+- `stack.push(val);`
+  - every value goes into the main stack
+- `if (minStack.isEmpty() || val <= minStack.peek()) { minStack.push(val); }`
+  - if the new value is the first value or ties/beats the current minimum, it is also pushed onto `minStack`
+
+The `<=` comparison matters because duplicate minimum values must be tracked separately.
+
+In `pop()`:
+
+- `stack.pop()` removes the top value from the main stack
+- if that removed value `.equals(minStack.peek())`, the code also pops from `minStack`
+
+Using `.equals(...)` is important because these are `Integer` objects, and the code compares values rather than object references.
+
+In `top()`:
+
+- `return stack.peek();`
+
+In `getMin()`:
+
+- `return minStack.peek();`
+
+### Example Walkthrough
+
+Using the given example:
+
+- `push(-2)`  
+  - `stack = [-2]`
+  - `minStack = [-2]`
+- `push(0)`  
+  - `stack = [-2, 0]`
+  - `0` is not `<= -2`, so `minStack` stays `[-2]`
+- `push(-3)`  
+  - `stack = [-2, 0, -3]`
+  - `-3 <= -2`, so `minStack = [-2, -3]`
+- `getMin()`  
+  - `minStack.peek()` returns `-3`
+- `pop()`  
+  - remove `-3` from `stack`
+  - it equals `minStack.peek()`, so remove `-3` from `minStack` too
+  - now `stack = [-2, 0]`, `minStack = [-2]`
+- `top()`  
+  - `stack.peek()` returns `0`
+- `getMin()`  
+  - `minStack.peek()` returns `-2`
+
+This matches the expected output.
+
+### Key Variables Explained
+
+- `stack`: the real stack containing every pushed value.
+- `minStack`: a helper stack containing the history of minimum values.
+- `val`: the incoming value in `push(int val)`.
+
+`minStack` changes only when a new minimum appears or when the current minimum is removed.
+
+### Why This Works
+
+At all times, the top of `minStack` is the minimum value among all elements still present in `stack`. That invariant holds because:
+
+- every new minimum is recorded immediately,
+- duplicate minimums are also recorded due to `val <= minStack.peek()`,
+- when a minimum value leaves the main stack, it is removed from `minStack` at the same time.
+
+So `getMin()` never needs to search; the answer is always ready on top of `minStack`.
+
+### Trick Used
+
+The trick is **tracking duplicate minimums** by pushing values onto `minStack` when `val <= minStack.peek()`, not just when `val < minStack.peek()`.
+
+### Edge Cases Handled
+
+- First insertion: `minStack.isEmpty()` ensures the first value becomes the current minimum.
+- Duplicate minimum values: the `<=` condition preserves correct behavior after one copy is popped.
+- Negative numbers: handled naturally because comparisons are ordinary integer comparisons.
+
+The code relies on the problem guarantee that `pop()`, `top()`, and `getMin()` are called only on non-empty stacks.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(1)` per operation**  
+  `push`, `pop`, `top`, and `getMin` each use only a constant number of stack operations.
+- **Space Complexity: `O(n)`**  
+  `stack` stores all values, and `minStack` can also grow up to `n` in the worst case, such as a strictly decreasing sequence.

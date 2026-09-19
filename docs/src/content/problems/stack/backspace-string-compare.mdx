@@ -83,23 +83,118 @@ public class BackspaceStringCompare {
 
 ## Explanation
 
+### Problem Analysis
+
+The problem asks whether two typed strings become identical after applying `#` as a backspace. The challenge is that each `#` affects characters before it, so comparing the raw strings directly is not enough.
+
+This is a common interview problem because it tests string simulation, careful state tracking, and whether you can avoid inefficient repeated deletions.
+
 ### Approach
 
-**Backspace String Compare** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+Instead of literally deleting characters from left to right, this code scans each string from right to left and counts how many characters must be skipped because of backspaces.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+That turns every `#` into a simple counter update:
+
+- if we see `#`, increase the skip count
+- if we see a letter while `skip > 0`, consume one skip
+- otherwise, the letter survives and belongs in the final string
+
+This is cleaner than brute-force deletion and avoids expensive middle removals from a string.
+
+### Pattern Used
+
+This solution primarily relies on **reverse traversal with string simulation**.
+
+### Key Insight
+
+A backspace only affects characters to its left, so scanning from right to left lets the code decide immediately whether a character survives or gets erased.
 
 ### Code Walkthrough
 
-The solution is implemented in `backspaceCompare(String s, String t)`:
+The public method `backspaceCompare(String s, String t)` does one thing:
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+- it calls `buildString(s)`
+- it calls `buildString(t)`
+- it compares the two built results with `.equals(...)`
+
+The real work happens inside `buildString(String str)`:
+
+- `StringBuilder sb = new StringBuilder();` stores the surviving characters
+- `int skip = 0;` tracks how many letters should be ignored because of later `#`
+
+The loop runs backward:
+
+- `for (int i = str.length() - 1; i >= 0; i--)`
+
+For each character `c`:
+
+- if `c == '#'`, increment `skip`
+- else if `skip > 0`, decrement `skip` because this character gets erased
+- else append `c` to `sb`
+
+Finally, `buildString` returns `sb.toString()`.
+
+Because both strings are built using the same right-to-left logic, the final equality check is valid even though the characters are appended in reverse order.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+```text
+s = "ab#c", t = "ad#c"
+```
+
+For `s`:
+
+- start with `sb = ""`, `skip = 0`
+- read `'c'` -> append, so `sb = "c"`
+- read `'#'` -> `skip = 1`
+- read `'b'` with `skip = 1` -> skip it, now `skip = 0`
+- read `'a'` -> append, so `sb = "ca"`
+
+For `t`:
+
+- start with `sb = ""`, `skip = 0`
+- read `'c'` -> append, so `sb = "c"`
+- read `'#'` -> `skip = 1`
+- read `'d'` with `skip = 1` -> skip it, now `skip = 0`
+- read `'a'` -> append, so `sb = "ca"`
+
+Both calls return `"ca"`, so `backspaceCompare` returns `true`.
+
+That matches the intended final typed text `"ac"`, just stored in reverse order for both strings.
+
+### Key Variables Explained
+
+- `sb` — collects the surviving characters for one string
+- `skip` — counts how many upcoming characters on the left should be deleted
+- `i` — moves from the end of the string toward the beginning
+- `c` — the current character being processed
+
+### Why This Works
+
+The invariant is: before processing index `i`, `skip` equals the number of not-yet-applied backspaces created by characters to the right of `i`.
+
+So:
+
+- every `#` correctly increases pending deletions
+- every skipped letter correctly consumes one deletion
+- every appended letter is guaranteed to survive in the final typed text
+
+Since `buildString` returns exactly the surviving characters of each input, comparing the two returned strings gives the correct answer.
+
+### Trick Used
+
+The trick is **processing the string backward so backspaces become a counter instead of an actual delete operation**.
+
+### Edge Cases Handled
+
+- **Consecutive backspaces** like `"ab##"` — `skip` can grow above `1`
+- **Backspacing past the start** like `"###a"` — skipped characters are simply consumed; no invalid access happens
+- **Empty final strings** like `"ab##"` and `"c#d#"` — both builders can end up empty and still compare correctly
+- **Different raw strings with same final text** — both are normalized through `buildString(...)`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(|s| + |t|)`** — each string is scanned once from right to left
+- **Space Complexity: `O(|s| + |t|)`** — the two `StringBuilder` results store the surviving characters

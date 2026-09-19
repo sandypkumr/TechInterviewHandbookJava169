@@ -113,23 +113,98 @@ public class ValidSudoku {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to validate a partially filled Sudoku board, not solve it. We only need to check whether any filled digit breaks the row, column, or `3 x 3` box rules.
+
+It is a common interview question because it tests clean state tracking across multiple constraints at the same time.
+
 ### Approach
+A naive approach would be to re-scan the current row, current column, and current box for every filled cell. That repeats a lot of work.
 
-The key insight for **Valid Sudoku** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+This solution keeps three arrays of sets:
+- `rows[i]` stores digits already seen in row `i`
+- `cols[j]` stores digits already seen in column `j`
+- `boxes[boxIndex]` stores digits already seen in the corresponding `3 x 3` sub-box
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+As we scan the board once, any repeated digit can be detected immediately.
+
+### Pattern Used
+The solution uses **Hashing** with row, column, and box tracking.
+
+### Key Insight
+For each filled cell, the question is simply: has this digit already appeared in its row, column, or sub-box?
 
 ### Code Walkthrough
+The method starts by creating three arrays of sets:
+- `Set<Character>[] rows = new HashSet[9]`
+- `Set<Character>[] cols = new HashSet[9]`
+- `Set<Character>[] boxes = new HashSet[9]`
 
-The solution is implemented in `isValidSudoku(char[][] board)`:
+Then a loop from `0` to `8` initializes each slot with a new `HashSet<>()`.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+Next, the nested loops scan the board using indices `i` and `j`.
+- `char num = board[i][j]`
+- if `num == '.'`, the code continues because empty cells do not matter for validity
+
+For a filled cell, it computes:
+- `int boxIndex = (i / 3) * 3 + (j / 3)`
+
+That formula maps coordinates into one of the 9 sub-boxes:
+- rows `0..2`, cols `0..2` become box `0`
+- rows `0..2`, cols `3..5` become box `1`
+- and so on
+
+Before inserting `num`, the code checks:
+- `rows[i].contains(num)`
+- `cols[j].contains(num)`
+- `boxes[boxIndex].contains(num)`
+
+If any check is true, the board is invalid and the method returns `false` immediately.
+
+Otherwise, the digit is recorded in all three places:
+- `rows[i].add(num)`
+- `cols[j].add(num)`
+- `boxes[boxIndex].add(num)`
+
+If the full board is scanned without a conflict, the method returns `true`.
+
+### Example Walkthrough
+Use Example 2, which returns `false`.
+
+At cell `(0, 0)`, `num = '8'`:
+- `boxIndex = (0 / 3) * 3 + (0 / 3) = 0`
+- row `0`, column `0`, and box `0` are all empty, so `'8'` is added to each relevant set
+
+The scan continues. When it reaches cell `(3, 0)`, `num = '8'` again:
+- this cell is in row `3` and box `3`, so those structures do not conflict with `(0, 0)`
+- but `cols[0]` already contains `'8'` from the first cell
+- therefore `cols[0].contains(num)` is true and the method returns `false`
+
+So for the exact board shown in the MDX, the implementation actually detects the column duplicate first, which still correctly proves the board is invalid.
+
+### Key Variables Explained
+- `rows`: array of sets tracking which digits have appeared in each row
+- `cols`: array of sets tracking which digits have appeared in each column
+- `boxes`: array of sets tracking which digits have appeared in each `3 x 3` sub-box
+- `num`: the current board value being processed
+- `boxIndex`: maps `(i, j)` to the correct sub-box number
+- `i`, `j`: row and column pointers in the nested loops
+
+### Why This Works
+After processing any prefix of the board, `rows`, `cols`, and `boxes` exactly represent all digits already seen in the corresponding structures. Therefore, when a new filled cell is encountered, checking those sets is enough to know whether placing that digit would violate Sudoku rules.
+
+Because every filled cell is checked once before insertion, the method returns `false` on the first duplicate and returns `true` only if no row, column, or box conflict exists anywhere.
+
+### Trick Used
+The key trick is **encoding each `3 x 3` box with `(i / 3) * 3 + (j / 3)`** so box membership can be tracked with a simple 1D array.
+
+### Edge Cases Handled
+- Empty cells: skipped by `if (num == '.') continue`
+- Duplicate in a row: caught by `rows[i].contains(num)`
+- Duplicate in a column: caught by `cols[j].contains(num)`
+- Duplicate in a sub-box: caught by `boxes[boxIndex].contains(num)`
+- Partially filled but valid board: accepted because only filled cells are checked
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(1)` for this problem size because the board is always `9 x 9`; more explicitly, the code processes at most `81` cells and does constant-time set operations for each
+- **Space Complexity:** `O(1)` because it stores at most 27 sets over digits `1` to `9`; with variable board size, this would be proportional to the board constraints

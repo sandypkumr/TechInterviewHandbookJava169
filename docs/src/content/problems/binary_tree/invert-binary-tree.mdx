@@ -73,23 +73,72 @@ public class InvertBinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks us to mirror the binary tree by swapping every node's left and right child. Each node must be updated exactly once, but the same operation must happen across the whole tree.
+
+This is a classic interview question because the transformation is simple, yet it checks whether you are comfortable with recursive tree traversal.
+
 ### Approach
+The code uses recursion to visit a node, swap its two children, and then do the same for the new left and right subtrees. Since inversion of a tree is defined in terms of inversion of its subtrees, recursion fits naturally.
 
-**Invert Binary Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+This is much simpler than trying to manually track parent-child relationships level by level.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+Depth-First Search (DFS) with recursion.
+
+### Key Insight
+To invert the whole tree, it is enough to swap `root.left` and `root.right` at every node and recursively repeat that exact same step below it.
 
 ### Code Walkthrough
+`invertTree(TreeNode root)` is both the entry point and the recursive worker.
 
-The solution is implemented in `invertTree(TreeNode root)`:
+The base case is `if (root == null) return null;`, which stops recursion at empty children.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+`TreeNode temp = root.left;` temporarily stores the original left child.
+
+Then `root.left = root.right;` moves the original right subtree to the left side.
+
+`root.right = temp;` completes the swap by moving the original left subtree to the right side.
+
+After the swap, the code recursively calls `invertTree(root.left);` and `invertTree(root.right);` so both subtrees are inverted as well.
+
+Finally, it returns `root`, which is the same node reference but now points to an inverted subtree.
+
+### Example Walkthrough
+Use Example 1: `root = [4,2,7,1,3,6,9]`.
+
+At node `4`:
+- `temp = 2`
+- `root.left` becomes `7`
+- `root.right` becomes `2`
+
+Now recurse into the new left subtree rooted at `7`:
+- Swap `6` and `9`
+- Subtree becomes `[7,9,6]`
+
+Recurse into the new right subtree rooted at `2`:
+- Swap `1` and `3`
+- Subtree becomes `[2,3,1]`
+
+Putting everything together gives `[4,7,2,9,6,3,1]`.
+
+### Key Variables Explained
+- `root`: current node whose children are being swapped.
+- `temp`: temporary storage for the original `root.left` during the swap.
+
+### Why This Works
+Every node independently needs the same local operation: exchange its left and right pointers. The recursive calls guarantee that after the current node is fixed, the same rule is applied to every descendant.
+
+Since the algorithm stops only at null references, every real node is swapped exactly once, producing the full mirror image of the original tree.
+
+### Trick Used
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+- Empty tree: `root == null` returns `null` immediately.
+- Leaf node: both children are `null`, so swapping changes nothing and recursion stops.
+- One missing child: swapping still works because one side simply becomes `null`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(n)` because each node is visited once and swapped in constant time.
+- Space Complexity: `O(h)` for the recursion stack, where `h` is the tree height; in the worst-case skewed tree, this is `O(n)`.

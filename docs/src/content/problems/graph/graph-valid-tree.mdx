@@ -118,24 +118,140 @@ public class GraphValidTree {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks whether an undirected graph is a valid tree. A tree must satisfy two properties at the same time: it must be fully connected, and it must contain no cycle.
+
+This is a classic interview question because it checks whether you know the structural rule that a tree with `n` nodes must have exactly `n - 1` edges, and whether you can combine that with efficient cycle detection.
+
 ### Approach
 
-**Graph Valid Tree** involves repeatedly merging groups and querying whether two elements belong to the same group — perfect for Union-Find. The data structure maintains a forest of trees where each tree represents a component; union merges two trees and find identifies a root.
+The code uses Union-Find (Disjoint Set Union).
 
-With path compression (flattening the tree on every find) and union by rank (always attaching the smaller tree under the larger), both operations run in near-constant amortised time O(α(n)), where α is the extremely slow-growing inverse Ackermann function.
+The strategy is:
+- First reject any graph whose edge count is not exactly `n - 1`.
+- Then process each edge with `union`.
+- If two endpoints already belong to the same component, adding that edge creates a cycle, so return `false`.
+- If all unions succeed, the graph is a tree.
+
+This is more efficient than repeatedly searching the graph from scratch after every edge.
+
+### Pattern Used
+
+Union-Find (Disjoint Set Union) with path compression and union by rank.
+
+### Key Insight
+
+Once `edges.length == n - 1` is enforced, detecting any cycle is enough to reject the graph, and if no cycle appears, connectivity is guaranteed automatically.
 
 ### Code Walkthrough
 
-The solution is implemented in `validTree(int n, int[][] edges)`:
+The method begins with:
+- `if (edges.length != n - 1) { return false; }`
 
-1. Initialise parent[i] = i and rank[i] = 0 for every node.
-2. find(x): recursively find the root, applying path compression along the way.
-3. union(x, y): find both roots; if different, attach the lower-rank tree under the higher-rank one.
-4. After processing all edges/queries, count distinct roots or answer connectivity queries.
+This is an important shortcut.
+- Too few edges means the graph cannot be connected.
+- Too many edges means the graph must contain a cycle.
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+Next, the code initializes two arrays of size `n`.
+- `parent[i] = i` means every node starts as its own component root.
+- `rank[i] = 1` stores a rough tree height or size indicator for balanced unions.
+
+Then the loop `for (int[] edge : edges)` processes each undirected edge.
+- `union(edge[0], edge[1], parent, rank)` attempts to merge the two endpoint components.
+- If `union(...)` returns `false`, the endpoints were already connected, so the method returns `false` immediately.
+
+The helper `find(int node, int[] parent)` locates the representative root.
+- If `parent[node] != node`, the method recursively finds the top root.
+- `parent[node] = find(parent[node], parent);` applies path compression so future finds are faster.
+
+The helper `union(int u, int v, int[] parent, int[] rank)` does the merge.
+- `rootU = find(u, parent)` and `rootV = find(v, parent)` locate both roots.
+- If `rootU == rootV`, the two nodes are already in the same component, so adding this edge would form a cycle.
+
+Otherwise, the code attaches the lower-rank root under the higher-rank root.
+- If `rank[rootU] > rank[rootV]`, make `rootU` the parent.
+- If `rank[rootU] < rank[rootV]`, make `rootV` the parent.
+- If the ranks are equal, attach `rootV` under `rootU` and increment `rank[rootU]`.
+
+If every edge is processed without failure, `validTree(...)` returns `true`.
+
+### Example Walkthrough
+
+Use Example 1:
+- `n = 5`
+- `edges = [[0,1],[0,2],[0,3],[1,4]]`
+
+First check:
+- `edges.length = 4`
+- `n - 1 = 4`
+- So the graph passes the edge-count requirement.
+
+Initial state:
+- `parent = [0,1,2,3,4]`
+- `rank = [1,1,1,1,1]`
+
+Process `[0,1]`:
+- `find(0) = 0`, `find(1) = 1`
+- Different roots, so union succeeds
+- One root becomes parent of the other
+
+Process `[0,2]`:
+- `find(0)` returns the component root of `0`
+- `find(2) = 2`
+- Different roots, so union succeeds
+
+Process `[0,3]`:
+- Again, `3` is merged into the main component
+
+Process `[1,4]`:
+- `find(1)` compresses to the main root
+- `find(4) = 4`
+- Union succeeds
+
+No union ever fails, so no cycle is found. Because the graph also has exactly `n - 1` edges, the method returns `true`.
+
+Example 2 fails even earlier:
+- `n = 5`, so a tree would need exactly `4` edges
+- The input has `5` edges
+- The method returns `false` immediately
+
+### Key Variables Explained
+
+- `parent`: parent-pointer array representing the current disjoint-set forest.
+- `rank`: balancing information used to keep Union-Find trees shallow.
+- `edge`: one undirected connection from the input.
+- `rootU`, `rootV`: representatives of the two endpoint components inside `union(...)`.
+- `find(...)`: returns the root representative, with path compression.
+- `union(...)`: merges two components and reports whether that merge was valid.
+
+### Why This Works
+
+The solution relies on two tree facts:
+- A valid tree on `n` nodes must have exactly `n - 1` edges.
+- An undirected graph with `n - 1` edges is a tree if and only if it has no cycle.
+
+The code enforces the first fact immediately with `edges.length != n - 1`.
+Then `union(...)` enforces the second fact:
+- If an edge connects two nodes already in the same component, a cycle exists.
+- If every edge connects two different components, the graph stays acyclic.
+
+Since the edge count is exactly `n - 1`, acyclicity implies connectivity here, so returning `true` is correct.
+
+### Trick Used
+
+The key trick is combining the `edges.length != n - 1` shortcut with Union-Find optimizations: path compression in `find(...)` and union by rank in `union(...)`.
+
+### Edge Cases Handled
+
+- Too few edges: rejected immediately by `edges.length != n - 1`.
+- Too many edges: also rejected immediately by the same check.
+- Cycle introduced during processing: `rootU == rootV` makes `union(...)` return `false`.
+- Repeated finds on deep components: path compression keeps later operations efficient.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(V+E)`** — each vertex and each edge is processed at most once in the graph traversal.
-- **Space Complexity: `O(V)`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(n + edges.length * α(n))`.
+  - Initializing `parent` and `rank` takes `O(n)`.
+  - Each call to `union(...)` performs `find(...)` operations that are effectively amortized near-constant time because of path compression and union by rank.
+- Space Complexity: `O(n)` for the `parent` and `rank` arrays.

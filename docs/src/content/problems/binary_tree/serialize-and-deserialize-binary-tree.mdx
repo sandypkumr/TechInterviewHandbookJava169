@@ -87,25 +87,124 @@ public class SerializeAndDeserializeBinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to convert a binary tree into a string and then rebuild the exact same tree from that string. The important requirement is not a specific format, but that the structure and values are preserved perfectly.
+
+It is a favorite interview design problem because it tests whether you can choose a traversal order that captures both node values and missing children. Without recording nulls, many different trees could produce the same sequence.
+
 ### Approach
+The code uses preorder DFS for both operations.
 
-**Serialize and Deserialize Binary Tree** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+- During serialization, it writes the current node value first, then serializes the left subtree, then the right subtree.
+- For missing children, it writes the marker `"null,"`.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+That null marker is what makes deserialization possible. A brute-force idea that records only values would lose structure, but preorder plus null placeholders gives a one-to-one representation of the tree.
+
+### Pattern Used
+DFS recursion with preorder traversal.
+
+### Key Insight
+Preorder traversal combined with explicit `null` markers contains enough information to reconstruct the exact original tree.
 
 ### Code Walkthrough
+In `serialize(TreeNode root)`:
 
-The solution is implemented in `serialize(TreeNode root)`:
+- A `StringBuilder sb = new StringBuilder();` is created.
+- `serializeHelper(root, sb);` fills it recursively.
+- `sb.toString()` is returned as the encoded tree.
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+In `serializeHelper(TreeNode node, StringBuilder sb)`:
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+- `if (node == null) { sb.append("null,"); return; }`
+  - Missing children are written explicitly.
+
+- Otherwise:
+  - `sb.append(node.val).append(",");`
+  - `serializeHelper(node.left, sb);`
+  - `serializeHelper(node.right, sb);`
+
+This is preorder because the current node is written before its children.
+
+In `deserialize(String data)`:
+
+- `String[] nodes = data.split(",");`
+  - The serialized string is broken into tokens.
+
+- `return deserializeHelper(nodes, new int[]{0});`
+  - The array `new int[]{0}` acts as a mutable index shared across recursive calls.
+
+In `deserializeHelper(String[] nodes, int[] index)`:
+
+- `if (index[0] >= nodes.length || nodes[index[0]].equals("null"))`
+  - If the current token is `null`, this subtree is empty.
+  - `index[0]++` moves to the next token, then `null` is returned.
+
+- Otherwise:
+  - `TreeNode node = new TreeNode(Integer.parseInt(nodes[index[0]++]));`
+  - A real node is created from the current token.
+  - `node.left = deserializeHelper(nodes, index);`
+  - `node.right = deserializeHelper(nodes, index);`
+  - The subtree is rebuilt in the same preorder order it was encoded.
+
+### Example Walkthrough
+Use Example 1: `root = [1,2,3,null,null,4,5]`.
+
+Serialization proceeds in preorder:
+
+- visit `1`  -> append `1,`
+- visit `2`  -> append `2,`
+- left of `2` is null  -> append `null,`
+- right of `2` is null -> append `null,`
+- visit `3`  -> append `3,`
+- visit `4`  -> append `4,`
+- left of `4` is null  -> append `null,`
+- right of `4` is null -> append `null,`
+- visit `5`  -> append `5,`
+- left of `5` is null  -> append `null,`
+- right of `5` is null -> append `null,`
+
+The serialized form becomes:
+
+- `1,2,null,null,3,4,null,null,5,null,null,`
+
+Now deserialization reads that sequence in the same order:
+
+- token `1` creates the root
+- token `2` becomes `root.left`
+- next two `null` tokens make `2` a leaf
+- token `3` becomes `root.right`
+- token `4` becomes `3.left`
+- two `null` tokens finish node `4`
+- token `5` becomes `3.right`
+- two `null` tokens finish node `5`
+
+The rebuilt tree matches the original structure exactly.
+
+### Key Variables Explained
+- `sb`: accumulates the serialized tree string efficiently.
+- `node`: current tree node being serialized or reconstructed.
+- `nodes`: tokenized serialized data used during deserialization.
+- `index`: one-element array used as a mutable pointer into `nodes` across recursive calls.
+
+### Why This Works
+Serialization writes nodes in preorder and records every missing child explicitly. That means the output fully describes both value order and tree shape.
+
+Deserialization consumes tokens in the exact same preorder sequence. Whenever it sees a real value, it creates a node and recursively builds its left and right children. Whenever it sees `null`, it knows that branch ends there. Because the reading order mirrors the writing order exactly, the reconstructed tree must be identical to the original.
+
+### Trick Used
+Using an `int[]` with one element as a mutable recursion index shared across deserialization calls.
+
+### Edge Cases Handled
+- Empty tree: serialization writes `null,`, and deserialization returns `null`.
+- Leaf nodes: both children become `null` tokens, so structure is preserved.
+- Negative values: `Integer.parseInt(...)` handles them correctly.
+- Deeply nested trees: recursion still processes the structure correctly in preorder.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`**
+  - Serialization visits each node once and also processes each null child marker a constant number of times.
+  - Deserialization reads each token once.
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — the BFS queue can hold up to O(n) nodes at the widest level.
+- **Space Complexity: `O(n)`**
+  - The serialized string stores the whole tree representation.
+  - Deserialization uses the token array `nodes`, and recursion can use up to `O(h)` call stack space.

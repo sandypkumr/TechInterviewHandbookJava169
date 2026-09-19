@@ -94,25 +94,133 @@ public class MergeIntervals {
 
 ## Explanation
 
+### Problem Analysis
+
+The problem asks us to combine all intervals that overlap and return the smallest set of disjoint intervals covering the same ranges. Two intervals belong together if the next one starts before or exactly when the current merged interval ends.
+
+This is a classic interview topic because it tests whether you recognize that sorting turns a messy global overlap problem into a simple one-pass merge process.
+
 ### Approach
 
-**Merge Intervals** deals with overlapping intervals. After sorting by start time, any interval that overlaps with the previous one (its start ≤ previous end) can be merged by extending the end. A single left-to-right scan after sorting handles all merges in O(n).
+The code first sorts intervals by start time. After that, it keeps one active interval in `currentInterval` and decides whether each new interval extends it or starts a brand-new merged block.
 
-Visualise intervals as horizontal bars on a timeline. Once sorted by left edge, you walk left to right: if the new bar overlaps the current merged bar, extend the merged bar; otherwise, seal the current bar and start a new one.
+This is much better than comparing each interval with every other interval:
+
+- brute force would repeatedly revisit the same overlap relationships
+- sorting ensures that once an interval does not overlap with `currentInterval`, it cannot overlap with any earlier merged interval either
+
+### Pattern Used
+
+This solution uses the **Merge Intervals** pattern with a **Greedy** left-to-right scan.
+
+### Key Insight
+
+After sorting by start time, all intervals that should merge will appear consecutively, so maintaining one running merged interval is enough.
 
 ### Code Walkthrough
 
-The solution is implemented in `merge(int[][] intervals)`:
+The method starts with:
 
-1. Sort intervals by their start value.
-2. Initialise the result list with the first interval.
-3. For each subsequent interval, compare its start with the end of the last interval in the result.
-4. If they overlap (start ≤ last.end), update last.end = max(last.end, current.end).
-5. Otherwise, append the current interval as a new merged interval.
+- `if (intervals.length == 0) { return new int[0][0]; }`
 
-&gt; **Note:** This solution also uses the **greedy — make the locally optimal choice at each step** technique.
+That handles the empty-input case immediately.
+
+Next, it sorts by start time:
+
+- `Arrays.sort(intervals, Comparator.comparingInt(a -> a[0]))`
+
+The result container is:
+
+- `List<int[]> merged = new ArrayList<>();`
+
+Then:
+
+- `int[] currentInterval = intervals[0];`
+
+This means the first interval becomes the active interval we are currently building.
+
+The loop
+
+- `for (int i = 1; i < intervals.length; i++)`
+
+processes every remaining interval.
+
+Inside the loop:
+
+- if `intervals[i][0] <= currentInterval[1]`, the intervals overlap, so the code extends the current merged end with `currentInterval[1] = Math.max(currentInterval[1], intervals[i][1])`
+- otherwise, the current merged interval is finished, so `merged.add(currentInterval)` stores it and `currentInterval = intervals[i]` starts a new one
+
+After the loop, the last active interval has not yet been added, so:
+
+- `merged.add(currentInterval);`
+
+Finally, the list is converted back to the required array format with:
+
+- `return merged.toArray(new int[merged.size()][]);`
+
+### Example Walkthrough
+
+Using Example 1:
+
+- `intervals = [[1,3],[2,6],[8,10],[15,18]]`
+
+After sorting, the order is unchanged.
+
+Initialize:
+
+- `currentInterval = [1,3]`
+- `merged = []`
+
+Now scan:
+
+- `i = 1`, interval `[2,6]`
+  - `2 <= 3`, so merge
+  - `currentInterval[1] = Math.max(3, 6) = 6`
+  - `currentInterval` becomes `[1,6]`
+
+- `i = 2`, interval `[8,10]`
+  - `8 <= 6` is false, so no overlap
+  - add `[1,6]` to `merged`
+  - set `currentInterval = [8,10]`
+
+- `i = 3`, interval `[15,18]`
+  - `15 <= 10` is false
+  - add `[8,10]` to `merged`
+  - set `currentInterval = [15,18]`
+
+After the loop:
+
+- add the final `currentInterval`, `[15,18]`
+
+Result:
+
+- `[[1,6],[8,10],[15,18]]`
+
+### Key Variables Explained
+
+- `intervals`: input array, sorted in place by start time
+- `merged`: stores completed merged intervals
+- `currentInterval`: the interval currently being expanded
+- `i`: index used to scan the remaining intervals
+
+### Why This Works
+
+Sorting by start time ensures intervals are considered in the only order that matters for merging. At any moment, `currentInterval` represents the merged result of all consecutive intervals processed so far that overlap with it.
+
+If the next interval starts before or at `currentInterval[1]`, they must belong to the same merged block, so extending the end is correct. If it starts after `currentInterval[1]`, there is a gap, so no later interval can reconnect them, which makes it safe to finalize the current interval.
+
+### Trick Used
+
+The trick is reusing `currentInterval` directly from the original `intervals` array and only updating its end instead of creating a fresh interval object for every merge.
+
+### Edge Cases Handled
+
+- Empty input: returns `new int[0][0]`
+- Touching intervals like `[1,4]` and `[4,5]`: merged because the check is `<=`
+- Input already sorted or unsorted: both work because of the initial sort
+- A fully contained interval, like `[2,3]` inside `[1,6]`: handled by `Math.max(...)`, which keeps the larger end
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n log n)`** because sorting with `Arrays.sort(...)` dominates, and the merge loop is linear
+- **Space Complexity: `O(n)`** because `merged` may store all intervals in the no-overlap case, excluding the output array conversion which represents the returned result

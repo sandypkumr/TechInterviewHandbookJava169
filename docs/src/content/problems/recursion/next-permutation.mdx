@@ -101,23 +101,89 @@ public class NextPermutation {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to rearrange `nums` into the next lexicographically larger ordering, or reset it to the smallest ordering if no larger permutation exists. The update must happen in place and use constant extra memory.
+
+It is a popular interview problem because the correct solution depends on recognizing a structural property of permutations rather than generating permutations explicitly.
+
 ### Approach
+The code scans from right to left to find the first index where the order stops decreasing. That index is the pivot: the place where we can make the smallest possible increase.
 
-**Next Permutation** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+After finding the pivot, the code swaps it with the smallest larger value available on its right side, then reverses the suffix. This is better than brute force because it transforms the current arrangement directly into the next one in linear time.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+### Pattern Used
+Greedy with two-pointer style suffix reversal.
+
+### Key Insight
+The suffix to the right of the pivot is already in non-increasing order, so after swapping the pivot, reversing that suffix produces the smallest arrangement larger than the original one.
 
 ### Code Walkthrough
+In `nextPermutation(int[] nums)`:
+- `n = nums.length`
+- `i = n - 2` starts from the second-last index because we compare `nums[i]` with `nums[i + 1]`.
 
-The solution is implemented in `nextPermutation(int[] nums)`:
+Finding the pivot:
+- `while (i >= 0 && nums[i] >= nums[i + 1]) { i--; }`
+- This moves left while the suffix is non-increasing.
+- When the loop stops, `i` is the first position from the right where `nums[i] < nums[i + 1]`, or `-1` if the whole array is descending.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+Finding the swap partner:
+- If `i >= 0`, a larger permutation exists.
+- `j = n - 1` starts from the end.
+- `while (j >= 0 && nums[j] <= nums[i]) { j--; }` finds the first value from the right that is strictly larger than `nums[i]`.
+- `swap(nums, i, j)` makes the permutation just large enough at position `i`.
+
+Fixing the suffix:
+- `reverse(nums, i + 1, n - 1)` reverses everything after the pivot.
+- Because that suffix was decreasing before the reverse, it becomes increasing afterward, which is the smallest possible suffix.
+
+Helper methods:
+- `swap(int[] nums, int i, int j)` exchanges two elements.
+- `reverse(int[] nums, int start, int end)` uses repeated `swap` calls while `start < end`.
+
+### Example Walkthrough
+Use **Example 1**: `nums = [1,2,3]`.
+
+Step 1: find pivot
+- start `i = 1`
+- check `nums[1] >= nums[2]` -> `2 >= 3` is false
+- pivot is `i = 1`, value `2`
+
+Step 2: find next larger element from the right
+- start `j = 2`
+- check `nums[2] <= nums[1]` -> `3 <= 2` is false
+- swap `nums[1]` and `nums[2]`
+- array becomes `[1,3,2]`
+
+Step 3: reverse suffix from `i + 1 = 2` to `2`
+- suffix has one element, so it stays the same
+- final result is `[1,3,2]`
+
+For the descending case in **Example 2**: `[3,2,1]`
+- no pivot is found, so `i = -1`
+- `reverse(nums, 0, 2)` turns the whole array into `[1,2,3]`
+
+### Key Variables Explained
+- `n`: array length.
+- `i`: pivot index, the first place from the right where the sequence can be increased.
+- `j`: rightmost element larger than `nums[i]`, used for the swap.
+- `nums`: modified in place to become the next permutation.
+- `start`, `end`: two pointers used by `reverse`.
+- `temp`: temporary storage inside `swap`.
+
+### Why This Works
+If the array has a pivot `i`, then everything to the right of `i` is in descending order. Any permutation larger than the current one must change position `i` or something to its left, and changing farther left would make the result unnecessarily large.
+
+Swapping `nums[i]` with the rightmost value larger than it makes the smallest possible increase at the pivot position. Reversing the descending suffix then puts the remainder into ascending order, which is the minimum suffix that still keeps the whole array larger than before.
+
+### Trick Used
+The key trick is scanning from the right so the algorithm can identify the pivot and exploit the already descending suffix instead of sorting or generating permutations.
+
+### Edge Cases Handled
+- Already largest permutation like `[3,2,1]`: no pivot is found, so reversing the whole array produces the smallest ordering.
+- Duplicate values like `[1,1,5]`: the `<=` comparison while searching for `j` ensures the swap uses a strictly larger value.
+- Length `1`: `i` becomes `-1`, and `reverse(nums, 0, 0)` safely does nothing.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(n)`. The pivot scan moves left once, the `j` scan moves left once, and `reverse` processes the suffix once.
+- **Space Complexity:** `O(1)`. Only a few integer variables and the temporary swap variable are used.

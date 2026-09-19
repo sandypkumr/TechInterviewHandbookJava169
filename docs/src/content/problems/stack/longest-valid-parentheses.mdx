@@ -78,23 +78,137 @@ public class LongestValidParentheses {
 
 ## Explanation
 
+### Problem Analysis
+
+We need the length of the longest contiguous substring that forms valid parentheses. The difficulty is that a valid region can break and restart many times, so simply counting opening and closing brackets is not enough.
+
+This problem appears often in interviews because it tests whether you can track structural boundaries in a string efficiently instead of checking every substring.
+
 ### Approach
 
-**Longest Valid Parentheses** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+The code uses a stack of indices, not characters. The stack helps track unmatched `'('` positions, and it also stores the most recent invalid boundary so the current valid length can be measured correctly.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+A brute-force check of all substrings would be `O(n^2)` or worse. This stack-based scan computes the answer in one pass.
+
+### Pattern Used
+
+This solution uses a **Stack** pattern for matching parentheses and tracking boundaries.
+
+### Key Insight
+
+Store indices on the stack, and keep a base index such as `-1` or the latest unmatched `')'` so that when a valid match closes, `i - stack.peek()` immediately gives the current valid substring length.
 
 ### Code Walkthrough
 
-The solution is implemented in `longestValidParentheses(String s)`:
+The method starts by creating:
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+- `Stack<Integer> stack = new Stack<>();`
+
+Then it pushes `-1`:
+
+- `stack.push(-1);`
+
+This sentinel index acts as the left boundary before the string starts.
+
+`maxLength` tracks the best answer found so far:
+
+- `int maxLength = 0;`
+
+The `for` loop scans each character of `s`:
+
+- `for (int i = 0; i < s.length(); i++)`
+
+Inside the loop:
+
+- `char c = s.charAt(i);`
+
+If `c == '('`:
+
+- the index `i` is pushed onto `stack`
+- this records an unmatched opening bracket
+
+Otherwise the character is `')'`:
+
+- the code does `stack.pop();`
+- this tries to match the current `')'` with the most recent unmatched opening bracket or sentinel boundary
+
+After popping, two cases are possible:
+
+- If `stack.isEmpty()`, there was no valid base left, so the current `')'` becomes a new invalid boundary and the code pushes `i`
+- Otherwise, the substring from `stack.peek() + 1` to `i` is valid, so:
+  - `maxLength = Math.max(maxLength, i - stack.peek());`
+
+### Example Walkthrough
+
+Use Example 2: `s = ")()())"`
+
+Initial state:
+
+- `stack = [-1]`
+- `maxLength = 0`
+
+Step by step:
+
+- `i = 0`, `c = ')'`
+  - pop `-1`, stack becomes empty
+  - push boundary `0`
+  - `stack = [0]`
+- `i = 1`, `c = '('`
+  - push `1`
+  - `stack = [0, 1]`
+- `i = 2`, `c = ')'`
+  - pop `1`
+  - stack is `[0]`
+  - valid length = `2 - 0 = 2`
+  - `maxLength = 2`
+- `i = 3`, `c = '('`
+  - push `3`
+  - `stack = [0, 3]`
+- `i = 4`, `c = ')'`
+  - pop `3`
+  - stack is `[0]`
+  - valid length = `4 - 0 = 4`
+  - `maxLength = 4`
+- `i = 5`, `c = ')'`
+  - pop `0`
+  - stack becomes empty
+  - push boundary `5`
+
+Final answer is `4`, which corresponds to `"()()"`.
+
+For Example 1, `s = "(()"`, the same logic finds the valid substring `"()"` with length `2`. For Example 3, the loop never runs, so the method correctly returns `0`.
+
+### Key Variables Explained
+
+- `stack`: stores indices of unmatched `'('` and boundary markers.
+- `-1`: initial sentinel boundary before the string begins.
+- `i`: current index in the string.
+- `c`: current character at index `i`.
+- `maxLength`: longest valid substring length seen so far.
+
+### Why This Works
+
+The stack always keeps the index before the start of the current valid suffix at its top after matching operations. When a closing bracket successfully matches, `i - stack.peek()` gives the exact length of the valid substring ending at `i`.
+
+When an unmatched `')'` appears, the code resets the boundary by pushing its index. That prevents future lengths from incorrectly spanning across an invalid split point. Because every index is pushed and popped in order, the algorithm captures all valid contiguous regions correctly.
+
+### Trick Used
+
+The trick is the **sentinel boundary index**:
+
+- initial `-1` handles valid substrings starting at index `0`
+- later pushing an unmatched `')'` index resets the base for the next valid region
+
+### Edge Cases Handled
+
+- Empty string `""`: the loop is skipped and `0` is returned.
+- String starting with `')'`: popping makes the stack empty, so the invalid index is stored as a new boundary.
+- Valid substring starting at index `0`: the initial `-1` makes its length compute correctly.
+- Nested and adjacent valid groups: both are handled because the stack tracks exact unmatched positions.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`**  
+  The loop scans the string once, and each index is pushed to or popped from `stack` at most one time.
+- **Space Complexity: `O(n)`**  
+  In the worst case, such as `"(((("`, the stack stores all indices. The existing `O(1)` claim would not match this implementation.

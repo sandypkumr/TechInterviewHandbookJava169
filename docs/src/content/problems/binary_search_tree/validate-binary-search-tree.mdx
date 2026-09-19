@@ -70,23 +70,83 @@ public class ValidateBinarySearchTree {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks whether the entire binary tree satisfies the BST rule, not just whether each node is larger than its left child and smaller than its right child. The subtle part is that every node must also respect constraints inherited from all its ancestors.
+
+It is a common interview question because it exposes a frequent mistake: checking only local parent-child relationships instead of validating the full allowed range for every node.
+
 ### Approach
+The code performs a DFS while carrying the valid numeric range for each subtree.
 
-**Validate Binary Search Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+- A node in the left subtree must stay between the current `min` bound and the parent value.
+- A node in the right subtree must stay between the parent value and the current `max` bound.
+- If any node violates its range, the whole tree is invalid.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+This is better than brute force because one traversal is enough to validate all ancestor-based constraints directly.
+
+### Pattern Used
+This solution uses **DFS recursion with lower/upper bounds**.
+
+### Key Insight
+A node is valid only if its value lies inside the strict range allowed by every ancestor, so passing bounds downward is the cleanest way to enforce the BST definition.
 
 ### Code Walkthrough
+The entry method is `isValidBST(TreeNode root)`.
 
-The solution is implemented in `isValidBST(TreeNode root)`:
+- It starts with `return isValidBST(root, Long.MIN_VALUE, Long.MAX_VALUE);`
+  - The root initially has no practical restrictions, so the widest possible range is used.
+  - `long` bounds are chosen so integer edge values still fit safely inside the range.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+The helper method is `isValidBST(TreeNode node, long min, long max)`.
+
+- `if (node == null) { return true; }`
+  - An empty subtree is valid by definition.
+- `if (node.val <= min || node.val >= max) { return false; }`
+  - The current value must be strictly inside `(min, max)`.
+  - This also correctly rejects duplicates because equality is not allowed in a BST.
+- `return isValidBST(node.left, min, node.val) && isValidBST(node.right, node.val, max);`
+  - The left subtree inherits the same lower bound `min` but gets a tighter upper bound `node.val`.
+  - The right subtree inherits the same upper bound `max` but gets a tighter lower bound `node.val`.
+  - Both subtrees must be valid for the whole tree to be valid.
+
+### Example Walkthrough
+Use **Example 2**: `root = [5,1,4,null,null,3,6]`.
+
+- Start with `isValidBST(root, Long.MIN_VALUE, Long.MAX_VALUE)`.
+- At node `5`, the value is inside the allowed range, so recurse:
+  - Left: `isValidBST(1, Long.MIN_VALUE, 5)`
+  - Right: `isValidBST(4, 5, Long.MAX_VALUE)`
+- Node `1` is valid because `Long.MIN_VALUE < 1 < 5`.
+- Now check node `4` in the right subtree of `5`:
+  - Its allowed range is `(5, Long.MAX_VALUE)`.
+  - But `4 <= 5`, so the condition `node.val <= min` becomes true.
+- The helper returns `false`, so the whole tree is not a valid BST.
+- Output is `false`.
+
+### Key Variables Explained
+- `root`: the tree root passed into the public method.
+- `node`: the current node being validated in the helper.
+- `min`: the strict lower bound that `node.val` must exceed.
+- `max`: the strict upper bound that `node.val` must stay below.
+- `Long.MIN_VALUE` / `Long.MAX_VALUE`: safe initial bounds that avoid overflow issues with `int` node values.
+
+### Why This Works
+The recursive invariant is: every call to `isValidBST(node, min, max)` means `node` must lie strictly inside `(min, max)` for the subtree to remain valid.
+
+When the method goes left, it tightens the upper bound to `node.val`; when it goes right, it tightens the lower bound to `node.val`. That exactly matches the BST definition for all descendants, not just immediate children. If any descendant breaks an ancestor-derived bound, the method returns `false` at that point.
+
+### Trick Used
+The trick is using **`long` bounds instead of `int` bounds** so nodes with value `Integer.MIN_VALUE` or `Integer.MAX_VALUE` are still checked correctly.
+
+### Edge Cases Handled
+- Empty child subtree: `node == null` returns `true`.
+- Duplicate values: rejected because the code uses `<= min` and `>= max`.
+- Extreme integer values: handled safely by `Long.MIN_VALUE` and `Long.MAX_VALUE`.
+- Deep violations from ancestors, not just parents: caught by the propagated bounds.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)`**
+  - Each node is visited once by the recursive helper.
+- **Space Complexity: `O(h)`**
+  - The extra space comes from the recursion stack, where `h` is the tree height.
+  - In the worst case of a skewed tree, this becomes `O(n)`.

@@ -108,25 +108,140 @@ public class BusRoutes {
 
 ## Explanation
 
+### Problem Analysis
+We need the minimum number of buses required to travel from `source` to `target`, not the minimum number of stops traveled. That detail changes the graph model: each BFS level should represent taking one more bus.
+
+This is a strong interview problem because it tests graph modeling. The main challenge is realizing that bus routes and stops form an implicit graph rather than a simple shortest path over integers.
+
 ### Approach
+The code first builds `stopToBuses`, which tells us which bus indices can be boarded at each stop.
 
-**Bus Routes** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+Then it runs BFS over buses, not over stops:
+- the initial queue contains every bus available at `source`
+- one BFS level represents one additional bus taken
+- when exploring a bus, the code looks at every stop on that route
+- from each stop, it discovers other buses reachable without increasing the bus count until the next level
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+This works better than searching blindly through stops because the quantity we optimize is exactly the number of bus transfers taken.
+
+### Pattern Used
+Breadth-First Search on an implicit graph.
+
+### Key Insight
+If each BFS level represents a set of buses taken so far, then the first time we encounter `target`, we have used the minimum possible number of buses.
 
 ### Code Walkthrough
+The method `numBusesToDestination(int[][] routes, int source, int target)` starts with an immediate base case:
+- `if (source == target) return 0;`
 
-The solution is implemented in `numBusesToDestination(int[][] routes, int source, int target)`:
+Next, it builds:
+- `Map<Integer, List<Integer>> stopToBuses = new HashMap<>();`
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+The nested loops fill this map so every `stop` knows which bus indices include it:
+- `stopToBuses.computeIfAbsent(stop, k -> new ArrayList<>()).add(i);`
 
-&gt; **Note:** This solution also uses the **HashMap for O(1) average-case lookups** technique.
+After that, the BFS structures are created:
+- `Queue<Integer> queue = new LinkedList<>();`
+- `Set<Integer> visitedStops = new HashSet<>();`
+- `Set<Integer> visitedBuses = new HashSet<>();`
+
+The initial queue is seeded with every bus serving `source`:
+- `for (int bus : stopToBuses.getOrDefault(source, new ArrayList<>()))`
+- `queue.offer(bus);`
+- `visitedBuses.add(bus);`
+
+At this point, boarding any of those buses counts as taking the first bus, so:
+- `int busesTaken = 1;`
+
+The BFS loop processes one level at a time:
+- `int size = queue.size();`
+- the `for (int i = 0; i < size; i++)` loop handles all buses reachable with the current `busesTaken`
+
+For each `bus = queue.poll()`:
+- iterate through every `stop` in `routes[bus]`
+- if `stop == target`, return `busesTaken`
+- if `visitedStops.contains(stop)`, skip it
+- otherwise add the stop to `visitedStops`
+
+From each newly visited stop, the code checks every connecting bus:
+- `for (int nextBus : stopToBuses.getOrDefault(stop, new ArrayList<>()))`
+- if `nextBus` has not been used before, enqueue it and mark it in `visitedBuses`
+
+After finishing the whole current level, the code increments:
+- `busesTaken++;`
+
+If BFS ends without reaching `target`, it returns `-1`.
+
+### Example Walkthrough
+Use Example 1:
+- `routes = [[1,2,7],[3,6,7]]`
+- `source = 1`
+- `target = 6`
+
+Build `stopToBuses`:
+- stop `1` -> bus `[0]`
+- stop `2` -> bus `[0]`
+- stop `7` -> buses `[0, 1]`
+- stop `3` -> bus `[1]`
+- stop `6` -> bus `[1]`
+
+Initialization:
+- `queue = [0]` because bus `0` serves the source stop `1`
+- `visitedBuses = {0}`
+- `busesTaken = 1`
+
+Process level 1:
+- pop bus `0`
+- its stops are `1, 2, 7`
+- none is `6`
+- from stop `7`, discover bus `1` and enqueue it
+
+End of level 1:
+- `queue = [1]`
+- increment `busesTaken` to `2`
+
+Process level 2:
+- pop bus `1`
+- its stops are `3, 6, 7`
+- when the code sees stop `6`, `stop == target` is true
+- return `2`
+
+That matches the expected answer.
+
+For Example 2, no BFS path reaches the target stop, so the queue empties and the method returns `-1`.
+
+### Key Variables Explained
+- `routes`: the original bus routes; `routes[bus]` gives all stops visited by that bus.
+- `stopToBuses`: reverse index from a stop to all buses available there.
+- `queue`: BFS queue of bus indices to explore at the current or next bus-count level.
+- `visitedStops`: stops already expanded so their outgoing bus connections are not processed repeatedly.
+- `visitedBuses`: buses already boarded or queued, preventing duplicate work.
+- `busesTaken`: current BFS depth, equal to the number of buses used so far.
+- `size`: number of buses in the current BFS layer.
+- `nextBus`: a connecting bus reachable from the current stop.
+
+### Why This Works
+The BFS invariant is that every bus currently in `queue` can be reached using exactly `busesTaken` buses.
+
+- The initial queue is correct because any bus serving `source` can be boarded first.
+- Exploring all stops on a bus captures every place you can reach without increasing the number of buses.
+- Enqueuing connecting buses from those stops means those buses become reachable using one more bus, which is why they belong to the next BFS layer.
+- Because BFS explores layers in increasing order, the first time a stop equal to `target` is seen, that route uses the minimum possible number of buses.
+
+The visited sets keep the search finite and prevent repeated expansion of the same stops and buses.
+
+### Trick Used
+Using two visited sets — `visitedStops` and `visitedBuses` — to avoid repeated expansions from both sides of the implicit graph.
+
+### Edge Cases Handled
+- `source == target`: the code returns `0` immediately.
+- Source stop served by no buses: the initial queue stays empty, so the method returns `-1`.
+- Multiple buses serving the same stop: `visitedBuses` prevents re-enqueuing the same bus repeatedly.
+- Stops shared by many routes: `visitedStops` ensures each stop's outgoing bus list is expanded once.
 
 ### Complexity Analysis
+Let `S` be the total number of stop entries across all routes, i.e. `S = sum(routes[i].length)`.
 
-- **Time Complexity: `O(N·M)`** — see the analysis for full details.
-- **Space Complexity: `O(N·M)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `O(S)` overall. Building `stopToBuses` touches each stop entry once, each bus is enqueued at most once, and the total work done while iterating route stops and stop-to-bus lists is linear in the total number of route-stop incidences.
+- **Space Complexity:** `O(S)` because `stopToBuses`, `visitedStops`, `visitedBuses`, and the BFS queue all store data proportional to the total route-stop entries.
+

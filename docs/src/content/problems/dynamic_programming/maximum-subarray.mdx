@@ -71,25 +71,132 @@ public class MaximumSubarray {
 
 ## Explanation
 
+### Problem Analysis
+
+The task is to find the largest possible sum of any contiguous subarray.
+For each position, the interesting decision is whether continuing the current subarray is better than starting fresh at the current element.
+This is a classic interview problem because it reveals whether you recognize Kadane's algorithm, one of the most important linear-time DP/greedy patterns.
+
 ### Approach
 
-**Maximum Subarray** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+A brute-force solution would try every subarray, giving quadratic or worse time.
+This code uses Kadane's algorithm to keep only the best subarray ending at the current index and the best answer seen overall.
+If the running sum becomes worse than the current element alone, the code restarts the subarray at the current position.
+That compresses the whole search into one pass.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+
+Dynamic Programming with a greedy-style state transition.
+
+### Key Insight
+
+For each index, the best subarray ending there is either the current number by itself or the previous best ending sum plus the current number.
 
 ### Code Walkthrough
 
-The solution is implemented in `maxSubArray(int[] nums)`:
+The method initializes both tracking values from the first element:
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+- `int maxSoFar = nums[0];`
+- `int maxEndingHere = nums[0];`
 
-&gt; **Note:** This solution also uses the **greedy — make the locally optimal choice at each step** technique.
+Their roles are:
+
+- `maxEndingHere`: best sum of a subarray that must end at the current index.
+- `maxSoFar`: best sum found anywhere in the array so far.
+
+The loop starts from index `1`:
+
+- `for (int i = 1; i < nums.length; i++)`
+
+At each step, it updates the best subarray ending at `i`:
+
+- `maxEndingHere = Math.max(nums[i], maxEndingHere + nums[i]);`
+
+This compares two choices:
+
+- start a new subarray at `nums[i]`, or
+- extend the previous subarray by adding `nums[i]`.
+
+Then it updates the overall best answer:
+
+- `maxSoFar = Math.max(maxSoFar, maxEndingHere);`
+
+So even if the best subarray ended earlier, `maxSoFar` keeps it.
+
+Finally:
+
+- `return maxSoFar;`
+
+### Example Walkthrough
+
+Use **Example 1**: `nums = [-2,1,-3,4,-1,2,1,-5,4]`.
+
+Start:
+
+- `maxEndingHere = -2`
+- `maxSoFar = -2`
+
+Process the rest:
+
+- `i = 1`, value `1`
+  - `maxEndingHere = Math.max(1, -2 + 1) = 1`
+  - `maxSoFar = 1`
+- `i = 2`, value `-3`
+  - `maxEndingHere = Math.max(-3, 1 + -3) = -2`
+  - `maxSoFar = 1`
+- `i = 3`, value `4`
+  - `maxEndingHere = Math.max(4, -2 + 4) = 4`
+  - `maxSoFar = 4`
+- `i = 4`, value `-1`
+  - `maxEndingHere = Math.max(-1, 4 + -1) = 3`
+  - `maxSoFar = 4`
+- `i = 5`, value `2`
+  - `maxEndingHere = Math.max(2, 3 + 2) = 5`
+  - `maxSoFar = 5`
+- `i = 6`, value `1`
+  - `maxEndingHere = Math.max(1, 5 + 1) = 6`
+  - `maxSoFar = 6`
+- `i = 7`, value `-5`
+  - `maxEndingHere = Math.max(-5, 6 + -5) = 1`
+  - `maxSoFar = 6`
+- `i = 8`, value `4`
+  - `maxEndingHere = Math.max(4, 1 + 4) = 5`
+  - `maxSoFar = 6`
+
+The best sum is `6`, coming from subarray `[4,-1,2,1]`.
+
+### Key Variables Explained
+
+- `nums`: input array.
+- `maxEndingHere`: best subarray sum that must end at the current index.
+- `maxSoFar`: largest subarray sum seen anywhere so far.
+- `i`: current scan index.
+
+### Why This Works
+
+Any optimal subarray ending at index `i` has only two possibilities:
+
+- it starts at `i`, or
+- it extends the optimal subarray ending at `i - 1`.
+
+There is no benefit in extending a weaker ending sum when a stronger one already exists, which is why keeping only `maxEndingHere` is enough.
+By updating `maxSoFar` after each step, the algorithm preserves the best subarray over all possible ending positions.
+That is exactly the quantity the problem asks for.
+
+### Trick Used
+
+The trick is Kadane's reset decision: compare `nums[i]` against `maxEndingHere + nums[i]` to decide whether to restart or extend.
+
+### Edge Cases Handled
+
+- Single-element array: initialization from `nums[0]` makes that value the answer.
+- All-negative input: the algorithm still works because it never forces an empty subarray; it returns the largest individual value.
+- Best subarray at the beginning or end: `maxSoFar` tracks the best answer regardless of where it appears.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`**
+  - The code performs one pass over the array with constant work per element.
+- **Space Complexity: `O(1)`**
+  - Only `maxSoFar`, `maxEndingHere`, and the loop index are used beyond the input.
+

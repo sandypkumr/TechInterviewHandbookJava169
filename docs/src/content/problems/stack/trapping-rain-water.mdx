@@ -70,23 +70,127 @@ public class TrappingRainWater {
 
 ## Explanation
 
+### Problem Analysis
+
+Each bar can trap water only if there is a tall enough boundary on both its left and right. So the main challenge is determining, for every position, the smaller of its best left wall and best right wall without doing repeated scans.
+
+This is a classic interview problem because it rewards recognizing boundary-based reasoning and replacing brute force with a linear-time strategy.
+
 ### Approach
 
-**Trapping Rain Water** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+This implementation uses two pointers:
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+- `left` starts from the beginning
+- `right` starts from the end
+
+It also tracks the best walls seen so far from both sides using `leftMax` and `rightMax`. At each step, the code processes the side with the smaller current height, because that side's trapped water is already limited by the other side.
+
+That avoids the brute-force approach of, for each index, scanning left and right to find maximum boundaries.
+
+### Pattern Used
+
+This solution uses the **Two Pointers** pattern.
+
+### Key Insight
+
+When `height[left] <= height[right]`, the amount of water at `left` depends only on `leftMax`, because the right side is guaranteed to have a boundary at least as tall as `height[left]`.
 
 ### Code Walkthrough
 
-The solution is implemented in `trap(int[] height)`:
+The method initializes:
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+- `int left = 0, right = height.length - 1;`
+- `int leftMax = 0, rightMax = 0;`
+- `int water = 0;`
+
+Then it runs:
+
+- `while (left < right)`
+
+Inside the loop, the code compares `height[left]` and `height[right]`.
+
+If `height[left] <= height[right]`:
+
+- update `leftMax = Math.max(leftMax, height[left]);`
+- add trapped water at `left`:
+  - `water += leftMax - height[left];`
+- move `left++`
+
+Otherwise:
+
+- update `rightMax = Math.max(rightMax, height[right]);`
+- add trapped water at `right`:
+  - `water += rightMax - height[right];`
+- move `right--`
+
+When the pointers meet, every position has been processed exactly once, so the method returns `water`.
+
+### Example Walkthrough
+
+Use Example 1: `height = [0,1,0,2,1,0,1,3,2,1,2,1]`
+
+Important steps:
+
+- start: `left = 0`, `right = 11`, `leftMax = 0`, `rightMax = 0`, `water = 0`
+- `height[left] = 0 <= 1`
+  - `leftMax = 0`
+  - add `0 - 0 = 0`
+  - `left = 1`
+- `height[1] = 1 <= 1`
+  - `leftMax = 1`
+  - add `1 - 1 = 0`
+  - `left = 2`
+- `height[2] = 0 <= 1`
+  - `leftMax = 1`
+  - add `1 - 0 = 1`
+  - `water = 1`
+- later at index `4`
+  - `leftMax` is already `2`
+  - add `2 - 1 = 1`
+- at index `5`
+  - add `2 - 0 = 2`
+- at index `6`
+  - add `2 - 1 = 1`
+
+From the right side, the code also updates `rightMax` when needed, especially near the bar of height `3`, which becomes the dominant right boundary.
+
+By the time `left` meets `right`, the total accumulated `water` is `6`.
+
+For Example 2, `height = [4,2,0,3,2,5]`, the same logic accumulates `9`.
+
+### Key Variables Explained
+
+- `left`: current index being processed from the left side.
+- `right`: current index being processed from the right side.
+- `leftMax`: tallest bar seen so far from index `0` to `left`.
+- `rightMax`: tallest bar seen so far from index `height.length - 1` down to `right`.
+- `water`: total trapped water accumulated so far.
+
+### Why This Works
+
+The algorithm always processes the side with the smaller current height. That is safe because trapped water at that side is limited by its own side's running maximum and by the fact that the opposite side already has a boundary at least as tall as the current side.
+
+So:
+
+- if the left side is shorter, `leftMax` fully determines water at `left`
+- if the right side is shorter, `rightMax` fully determines water at `right`
+
+This invariant lets the algorithm finalize each index immediately without ever revisiting it.
+
+### Trick Used
+
+The trick is **finalizing water from the shorter side first**, which avoids building explicit prefix-max and suffix-max arrays.
+
+### Edge Cases Handled
+
+- Monotonic increasing heights: `leftMax` rises, but no positive water is added.
+- Monotonic decreasing heights: the right branch handles the array symmetrically, also adding no invalid water.
+- Bars of height `0`: they naturally collect water when bounded by taller walls.
+- Small arrays: if `left` quickly meets `right`, the loop stops safely.
 
 ### Complexity Analysis
 
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n)`**  
+  Each loop iteration moves either `left` or `right`, so each index is processed at most once.
+- **Space Complexity: `O(1)`**  
+  The code uses only the variables `left`, `right`, `leftMax`, `rightMax`, and `water`, regardless of input size.

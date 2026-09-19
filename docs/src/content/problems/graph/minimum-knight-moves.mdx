@@ -120,23 +120,95 @@ public class MinimumKnightMoves {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the minimum number of knight moves from `(0, 0)` to `(x, y)` on an infinite chessboard. It is a standard shortest-path interview question because each board position acts like a graph node, each knight move is an unweighted edge, and the goal is the fewest moves.
+
 ### Approach
+Since every move has equal cost, Breadth-First Search is the natural choice. BFS explores all positions reachable in 1 move before any position reachable in 2 moves, then all positions reachable in 2 moves before 3, so the first time the target is removed from the queue, the move count is guaranteed to be minimum.
 
-**Minimum Knight Moves** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+This implementation also reduces the search space in two practical ways:
+- It converts `x` and `y` to `Math.abs(...)` because the board is symmetric across both axes.
+- It only explores positions with `newX >= -2` and `newY >= -2`, which prevents the search from drifting unnecessarily far into negative coordinates.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+### Pattern Used
+Breadth-First Search (BFS)
+
+### Key Insight
+Because all knight moves have equal cost, level-order traversal from `(0, 0)` guarantees that the first time we reach `(x, y)`, we have used the fewest possible moves.
 
 ### Code Walkthrough
+In `minKnightMoves(int x, int y)`:
+- `x = Math.abs(x);` and `y = Math.abs(y);` map the target into the first quadrant without changing the answer.
+- `directions` stores the eight legal knight moves.
 
-The solution is implemented in `minKnightMoves(int x, int y)`:
+For BFS setup:
+- `Queue<int[]> queue = new LinkedList<>();` stores positions to process.
+- `Set<String> visited = new HashSet<>();` prevents revisiting the same coordinate.
+- `queue.offer(new int[]{0, 0});` starts the search from the origin.
+- `visited.add("0,0");` marks the origin as seen.
+- `steps = 0` counts how many BFS layers have been completed.
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+Inside the BFS loop:
+- `while (!queue.isEmpty())` keeps exploring until the target is found.
+- `size = queue.size()` captures the current layer size so all nodes at the same distance are processed together.
+- For each node in the layer, `current = queue.poll()` retrieves the next position.
+- `currX` and `currY` unpack that position.
+- If `currX == x && currY == y`, the method returns `steps` immediately.
+
+For each move option:
+- The loop over `directions` computes `newX` and `newY`.
+- `key = newX + "," + newY` creates the visited marker.
+- The condition `!visited.contains(key) && newX >= -2 && newY >= -2` keeps only unseen states in the bounded useful region.
+- Valid neighbors are added to `visited` and pushed into `queue`.
+
+After finishing the whole layer:
+- `steps++` moves to the next BFS distance.
+- The final `return -1` is defensive; for this problem, BFS will find the target.
+
+### Example Walkthrough
+Use Example 2:
+- `x = 5`, `y = 5`
+
+After normalization, the target stays `(5, 5)`.
+
+BFS layers look like this:
+- `steps = 0`: queue contains only `(0, 0)`.
+- From `(0, 0)`, the code adds positions like `(1, 2)` and `(2, 1)`.
+- `steps = 1`: all positions one knight move away are processed.
+- From `(2, 1)`, one useful next state is `(4, 2)`.
+- `steps = 2`: positions two moves away are processed.
+- From `(4, 2)`, one useful next state is `(3, 4)`.
+- `steps = 3`: positions three moves away are processed.
+- From `(3, 4)`, one useful next state is `(5, 5)`.
+- `steps = 4`: when `(5, 5)` is polled, the code returns `4`.
+
+That matches the example path:
+- `(0, 0) -> (2, 1) -> (4, 2) -> (3, 4) -> (5, 5)`
+
+### Key Variables Explained
+- `x`, `y`: target coordinates after converting to the first quadrant.
+- `directions`: the eight relative knight moves.
+- `queue`: BFS frontier of positions waiting to be processed.
+- `visited`: set of coordinates already enqueued, stored as strings like `"2,1"`.
+- `steps`: current BFS depth, which equals the number of moves taken.
+- `size`: number of positions in the current BFS layer.
+- `currX`, `currY`: coordinates of the currently processed position.
+- `newX`, `newY`: next candidate position from one knight move.
+
+### Why This Works
+BFS explores states in nondecreasing order of distance from the start. That means every position processed in the same outer loop iteration is reachable in exactly `steps` moves.
+
+Because the code marks positions in `visited` as soon as they are enqueued, no state is processed more than once. So when `(x, y)` is first removed from `queue`, there cannot be a shorter path that was skipped.
+
+### Trick Used
+Using symmetry with `Math.abs(x)` and `Math.abs(y)`, plus the `newX >= -2 && newY >= -2` pruning bound, to keep the infinite-board search finite and small.
+
+### Edge Cases Handled
+- Negative targets: `Math.abs(...)` converts them to an equivalent first-quadrant target.
+- Target at origin `(0, 0)`: the first polled node matches immediately, so the method returns `0`.
+- Small targets near the axes: allowing coordinates down to `-2` keeps necessary detours available.
+- Duplicate paths to the same square: `visited` prevents repeated work.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(n²)`** — a 2-D DP table of size n × n is used.
+- Time Complexity: `O(x * y)` in practice after normalization and pruning, because BFS explores a bounded rectangle of reachable states around the target; equivalently, if `n = max(x, y)`, this is `O(n^2)`.
+- Space Complexity: `O(x * y)` for the `queue` and `visited` set over those explored states; equivalently `O(n^2)` with `n = max(x, y)`.

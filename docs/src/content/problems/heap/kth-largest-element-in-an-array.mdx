@@ -67,23 +67,97 @@ public class KthLargestElementInAnArray {
 
 ## Explanation
 
+### Problem Analysis
+We need the `k`th largest value, not the fully sorted array.
+That means doing a complete descending sort is more work than necessary when we only need to remember the top `k` elements seen so far.
+This is a very common interview problem because it tests top-`k` thinking and heap selection.
+
 ### Approach
+The code uses a min-heap that stores at most `k` numbers.
+As we scan `nums`, every number is pushed into the heap.
+If the heap size becomes larger than `k`, the smallest element is removed.
+So the heap always contains the current `k` largest values seen so far.
+Among those `k` values, the smallest one is exactly the `k`th largest overall, which is why `peek()` gives the answer at the end.
+This is better than sorting the full array in `O(n log n)`.
 
-**Kth Largest Element in an Array** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+### Pattern Used
+Heap / Priority Queue.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Key Insight
+Keep only the largest `k` values; then the smallest value inside that group is the `k`th largest element in the entire array.
 
 ### Code Walkthrough
+The method `findKthLargest(int[] nums, int k)` starts by creating `PriorityQueue<Integer> minHeap = new PriorityQueue<>()`.
+Java's default `PriorityQueue` is a min-heap, so `peek()` always shows the smallest stored value.
 
-The solution is implemented in `findKthLargest(int[] nums, int k)`:
+The loop `for (int num : nums)` processes every element in the array.
+For each `num`, `minHeap.offer(num)` inserts it into the heap.
+If the heap grows beyond size `k`, `minHeap.poll()` removes the smallest element currently stored.
+That removal is the key step: it throws away values that are too small to remain among the top `k`.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+After the loop finishes, exactly `k` candidates remain in `minHeap`.
+Those are the `k` largest elements from `nums`.
+Since the heap is a min-heap, `minHeap.peek()` is the smallest among those `k` elements, which is exactly the `k`th largest overall.
+The method returns that value.
+
+### Example Walkthrough
+Use Example 1: `nums = [3,2,1,5,6,4]`, `k = 2`.
+
+Start with an empty `minHeap`.
+
+Process `3`:
+- Heap becomes `[3]`.
+
+Process `2`:
+- Heap becomes `[2,3]`.
+- Size is `2`, so nothing is removed.
+
+Process `1`:
+- Heap becomes `[1,3,2]`.
+- Size is now `3`, so poll the smallest value `1`.
+- Heap goes back to `[2,3]`.
+
+Process `5`:
+- Heap becomes `[2,3,5]`.
+- Poll removes `2`.
+- Heap becomes `[3,5]`.
+
+Process `6`:
+- Heap becomes `[3,5,6]`.
+- Poll removes `3`.
+- Heap becomes `[5,6]`.
+
+Process `4`:
+- Heap becomes `[4,6,5]`.
+- Poll removes `4`.
+- Heap becomes `[5,6]`.
+
+Now the heap contains the two largest values, `5` and `6`.
+`minHeap.peek()` is `5`, so the method returns `5`, matching the expected output.
+
+For Example 2, the same logic leaves the four largest values in the heap, and `peek()` ends at `4`.
+
+### Key Variables Explained
+- `nums`: input array being scanned once.
+- `k`: number of largest elements that must be retained.
+- `minHeap`: min-heap holding the current top `k` values.
+- `num`: current value being inserted into the heap.
+
+### Why This Works
+The invariant is that after processing each prefix of `nums`, `minHeap` contains the largest `k` values from that prefix, or all seen values if fewer than `k` elements have been processed.
+Whenever the heap exceeds size `k`, the smallest stored value is removed.
+That is always safe because if a value is the smallest among more than `k` candidates, it cannot be the `k`th largest after stronger candidates already exist.
+After the final iteration, the heap therefore contains exactly the global top `k` values, and its minimum is the `k`th largest element.
+
+### Trick Used
+Using a size-limited min-heap so the heap top always represents the current `k`th largest candidate.
+
+### Edge Cases Handled
+- Duplicate values: the heap stores duplicates naturally, which is required because the problem asks for sorted-order rank, not distinct rank.
+- `k == 1`: the heap keeps only the maximum element.
+- `k == nums.length`: nothing important is discarded, and `peek()` becomes the smallest element in the whole array, which is the `n`th largest.
+- Negative numbers: the min-heap logic works the same regardless of sign.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n log k)`** — see the analysis for full details.
-- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(n log k)` because the loop visits all `n = nums.length` elements, and each `offer` plus occasional `poll` costs `O(log k)` while the heap never grows beyond size `k`.
+- Space Complexity: `O(k)` because `minHeap` stores at most `k` integers.

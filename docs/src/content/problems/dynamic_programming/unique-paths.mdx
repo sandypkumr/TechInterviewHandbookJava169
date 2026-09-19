@@ -75,23 +75,107 @@ public class UniquePaths {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the number of different ways to move from the top-left corner of an `m x n` grid to the bottom-right corner when only moving right or down. Each path is made of the same total number of moves, but the order of those moves changes the answer.
+
+It is a classic interview DP problem because each cell depends on smaller subproblems directly above and to the left, making the recurrence easy to derive and easy to test.
+
 ### Approach
+The brute-force idea would try every possible sequence of right and down moves, but that repeats the same subproblems many times.
 
-**Unique Paths** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+This solution builds a DP table `dp` where `dp[i][j]` stores the number of ways to reach cell `(i, j)`. Since the robot can only enter `(i, j)` from `(i - 1, j)` or `(i, j - 1)`, the count for the current cell is just the sum of those two previous counts.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+The first row and first column are special because there is only one straight-line way to reach any cell there.
+
+### Pattern Used
+Dynamic Programming on a grid.
+
+### Key Insight
+Every path to a cell must come either from above or from the left, so the total number of paths to that cell is the sum of those two counts.
 
 ### Code Walkthrough
+The method `uniquePaths(int m, int n)` begins by creating:
+- `int[][] dp = new int[m][n];`
 
-The solution is implemented in `uniquePaths(int m, int n)`:
+This table will hold the answer for every grid position.
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+Next, the first column is initialized:
+- `for (int i = 0; i < m; i++) { dp[i][0] = 1; }`
+
+That is correct because the robot can only keep moving down to stay in column `0`.
+
+Then, the first row is initialized:
+- `for (int j = 0; j < n; j++) { dp[0][j] = 1; }`
+
+That is correct because the robot can only keep moving right to stay in row `0`.
+
+After the base cases are ready, the nested loops fill the rest of the table:
+- `for (int i = 1; i < m; i++)`
+- `for (int j = 1; j < n; j++)`
+- `dp[i][j] = dp[i - 1][j] + dp[i][j - 1];`
+
+So each interior cell gets its count from the top cell plus the left cell.
+
+Finally, the method returns:
+- `dp[m - 1][n - 1]`
+
+That is the number of paths to the bottom-right corner.
+
+### Example Walkthrough
+Use Example 1: `m = 3, n = 7`
+
+After initialization:
+- first row becomes `[1, 1, 1, 1, 1, 1, 1]`
+- first column means every row starts with `1`
+
+Now fill row by row.
+
+For `i = 1`:
+- `dp[1][1] = dp[0][1] + dp[1][0] = 1 + 1 = 2`
+- `dp[1][2] = 1 + 2 = 3`
+- `dp[1][3] = 1 + 3 = 4`
+- continue similarly until row 1 becomes `[1, 2, 3, 4, 5, 6, 7]`
+
+For `i = 2`:
+- `dp[2][1] = dp[1][1] + dp[2][0] = 2 + 1 = 3`
+- `dp[2][2] = 3 + 3 = 6`
+- `dp[2][3] = 4 + 6 = 10`
+- `dp[2][4] = 5 + 10 = 15`
+- `dp[2][5] = 6 + 15 = 21`
+- `dp[2][6] = 7 + 21 = 28`
+
+So `dp[2][6] = 28`, which matches the output.
+
+For Example 2, `m = 3, n = 2`:
+- the final table gives `dp[2][1] = 3`
+- the three paths match the listed explanation in the problem statement
+
+### Key Variables Explained
+- `m`: number of rows in the grid.
+- `n`: number of columns in the grid.
+- `dp`: 2-D DP table where `dp[i][j]` is the number of ways to reach cell `(i, j)`.
+- `i`: current row index while filling the table.
+- `j`: current column index while filling the table.
+
+### Why This Works
+The invariant is: when the code computes `dp[i][j]`, the values directly above and directly left have already been computed correctly.
+
+- Cells in the first row and first column each have exactly one path, so the initialization is correct.
+- Every other cell can only be reached from two valid predecessor cells because the robot may only move right or down.
+- Therefore `dp[i][j] = dp[i - 1][j] + dp[i][j - 1]` counts all valid paths without double-counting.
+
+By the time the loops end, `dp[m - 1][n - 1]` is the correct total number of unique paths to the destination.
+
+### Trick Used
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+- Single row (`m = 1`): the first-row initialization makes the answer `1`.
+- Single column (`n = 1`): the first-column initialization makes the answer `1`.
+- Small grids like `1 x 1`: both initializations work, and the method returns `dp[0][0] = 1`.
+- Larger grids up to the constraint limit: every cell is filled exactly once.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(m * n)` because the table has `m * n` cells, and each cell is initialized or computed once.
+- **Space Complexity:** `O(m * n)` because the solution stores the full `dp` matrix.
 
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.

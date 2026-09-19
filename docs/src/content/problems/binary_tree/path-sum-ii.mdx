@@ -87,25 +87,124 @@ public class PathSum2 {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for every root-to-leaf path whose node values add up to `targetSum`. Unlike the simpler yes/no path-sum problem, here we must collect all valid paths, not just detect one.
+
+This is a common interview topic because it combines tree DFS with backtracking. You need to explore paths incrementally, keep state for the current path, and undo that state correctly when recursion returns.
+
 ### Approach
+The code performs DFS from the root while maintaining two pieces of path state:
 
-**Path Sum II** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+- the remaining `targetSum` still needed
+- the current path stored in `currentPath`
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+Whenever recursion reaches a leaf, the code checks whether that leaf finishes the required sum. If it does, it copies the current path into `result`. This is better than brute-forcing all root-to-leaf paths first and summing them later because the running subtraction keeps the validation local to each recursive call.
+
+### Pattern Used
+DFS + Backtracking.
+
+### Key Insight
+Instead of recomputing path sums from scratch, subtract each visited node value from `targetSum`, so at a leaf you only need to check whether `node.val == targetSum`.
 
 ### Code Walkthrough
+The main method is `pathSum(TreeNode root, int targetSum)`.
 
-The solution is implemented in `pathSum(TreeNode root, int targetSum)`:
+- It creates `List<List<Integer>> result = new ArrayList<>();`
+  - This stores every valid root-to-leaf path.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+- It calls `findPaths(root, targetSum, new ArrayList<>(), result);`
+  - The empty list represents the path being built during DFS.
 
-&gt; **Note:** This solution also uses the **backtracking — explore all candidates and prune invalid paths early** technique.
+- Finally, it returns `result`.
+
+Inside `findPaths(TreeNode node, int targetSum, List<Integer> currentPath, List<List<Integer>> result)`:
+
+- `if (node == null) { return; }`
+  - A null node cannot extend a valid path.
+
+- `currentPath.add(node.val);`
+  - The current node is included in the active root-to-current path.
+
+- `if (node.left == null && node.right == null && node.val == targetSum)`
+  - This checks two things together:
+    - the node is a leaf
+    - the remaining sum is exactly satisfied here
+  - If true, `result.add(new ArrayList<>(currentPath));` stores a copy.
+
+- `else { ... }`
+  - If not a valid ending leaf, recursion continues:
+    - `findPaths(node.left, targetSum - node.val, currentPath, result);`
+    - `findPaths(node.right, targetSum - node.val, currentPath, result);`
+  - The sum passed down is reduced by the current node value.
+
+- `currentPath.removeLast();`
+  - This is the backtracking step.
+  - After both recursive calls finish, the current node is removed so the parent call can continue with a clean path.
+
+### Example Walkthrough
+Use Example 1: `root = [5,4,8,11,null,13,4,7,2,null,null,5,1]`, `targetSum = 22`.
+
+Start at node `5`:
+
+- `currentPath = [5]`
+- remaining sum for children becomes `22 - 5 = 17`
+
+Go left to `4`:
+
+- `currentPath = [5,4]`
+- remaining sum becomes `17 - 4 = 13`
+
+Go left to `11`:
+
+- `currentPath = [5,4,11]`
+- remaining sum becomes `13 - 11 = 2`
+
+Visit leaf `7`:
+
+- `currentPath = [5,4,11,7]`
+- `7 != 2`, so this path is rejected
+- backtrack to `[5,4,11]`
+
+Visit leaf `2`:
+
+- `currentPath = [5,4,11,2]`
+- leaf and `2 == 2`, so add `[5,4,11,2]` to `result`
+- backtrack
+
+Now explore the right side from `5` to `8` to `4` to `5`:
+
+- path becomes `[5,8,4,5]`
+- remaining sum at the leaf is exactly satisfied
+- add `[5,8,4,5]` to `result`
+
+The final result is `[[5,4,11,2],[5,8,4,5]]`.
+
+### Key Variables Explained
+- `result`: stores all valid root-to-leaf paths found so far.
+- `currentPath`: mutable list representing the path from the root to `node`.
+- `targetSum`: in each recursive call, this is the remaining sum still needed from the current node downward.
+- `node`: current tree node being explored.
+
+### Why This Works
+At every recursive call, `currentPath` exactly matches the nodes on the current root-to-node path, and `targetSum` represents the remaining amount needed before entering this node. That invariant is preserved because the method adds `node.val` to the path and subtracts `node.val` before recursing further.
+
+When the code reaches a leaf, the only valid time to store a path is when that leaf's value equals the remaining sum. Backtracking with `currentPath.removeLast()` restores the path to its previous state, so sibling branches are explored without contamination from earlier choices.
+
+### Trick Used
+Using backtracking with one shared `currentPath` list and copying it only when a valid leaf is found.
+
+### Edge Cases Handled
+- Empty tree: the initial call reaches `node == null`, so the method returns an empty `result`.
+- Leaf that does not finish the sum: it is rejected because `node.val == targetSum` fails.
+- Valid path only at a leaf: the code correctly avoids accepting partial root-to-internal-node sums.
+- Multiple valid paths: each one is copied separately into `result`.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n + total output size)`**
+  - Every node is visited once by `findPaths`.
+  - Each valid path added to `result` requires copying `currentPath`.
+  - In the worst case, this can grow to `O(n^2)` when the total size of stored paths is quadratic.
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Space Complexity: `O(h)` auxiliary, excluding output**
+  - The recursion stack and `currentPath` both follow the current tree height `h`.
+  - If the returned paths are counted, output space depends on how many valid paths exist.

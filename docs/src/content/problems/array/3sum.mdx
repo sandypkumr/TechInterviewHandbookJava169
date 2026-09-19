@@ -95,23 +95,106 @@ public class ThreeSum {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for all unique triplets whose sum is `0`. The tricky parts are avoiding duplicate triplets and doing better than brute-force enumeration.
+
+It is a classic interview question because it combines sorting, pointer movement, and duplicate handling in one clean pattern.
+
 ### Approach
+The code sorts the array first, then fixes one number `nums[i]`. For the remaining two numbers, it searches with `left` and `right` pointers from both ends of the suffix.
 
-**3Sum** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+Compared with brute force:
+- brute force checks every triplet in `O(n^3)` time
+- this solution uses sorted order to adjust the sum intelligently in `O(n^2)` time
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+When the current sum is:
+- too small, move `left` to increase it
+- too large, move `right` to decrease it
+- exactly `0`, record the triplet and skip duplicates before continuing
+
+### Pattern Used
+Two Pointers
+
+### Key Insight
+After sorting, every fixed first element can be paired with a linear two-pointer search, and duplicate values can be skipped in place so the output stays unique.
 
 ### Code Walkthrough
+`List<List<Integer>> result = new ArrayList<>();` stores all valid triplets.
 
-The solution is implemented in `threeSum(int[] nums)`:
+`Arrays.sort(nums);` is the foundation of the algorithm because pointer decisions depend on ordered values.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+The outer loop runs with `i` from `0` to `nums.length - 3`:
+- `nums[i]` becomes the first number of the triplet
+- `if (i > 0 && nums[i] == nums[i - 1]) continue;` skips repeating the same starting value, which prevents duplicate triplets
+
+For each `i`:
+- `left = i + 1`
+- `right = nums.length - 1`
+
+Inside `while (left < right)`:
+- `sum = nums[i] + nums[left] + nums[right]`
+
+Then the code branches:
+- `sum == 0`: add `Arrays.asList(nums[i], nums[left], nums[right])` to `result`
+- after adding, skip equal values with
+  - `while (left < right && nums[left] == nums[left + 1]) left++;`
+  - `while (left < right && nums[right] == nums[right - 1]) right--;`
+- then move both pointers with `left++` and `right--`
+
+If `sum < 0`, the triplet is too small, so `left++`.
+
+If `sum > 0`, the triplet is too large, so `right--`.
+
+### Example Walkthrough
+Use Example 1: `nums = [-1,0,1,2,-1,-4]`.
+
+After sorting, `nums` becomes `[-4,-1,-1,0,1,2]`.
+
+Start with `i = 0` (`nums[i] = -4`):
+- `left = 1`, `right = 5`
+- sum = `-4 + (-1) + 2 = -3` → too small, move `left`
+- sum = `-4 + (-1) + 2 = -3` again with the second `-1` → move `left`
+- sum = `-4 + 0 + 2 = -2` → move `left`
+- sum = `-4 + 1 + 2 = -1` → move `left`
+- pointers meet, so no triplet starts with `-4`
+
+Now `i = 1` (`nums[i] = -1`):
+- `left = 2`, `right = 5`
+- sum = `-1 + (-1) + 2 = 0` → add `[-1,-1,2]`
+- skip duplicates if needed, then move both pointers
+- `left = 3`, `right = 4`
+- sum = `-1 + 0 + 1 = 0` → add `[-1,0,1]`
+
+Now `i = 2`, but `nums[2] == nums[1]`, so the code skips it to avoid duplicate triplets.
+
+The final result is `[[-1,-1,2],[-1,0,1]]`.
+
+### Key Variables Explained
+- `result`: list of all unique triplets found
+- `i`: fixed index for the first number of each candidate triplet
+- `left`: pointer moving right to increase the sum
+- `right`: pointer moving left to decrease the sum
+- `sum`: current total of `nums[i] + nums[left] + nums[right]`
+- sorted `nums`: enables both pointer logic and duplicate skipping
+
+### Why This Works
+Sorting creates a useful invariant: for any fixed `i`, moving `left` right can only increase the sum, and moving `right` left can only decrease it. That means each pointer move removes only impossible candidates.
+
+The duplicate checks are also correct:
+- skipping repeated `nums[i]` avoids rebuilding the same triplets with the same first value
+- skipping repeated `nums[left]` and `nums[right]` after a match avoids adding the same triplet more than once
+
+So the algorithm finds every valid triplet exactly once.
+
+### Trick Used
+Duplicate-skipping at all three positions: skip repeated `nums[i]`, then skip repeated `nums[left]` and `nums[right]` after recording a valid triplet
+
+### Edge Cases Handled
+- Repeated values such as `[-1,-1,-1,2,2]`: duplicate checks prevent repeated output
+- No valid triplet, like Example 2: the pointers exhaust all options and `result` stays empty
+- All zeros, like Example 3: the code adds `[0,0,0]` once and skips duplicates correctly
+- Minimum valid size `3`: the outer loop and pointer setup still work
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n^2)`** — sorting costs `O(n log n)`, then the outer loop runs `n` times and each `left`/`right` scan is linear across the remaining range.
+- **Space Complexity: `O(log n)` auxiliary, excluding output** — aside from `result`, the algorithm uses constant extra variables; sorting a primitive array may use recursion stack space. The returned triplets themselves are additional output space.

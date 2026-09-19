@@ -77,22 +77,141 @@ public class ProductOfArrayExceptSelf {
 
 ## Explanation
 
+### Problem Analysis
+
+The goal is to build an output array where each position contains the product of every element except the one at that same index. The extra constraint is that division is not allowed, so the solution must avoid the obvious "total product divided by current element" shortcut.
+
+This is a favorite interview question because it tests whether you can decompose each answer into information from the left side and the right side of the array.
+
 ### Approach
 
-**Product of Array Except Self** requires repeated range-sum queries. Computing each sum from scratch is O(n) per query; a prefix sum array precomputes cumulative totals so any range sum [l, r] reduces to prefixSum[r] - prefixSum[l - 1] — a single O(1) subtraction.
+The code precomputes two helper arrays:
 
-Imagine a running tally of rainfall: instead of adding up each day's rain for every query, you keep a running total. The rain from day l to day r is simply totalUpToR - totalUpToL-1.
+- `leftProducts[i]` = product of everything to the left of `i`
+- `rightProducts[i]` = product of everything to the right of `i`
+
+Once those are known, the answer at index `i` is simply:
+
+- `leftProducts[i] * rightProducts[i]`
+
+This approach is chosen over brute force because multiplying all other elements separately for every index would take `O(n^2)` time.
+
+### Pattern Used
+
+This solution primarily relies on **prefix and suffix products**.
+
+### Key Insight
+
+Every result can be split into two independent parts: product before the index and product after the index.
 
 ### Code Walkthrough
 
-The solution is implemented in `productExceptSelf(int[] nums)`:
+The method begins by storing the array length:
 
-1. Allocate prefix[n + 1] initialised to 0.
-2. Fill prefix[i] = prefix[i - 1] + nums[i - 1] for i from 1 to n.
-3. Answer a range query [l, r] (0-indexed) as prefix[r + 1] - prefix[l].
-4. Use a HashMap from prefix-sum → first index to detect subarrays with a target sum.
+- `int n = nums.length;`
+
+Then it allocates three arrays:
+
+- `result` for the final answers
+- `leftProducts` for cumulative products from the left
+- `rightProducts` for cumulative products from the right
+
+The line
+
+- `leftProducts[0] = 1;`
+
+means there is nothing to the left of index `0`, so the multiplicative identity is used.
+
+Then this loop fills the left products:
+
+- `for (int i = 1; i < n; i++)`
+- `leftProducts[i] = leftProducts[i - 1] * nums[i - 1];`
+
+So each position stores the product of all earlier values.
+
+Similarly, the code sets:
+
+- `rightProducts[n - 1] = 1;`
+
+because there is nothing to the right of the last index.
+
+Then it fills suffix products with:
+
+- `for (int i = n - 2; i >= 0; i--)`
+- `rightProducts[i] = rightProducts[i + 1] * nums[i + 1];`
+
+Finally, the last loop combines both sides:
+
+- `for (int i = 0; i < n; i++)`
+- `result[i] = leftProducts[i] * rightProducts[i];`
+
+and returns `result`.
+
+### Example Walkthrough
+
+Using Example 1:
+
+- `nums = [1,2,3,4]`
+
+Build `leftProducts`:
+
+- `leftProducts[0] = 1`
+- `leftProducts[1] = 1 * 1 = 1`
+- `leftProducts[2] = 1 * 2 = 2`
+- `leftProducts[3] = 2 * 3 = 6`
+
+So:
+
+- `leftProducts = [1,1,2,6]`
+
+Build `rightProducts`:
+
+- `rightProducts[3] = 1`
+- `rightProducts[2] = 1 * 4 = 4`
+- `rightProducts[1] = 4 * 3 = 12`
+- `rightProducts[0] = 12 * 2 = 24`
+
+So:
+
+- `rightProducts = [24,12,4,1]`
+
+Combine them:
+
+- `result[0] = 1 * 24 = 24`
+- `result[1] = 1 * 12 = 12`
+- `result[2] = 2 * 4 = 8`
+- `result[3] = 6 * 1 = 6`
+
+Final output:
+
+- `[24,12,8,6]`
+
+### Key Variables Explained
+
+- `n`: length of the input array
+- `leftProducts`: product of all values strictly before each index
+- `rightProducts`: product of all values strictly after each index
+- `result`: final output array built from both helper arrays
+- `i`: loop index used in all three passes
+
+### Why This Works
+
+For any index `i`, every number except `nums[i]` lies either to its left or to its right. The code computes those two contributions separately and multiplies them together, so `nums[i]` is never included in its own answer.
+
+The initialization with `1` at both ends is also essential. It correctly represents an empty product, which lets the first and last positions work without special-case branching inside the loops.
+
+### Trick Used
+
+The trick is using `1` as the sentinel value for empty left and right products so boundary indices fit naturally into the same formula as every other index.
+
+### Edge Cases Handled
+
+- Arrays of length `2`: both helper loops still work correctly
+- Zeros in the input: handled naturally because affected prefix or suffix products become `0`
+- Negative numbers: handled naturally because multiplication preserves the correct sign changes
+- First and last indices: handled by `leftProducts[0] = 1` and `rightProducts[n - 1] = 1`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** because the method makes three linear passes over arrays of length `n`
+- **Space Complexity: `O(n)`** because `result`, `leftProducts`, and `rightProducts` are all arrays of size `n`; this exact implementation is not `O(1)` extra space

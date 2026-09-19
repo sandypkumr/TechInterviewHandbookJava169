@@ -72,23 +72,93 @@ public class ClimbingStairs {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the number of distinct ways to reach step `n` when each move can be either `1` step or `2` steps. The order matters, so `1 + 2` and `2 + 1` count as different ways.
+
+It is a standard interview question because it introduces dynamic programming through a very clean recurrence and also rewards candidates who optimize space.
+
 ### Approach
+To reach step `i`, the final move must come from either step `i - 1` or step `i - 2`. That means the number of ways to reach `i` is the sum of the ways to reach those two earlier steps.
 
-**Climbing Stairs** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+A brute-force recursive solution would repeatedly recompute the same subproblems. This implementation keeps only the last two answers, which is enough because each new state depends on exactly two previous states.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+This solution uses **Dynamic Programming**, specifically bottom-up DP with space optimization.
+
+### Key Insight
+The count for each step follows the Fibonacci-style recurrence: **ways(i) = ways(i - 1) + ways(i - 2)**.
 
 ### Code Walkthrough
+`climbStairs(int n)` handles small inputs first.
 
-The solution is implemented in `climbStairs(int n)`:
+- `if (n <= 2) { return n; }`
+  - For `n = 1`, there is `1` way.
+  - For `n = 2`, there are `2` ways.
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+Then the code initializes the rolling DP state:
+
+- `int first = 1;`
+  - number of ways to reach step `1`
+- `int second = 2;`
+  - number of ways to reach step `2`
+- `int current = 0;`
+  - placeholder for the current step being computed
+
+The loop builds answers from step `3` up to `n`:
+
+- `for (int i = 3; i <= n; i++)`
+- `current = first + second;`
+  - compute ways for the current step
+- `first = second;`
+  - shift the window forward
+- `second = current;`
+  - store the latest answer
+
+Finally:
+
+- `return current;`
+  - after the loop, `current` holds the number of ways to reach step `n`
+
+### Example Walkthrough
+Use **Example 2**:
+
+- `n = 3`
+
+Step by step:
+
+- `n <= 2` is false, so continue.
+- Initialize:
+  - `first = 1`
+  - `second = 2`
+  - `current = 0`
+- Loop starts with `i = 3`:
+  - `current = first + second = 1 + 2 = 3`
+  - `first = second`, so `first = 2`
+  - `second = current`, so `second = 3`
+- Loop ends because `i` reached `n`.
+- Return `current = 3`.
+
+That matches the example output: the three ways are `1+1+1`, `1+2`, and `2+1`.
+
+### Key Variables Explained
+- `n`: the target step number.
+- `first`: ways to reach the previous-previous step in the rolling DP window.
+- `second`: ways to reach the previous step.
+- `current`: ways to reach the current step being computed inside the loop.
+
+### Why This Works
+At every iteration, the algorithm maintains a correct rolling window of the last two DP values. Since the only legal last move is `1` or `2` steps, every valid path to step `i` must come from exactly one of those two previous steps.
+
+Adding `first` and `second` therefore counts all valid ways to reach the current step, with no overlap and no omissions. The variable updates preserve this invariant for the next iteration.
+
+### Trick Used
+The trick is **space optimization**: instead of storing a full `dp[]` array, the code keeps only `first`, `second`, and `current` because earlier values are never needed again.
+
+### Edge Cases Handled
+- `n = 1`: returned directly by `if (n <= 2)`.
+- `n = 2`: also returned directly, avoiding unnecessary looping.
+- Larger `n`: the loop starts at `3`, so the recurrence is only used when the base cases are already defined.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(n)` because the `for` loop runs once for each step from `3` to `n`.
+- **Space Complexity:** `O(1)` because only three integer variables are used regardless of `n`.

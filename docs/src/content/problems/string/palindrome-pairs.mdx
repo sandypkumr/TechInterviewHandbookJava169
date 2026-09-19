@@ -121,25 +121,125 @@ public class PalindromePairs {
 
 ## Explanation
 
+### Problem Analysis
+We need all index pairs `(i, j)` such that `words[i] + words[j]` forms a palindrome.
+This is a classic hard interview problem because the brute-force approach checks every pair of words, while the better idea is to use string structure: split a word, test one side for being a palindrome, and look up whether the reverse of the other side exists.
+
 ### Approach
+The code first stores every word and its index in a hash map for fast reverse lookups.
+Then, for each word, it tries every split position `j`, producing a `prefix` and `suffix`. If `prefix` is already a palindrome, then any word equal to `reverse(suffix)` can be placed in front. If `suffix` is a palindrome, then any word equal to `reverse(prefix)` can be placed after the current word.
 
-**Palindrome Pairs** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+### Pattern Used
+Hash Map + direct string partitioning
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Key Insight
+For a concatenation to be a palindrome, one side of the split must already be palindromic, and the remaining side must be matched by the reverse of another whole word.
 
 ### Code Walkthrough
+The method `palindromePairs(String[] words)` starts with:
+- `List<List<Integer>> result = new ArrayList<>();`
+- `Map<String, Integer> wordToIndex = new HashMap<>();`
 
-The solution is implemented in `palindromePairs(String[] words)`:
+The first loop fills `wordToIndex` so each word can be found in constant average time.
+- `wordToIndex.put(words[i], i);`
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+The second outer loop iterates through every word.
+- `String word = words[i];`
 
-&gt; **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
+Inside that, the loop `for (int j = 0; j <= word.length(); j++)` tries every possible split.
+At each split:
+- `prefix = word.substring(0, j)`
+- `suffix = word.substring(j)`
+
+First case:
+- If `isPalindrome(prefix)` is true, the code computes `reversedSuffix`
+- It looks up `foundIdx = wordToIndex.get(reversedSuffix)`
+- If such a word exists and `foundIdx != i`, it adds `Arrays.asList(foundIdx, i)`
+- This corresponds to `reversedSuffix + word`
+
+Second case:
+- If `j != word.length()` and `isPalindrome(suffix)` is true, the code computes `reversedPrefix`
+- It looks up `foundIdx = wordToIndex.get(reversedPrefix)`
+- If valid, it adds `Arrays.asList(i, foundIdx)`
+- This corresponds to `word + reversedPrefix`
+
+The condition `j != word.length()` prevents duplicate handling when the suffix is empty.
+
+The helper `isPalindrome(String s)` uses two pointers:
+- `left = 0`, `right = s.length() - 1`
+- It compares inward until a mismatch appears or the pointers cross
+
+After all words and splits are processed, `result` is returned.
+
+### Example Walkthrough
+Use Example 1: `words = ["abcd","dcba","lls","s","sssll"]`.
+
+Build the map:
+- `"abcd" -> 0`
+- `"dcba" -> 1`
+- `"lls" -> 2`
+- `"s" -> 3`
+- `"sssll" -> 4`
+
+Now inspect key successful splits.
+
+For `i = 0`, `word = "abcd"`:
+- At split `j = 0`, `prefix = ""`, `suffix = "abcd"`
+- `prefix` is a palindrome
+- `reverse(suffix) = "dcba"`, found at index `1`
+- Add `[1, 0]`
+
+For `i = 1`, `word = "dcba"`:
+- At split `j = 0`, `prefix = ""`, `suffix = "dcba"`
+- `reverse(suffix) = "abcd"`, found at index `0`
+- Add `[0, 1]`
+
+For `i = 2`, `word = "lls"`:
+- At split `j = 2`, `prefix = "ll"`, `suffix = "s"`
+- `prefix` is a palindrome
+- `reverse(suffix) = "s"`, found at index `3`
+- Add `[3, 2]`, which forms `"slls"`
+
+For `i = 4`, `word = "sssll"`:
+- At split `j = 2`, `prefix = "ss"`, `suffix = "sll"`
+- `suffix` is not a palindrome, so the first branch is the only useful one there
+- At split `j = 3`, `prefix = "sss"`, `suffix = "ll"`
+- `suffix` is a palindrome
+- `reverse(prefix) = "sss"` is not in the map
+- At split `j = 4`, `prefix = "sssl"`, `suffix = "l"`
+- `suffix` is a palindrome and `reverse(prefix) = "lsss"` is not present
+- The successful pair for this word comes from split `j = 2` when `prefix = "ss"` is a palindrome and `reverse(suffix) = "lls"` is found at index `2`
+- Add `[2, 4]`, which forms `"llssssll"`
+
+So the returned pairs are `[[0,1],[1,0],[3,2],[2,4]]` in some order.
+
+### Key Variables Explained
+- `result`: collected palindrome index pairs
+- `wordToIndex`: maps each full word to its index for fast reverse lookups
+- `i`: index of the current word being processed
+- `word`: current string under analysis
+- `j`: split position from `0` through `word.length()`
+- `prefix`, `suffix`: two parts of `word` created by the split
+- `reversedSuffix`, `reversedPrefix`: reversed strings used to search for complementary words
+- `foundIdx`: index returned from the hash map lookup
+- `left`, `right`: pointers used by `isPalindrome`
+
+### Why This Works
+Consider any valid pair `A + B` that forms a palindrome. Around the boundary between `A` and `B`, one side must already be palindromic, while the other side must be exactly mirrored by the other word. The code checks every split of every word, so it enumerates all such boundary possibilities. When `isPalindrome(prefix)` is true, prepending `reverse(suffix)` is the needed way to complete the mirror; when `isPalindrome(suffix)` is true, appending `reverse(prefix)` is the needed match. Because every whole word is available in `wordToIndex`, all valid complements are discovered.
+
+### Trick Used
+The important trick is checking both palindromic-prefix and palindromic-suffix cases for every split, while skipping the `suffix` case when `j == word.length()` to avoid duplicate empty-suffix pair generation.
+
+### Edge Cases Handled
+- Empty string splits: `j` ranges from `0` to `word.length()`, so prefix or suffix can be empty when needed
+- Pairing a word with itself: blocked by `foundIdx != i`
+- Single-character palindromic segments: `isPalindrome` naturally treats them as valid
+- Duplicate output from the empty suffix case: reduced by `if (j != word.length() && isPalindrome(suffix))`
 
 ### Complexity Analysis
-
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- Time Complexity: `O(N * K^2)` in the common `N` words / maximum length `K` form
+  - For each word, the code tries every split position
+  - Each split creates substrings, may reverse one part, and may call `isPalindrome` on a part, each of which can cost up to `O(K)`
+- Space Complexity: `O(N * K)`
+  - `wordToIndex` stores all words
+  - Extra temporary strings such as `prefix`, `suffix`, `reversedSuffix`, and `reversedPrefix` use up to `O(K)` additional transient space per iteration

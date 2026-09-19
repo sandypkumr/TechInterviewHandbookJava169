@@ -61,20 +61,82 @@ public class ReverseBits {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+The problem asks us to reverse the order of all 32 bits of the input integer. That means the least significant bit must become the most significant bit, the next least significant becomes the next most significant, and so on.
 
-**Reverse Bits** is a binary problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(1)` time and `O(1)` space.
+This is a common interview question because it tests precise control over bit shifting and masking, and it checks whether you remember that leading zeros also matter when working with fixed-width bit patterns.
+
+### Approach
+The code builds the reversed number one bit at a time. On each iteration, it shifts `result` left to make room for the next bit, takes the current least significant bit from `n`, and appends that bit into `result`.
+
+This is better than converting to a binary string because the solution stays purely bitwise and processes the fixed 32-bit representation directly.
+
+### Pattern Used
+This solution primarily relies on direct iteration with bit manipulation.
+
+### Key Insight
+If we repeatedly take `n & 1` and append it to the left-growing `result`, then after exactly 32 iterations the bit order has been reversed.
 
 ### Code Walkthrough
+The method starts with `int result = 0;`.
+- `result` will gradually become the reversed-bit integer.
 
-The solution is implemented in `reverseBits(int n)`:
+Then it runs:
+- `for (int i = 0; i < 32; i++)`
+- The fixed loop count is important because the problem is about reversing all 32 bits, including zeros.
 
-1. **Initialise** the necessary data structures (`i`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+Inside each iteration:
+- `result <<= 1;`
+- Shift `result` left by one so there is space for the next incoming bit.
+
+Then:
+- `result |= (n & 1);`
+- `n & 1` extracts the current least significant bit from `n`.
+- The OR operation appends that bit into the newly opened spot in `result`.
+
+Finally:
+- `n >>= 1;`
+- This moves the next bit of `n` into the least significant position for the next iteration.
+
+After 32 rounds, every original bit has been moved into its mirrored position, and `return result;` returns the reversed value.
+
+### Example Walkthrough
+Using Example 1: `n = 43261596`
+
+Its binary form is:
+- `00000010100101000001111010011100`
+
+The code processes from right to left:
+- iteration 1 takes the last bit `0`, so `result` stays `0`
+- iteration 2 takes the next bit `0`, so `result` is still `0`
+- iteration 3 takes the next bit `1`, so after shifting and OR-ing, `result` ends with `1`
+- each later iteration keeps shifting `result` left and appending the current last bit from `n`
+
+After all 32 iterations, `result` becomes the bit-reversed pattern:
+- `00111001011110000010100101000000`
+
+That binary value equals `964176192`, which matches the expected output.
+
+### Key Variables Explained
+- `result`: the reversed number being built from left to right
+- `i`: loop counter that ensures exactly 32 bits are processed
+- `n`: the remaining part of the original number; its least significant bit is consumed each round
+- `n & 1`: extracts the current rightmost bit from `n`
+
+### Why This Works
+At the start of each iteration, `result` already contains the reversed form of all bits processed so far. Shifting it left preserves that partial order and opens one slot for the next bit.
+
+Appending `n & 1` places the current rightmost bit of `n` at exactly the next mirrored position in `result`. Since the loop runs exactly 32 times, every bit, including leading zeros, is handled once.
+
+### Trick Used
+Build the reversed value incrementally by left-shifting `result` and OR-ing in `n & 1` on every step.
+
+### Edge Cases Handled
+- Input `0`: all 32 extracted bits are `0`, so the method returns `0`.
+- Leading zeros: the fixed `for (int i = 0; i < 32; i++)` loop preserves them by processing all 32 positions.
+- Even inputs with trailing zero bits: those zeros are still appended into the correct reversed positions.
+- Maximum valid range values: the method never allocates extra structures and always performs the same 32 iterations.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(1)` because the loop always runs exactly 32 times, regardless of the numeric value of `n`.
+- Space Complexity: `O(1)` because only `result` and the loop variable `i` are used.

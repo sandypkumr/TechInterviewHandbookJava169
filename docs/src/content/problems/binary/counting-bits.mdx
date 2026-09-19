@@ -62,23 +62,93 @@ public class CountingBits {
 
 ## Explanation
 
+### Problem Analysis
+The task is to return an array where each index `i` stores the number of set bits in the binary representation of `i`. A brute-force approach would count bits separately for every number, but that repeats a lot of work.
+
+This is a classic interview problem because it rewards recognizing a recurrence hidden inside binary representations and turning it into an efficient dynamic programming solution.
+
 ### Approach
+The code builds the answer from `0` up to `n`. For any number `i`, shifting it right by one bit gives `i >> 1`, which is just `i` without its last bit, so the number of `1`s in `i` is the number of `1`s in `i >> 1` plus the last bit `(i & 1)`.
 
-**Counting Bits** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+This avoids recomputing bit counts from scratch for every number. Once earlier answers are stored in `result`, each new value is derived in constant time.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+Dynamic Programming.
+
+### Key Insight
+`result[i] = result[i >> 1] + (i & 1)` because right shift removes the last bit and `(i & 1)` tells us whether that removed bit was `1`.
 
 ### Code Walkthrough
+The method begins with `int[] result = new int[n + 1];`.
+- The array has size `n + 1` because we need answers for every value from `0` through `n`.
+- `result[0]` is automatically `0`, which is the correct base case because zero has no set bits.
 
-The solution is implemented in `countBits(int n)`:
+Next, the loop runs:
+- `for (int i = 1; i <= n; i++)`
+- The order matters because `result[i >> 1]` must already be available before computing `result[i]`.
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+Inside the loop:
+- `i >> 1` drops the last bit of `i`
+- `(i & 1)` extracts the last bit: `0` if `i` is even, `1` if `i` is odd
+- `result[i] = result[i >> 1] + (i & 1);` combines those two facts
+
+Finally, `return result;` gives the completed DP table.
+
+### Example Walkthrough
+Using Example 2: `n = 5`
+
+Start with:
+- `result = [0, 0, 0, 0, 0, 0]`
+
+For `i = 1`:
+- `i >> 1 = 0`
+- `i & 1 = 1`
+- `result[1] = result[0] + 1 = 1`
+
+For `i = 2`:
+- `i >> 1 = 1`
+- `i & 1 = 0`
+- `result[2] = result[1] + 0 = 1`
+
+For `i = 3`:
+- `i >> 1 = 1`
+- `i & 1 = 1`
+- `result[3] = result[1] + 1 = 2`
+
+For `i = 4`:
+- `i >> 1 = 2`
+- `i & 1 = 0`
+- `result[4] = result[2] + 0 = 1`
+
+For `i = 5`:
+- `i >> 1 = 2`
+- `i & 1 = 1`
+- `result[5] = result[2] + 1 = 2`
+
+Final array:
+- `[0, 1, 1, 2, 1, 2]`
+- This matches the expected output.
+
+### Key Variables Explained
+- `result`: DP array where `result[i]` stores the number of set bits in `i`
+- `i`: current number being processed from `1` to `n`
+- `i >> 1`: the smaller subproblem obtained by removing the last bit of `i`
+- `i & 1`: the last bit of `i`, which contributes either `0` or `1`
+
+### Why This Works
+For every `i`, its binary form can be split into two parts: all bits except the last one, and the last bit itself. `result[i >> 1]` already counts the first part, and `(i & 1)` tells us whether the last bit contributes one more set bit.
+
+Because the loop fills `result` in increasing order, every dependency is solved before it is used. That makes the recurrence both valid and efficient.
+
+### Trick Used
+Reuse the already-computed answer for `i >> 1` instead of recounting all set bits of `i` from scratch.
+
+### Edge Cases Handled
+- `n = 0`: the loop does not run, and the method correctly returns `[0]`.
+- Even numbers: `(i & 1)` becomes `0`, so they inherit the bit count of `i >> 1`.
+- Odd numbers: `(i & 1)` becomes `1`, so they get exactly one more set bit than `i >> 1`.
+- Large valid `n`: the array is sized once up front, and each index is filled exactly once.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).
+- Time Complexity: `O(n)` because the `for` loop runs once for each integer from `1` to `n`, and each iteration does constant-time bit operations and array access.
+- Space Complexity: `O(n)` because the `result` array stores `n + 1` answers.

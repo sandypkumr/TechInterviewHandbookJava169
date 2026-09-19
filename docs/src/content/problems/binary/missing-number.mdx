@@ -79,20 +79,83 @@ public class MissingNumber {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+The array contains `n` distinct numbers taken from the range `[0, n]`, so exactly one value from that range is missing. We need to identify that missing value efficiently.
 
-**Missing Number** is a binary problem. The solution iterates over the input using a enhanced for-each loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(n)` time and `O(1)` space.
+This is a common interview problem because it checks whether you can replace extra storage or sorting with a mathematical observation that gives an `O(n)` solution in constant space.
+
+### Approach
+The code compares two sums:
+- the sum we should have if no number were missing
+- the sum that actually appears in `nums`
+
+Since every number except one is present exactly once, subtracting the actual sum from the expected sum leaves the missing value. This is simpler than sorting and uses less space than a set-based solution.
+
+### Pattern Used
+This solution primarily relies on direct iteration and arithmetic series math.
+
+### Key Insight
+The numbers from `0` to `n` should total `n * (n + 1) / 2`, so the missing number is exactly `expectedSum - actualSum`.
 
 ### Code Walkthrough
+The method begins with `int n = nums.length;`.
+- If the array has length `n`, then the full range of values is `0` through `n`.
 
-The solution is implemented in `missingNumber(int[] nums)`:
+Next it computes:
+- `int expectedSum = n * (n + 1) / 2;`
+- This is the closed-form sum of all integers from `0` to `n`.
 
-1. **Initialise** the necessary data structures (`n`, `expectedSum`, `actualSum`).
-2. **Iterate** over the input using a enhanced for-each loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+Then it initializes `int actualSum = 0;` and iterates through the array:
+- `for (int num : nums)`
+- `actualSum += num;`
+
+After the loop, `actualSum` is the total of all numbers currently present.
+
+Finally:
+- `return expectedSum - actualSum;`
+- The only missing value is whatever amount is needed to make the two sums match.
+
+### Example Walkthrough
+Using Example 1: `nums = [3,0,1]`
+
+Step 1:
+- `n = 3`
+- the full range should be `[0, 1, 2, 3]`
+
+Step 2:
+- `expectedSum = 3 * 4 / 2 = 6`
+
+Step 3:
+- start `actualSum = 0`
+- add `3` -> `actualSum = 3`
+- add `0` -> `actualSum = 3`
+- add `1` -> `actualSum = 4`
+
+Step 4:
+- `expectedSum - actualSum = 6 - 4 = 2`
+
+So the missing number is `2`, which matches the expected output.
+
+### Key Variables Explained
+- `n`: number of elements currently in `nums`, which implies the full range is `0` to `n`
+- `expectedSum`: total sum of every number that should appear in a complete range
+- `actualSum`: running total of the numbers that do appear in the array
+- `num`: current element visited by the enhanced `for` loop
+
+### Why This Works
+The input guarantees that every value in `[0, n]` appears once except one missing number. That means the only difference between the ideal total and the observed total is the missing value itself.
+
+Because the loop includes every array element exactly once, `actualSum` is accurate, and the subtraction isolates the missing number directly.
+
+### Trick Used
+Use the arithmetic-series formula `n * (n + 1) / 2` to avoid extra memory or sorting.
+
+### Edge Cases Handled
+- Missing `0`: `actualSum` still includes all other numbers, so the subtraction returns `0`.
+- Missing `n`: `expectedSum` includes `n`, but `actualSum` does not, so the subtraction returns `n`.
+- Small arrays such as `[0,1]`: the same formula and loop work without any special case.
+- Distinct numbers in any order: the sum is order-independent, so no sorting is needed.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(n)` because the enhanced `for` loop visits each element of `nums` exactly once.
+- Space Complexity: `O(1)` because the method uses only `n`, `expectedSum`, and `actualSum` in addition to the input array.

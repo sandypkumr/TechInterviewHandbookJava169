@@ -71,20 +71,70 @@ public class LargestNumber {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+We need to arrange the integers so that their concatenation forms the largest possible number.
+This is not about numeric sorting alone, because `9` should come before `34`, but `34` should come before `3` only if `343` beats `334` when concatenated.
+It is a common interview problem because it checks whether you can design the right comparator instead of applying a default sort blindly.
 
-**Largest Number** is a string problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (Arrays.sort, StringBuilder) to achieve the target complexities of `O(?)` time and `O(?)` space.
+### Approach
+The code first converts every integer into a string.
+Then it sorts those strings with a custom comparator that compares `(b + a)` against `(a + b)`.
+If putting `b` before `a` creates a larger combined string, `b` should come first in the final order.
+After sorting, it concatenates all strings to build the answer.
+This is much better than trying every permutation, which would be factorial time.
+
+### Pattern Used
+Greedy sorting with a custom comparator.
+
+### Key Insight
+For any two numbers `a` and `b`, the correct relative order is determined entirely by whether `ab` or `ba` is larger.
 
 ### Code Walkthrough
+The method starts by creating `String[] strNums = new String[nums.length]`.
+The first `for` loop fills it with `String.valueOf(nums[i])`, because concatenation comparisons are easiest to do as strings.
 
-The solution is implemented in `largestNumber(int[] nums)`:
+Next, `Arrays.sort(strNums, (a, b) -> (b + a).compareTo(a + b))` performs the core logic.
+- If `(b + a)` is larger, `b` is placed before `a`.
+- If `(a + b)` is larger, `a` stays before `b`.
+This produces the order that maximizes the final concatenated result.
 
-1. **Initialise** the necessary data structures (`i`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+After sorting, the code checks `if (strNums[0].equals("0"))`.
+That handles cases like `[0,0]`, where the sorted array would otherwise produce `"00"` instead of the correct `"0"`.
+
+Then `StringBuilder result = new StringBuilder()` is used to build the answer efficiently.
+The loop `for (String str : strNums)` appends each sorted piece.
+Finally, `return result.toString()` returns the largest-number string.
+
+### Example Walkthrough
+Use Example 2: `nums = [3,30,34,5,9]`.
+- Convert to strings: `strNums = ["3", "30", "34", "5", "9"]`.
+- Compare `"3"` and `"30"`: `"330"` vs `"303"`, so `"3"` comes before `"30"`.
+- Compare `"34"` and `"3"`: `"343"` vs `"334"`, so `"34"` comes before `"3"`.
+- Compare `"5"` with `"34"`: `"534"` vs `"345"`, so `"5"` comes before `"34"`.
+- Compare `"9"` with `"5"`: `"95"` vs `"59"`, so `"9"` comes before `"5"`.
+
+After sorting, the effective order is `["9", "5", "34", "3", "30"]`.
+Appending them with `result` gives `"9534330"`.
+
+### Key Variables Explained
+- `strNums`: string version of the input numbers, used for concatenation-based comparisons.
+- `i`: index used while converting `nums` into `strNums`.
+- `a`, `b`: comparator arguments representing two candidate strings being ordered.
+- `result`: `StringBuilder` that accumulates the final largest-number string.
+
+### Why This Works
+The comparator ensures that every pair of strings is ordered in the way that gives the larger local concatenation.
+Because the final answer is just the concatenation of all sorted parts, getting each pairwise order right leads to the globally largest result for this problem's comparison rule.
+The extra zero check is necessary because if the largest sorted element is `"0"`, every other element must also be `"0"`.
+
+### Trick Used
+The trick is the comparator `(b + a).compareTo(a + b)`, which converts the whole problem into a sort by best concatenation order.
+
+### Edge Cases Handled
+- All zeros, such as `[0,0]`: `strNums[0].equals("0")` returns `"0"` instead of `"00"`.
+- Single element array: sorting keeps it unchanged, and the builder returns that value.
+- Numbers with different digit lengths, such as `3` and `30`: the custom comparator handles them correctly.
 
 ### Complexity Analysis
-
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n log n · k)`** — converting numbers to strings takes `O(n · k)`, and `Arrays.sort` performs `O(n log n)` comparisons; each comparison builds and compares `(a + b)` and `(b + a)`, which costs `O(k)` when `k` is the maximum string length.
+- **Space Complexity: `O(n · k)`** — `strNums` stores the string form of all numbers, and `result` stores the final concatenated answer.

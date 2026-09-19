@@ -68,24 +68,129 @@ public class ConvertSortedArrayToBinarySearchTree {
 
 ## Explanation
 
+### Problem Analysis
+
+We are given a sorted array and must build a height-balanced BST from it. A valid tree must preserve BST ordering, and "height-balanced" means the left and right subtrees should stay as even as possible.
+
+This is a common interview problem because it tests whether you can connect sorted data, recursion, and balanced-tree construction in one clean solution.
+
 ### Approach
 
-**Convert Sorted Array to Binary Search Tree** follows the classic divide-and-conquer pattern: split the problem into smaller independent sub-problems, solve each recursively, then combine the results. This typically yields O(n log n) time because each level of recursion does O(n) work and there are O(log n) levels.
+The code always picks the middle element of the current subarray as the root. Everything left of that middle value becomes the left subtree, and everything right of it becomes the right subtree.
 
-Merge Sort is the canonical example: split the array in half, sort each half independently, then merge the two sorted halves in linear time. The "combine" step is where the real work happens.
+This approach is chosen because:
+
+- it automatically satisfies BST ordering
+- it keeps the tree balanced by splitting the array into two nearly equal halves at every step
+
+### Pattern Used
+
+Divide and Conquer with recursive DFS tree construction.
+
+### Key Insight
+
+In a sorted array, the middle element is the only natural root choice that preserves order while keeping subtree heights close to each other.
 
 ### Code Walkthrough
 
-The solution is implemented in `sortedArrayToBST(int[] nums)`:
+The public method is:
 
-1. Define the base case (array of size 0 or 1 is already solved).
-2. Split the input roughly in half (or by another natural partition).
-3. Recursively solve each half.
-4. Merge or combine the two results to produce the answer for the full input.
+```java
+public TreeNode sortedArrayToBST(int[] nums) {
+    return buildBST(nums, 0, nums.length - 1);
+}
+```
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+So the real work happens in `buildBST(int[] nums, int left, int right)`.
+
+Base case:
+
+```java
+if (left > right) {
+    return null;
+}
+```
+
+If the current subarray is empty, there is no node to build.
+
+Next, the code picks the middle index:
+
+```java
+int mid = left + (right - left) / 2;
+```
+
+Then it creates the current root:
+
+```java
+TreeNode node = new TreeNode(nums[mid]);
+```
+
+After that, it recursively builds:
+
+- `node.left = buildBST(nums, left, mid - 1);`
+- `node.right = buildBST(nums, mid + 1, right);`
+
+Finally, it returns `node`, which is the completed subtree for that range.
+
+### Example Walkthrough
+
+Use Example 1:
+
+```text
+nums = [-10,-3,0,5,9]
+```
+
+Step by step:
+
+1. `buildBST(nums, 0, 4)`
+   - `mid = 2`
+   - create `node = new TreeNode(0)`
+2. Build left subtree with `buildBST(nums, 0, 1)`
+   - `mid = 0`
+   - create node `-10`
+   - left side `buildBST(nums, 0, -1)` returns `null`
+   - right side `buildBST(nums, 1, 1)` creates node `-3`
+3. Build right subtree with `buildBST(nums, 3, 4)`
+   - `mid = 3`
+   - create node `5`
+   - left side `buildBST(nums, 3, 2)` returns `null`
+   - right side `buildBST(nums, 4, 4)` creates node `9`
+
+One valid resulting tree is:
+
+- root `0`
+- left child `-10`
+- right child `5`
+- `-10` has right child `-3`
+- `5` has right child `9`
+
+That matches the problem statement's note that multiple balanced BST shapes are acceptable.
+
+### Key Variables Explained
+
+- `nums`: the sorted input array.
+- `left`: starting index of the current subarray being converted.
+- `right`: ending index of the current subarray.
+- `mid`: chosen root index for the current subtree.
+- `node`: the `TreeNode` created from `nums[mid]`.
+
+### Why This Works
+
+Every recursive call builds a subtree from a sorted subarray. Since all elements left of `mid` are smaller than `nums[mid]`, they belong in the left subtree. Since all elements right of `mid` are larger, they belong in the right subtree.
+
+Choosing the middle index keeps the two recursive ranges as balanced as possible, so the height remains balanced throughout the construction.
+
+### Trick Used
+
+The key trick is always selecting `mid = left + (right - left) / 2`, which both avoids overflow and gives a naturally balanced split.
+
+### Edge Cases Handled
+
+- **Empty subarray during recursion**: `left > right` returns `null`.
+- **Single-element subarray**: `left == right` creates exactly one leaf node.
+- **Even-sized subarray**: integer division picks one of the two middle candidates, and the result is still height-balanced.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(log n)`** — the recursion call stack grows to O(log n) depth.
+- **Time Complexity: `O(n)`** — each array element is turned into exactly one `TreeNode`, and each recursive call does constant extra work beyond its two children.
+- **Space Complexity: `O(log n)`** — the recursion depth is the height of the balanced BST, which is logarithmic.

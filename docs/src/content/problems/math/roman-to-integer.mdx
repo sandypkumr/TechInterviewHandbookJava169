@@ -116,23 +116,93 @@ public class RomanToInteger {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks you to convert a Roman numeral string into its integer value while correctly handling subtractive pairs such as `IV`, `IX`, `XL`, `CM`, and similar cases. The challenge is not the symbol lookup itself, but deciding when a symbol should be added versus subtracted.
+
+It is a common interview question because it checks attention to numeral rules, traversal direction, and clean implementation of conditional logic.
+
 ### Approach
+The code scans the string from right to left. As it moves, it keeps track of the previously seen Roman value in `prevValue`.
 
-The key insight for **Roman to Integer** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+If the current symbol is smaller than `prevValue`, it must be part of a subtractive pair, so the code subtracts it from `total`. Otherwise, it adds the value. This avoids explicitly checking all six subtractive combinations.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Pattern Used
+This solution primarily relies on direct iteration from right to left with running-state comparison.
+
+### Key Insight
+When scanning from right to left, a symbol should be subtracted exactly when it is smaller than the symbol immediately processed before it.
 
 ### Code Walkthrough
+The method starts with `int total = 0;` and `int prevValue = 0;`.
 
-The solution is implemented in `romanToInt(String s)`:
+The loop `for (int i = s.length() - 1; i >= 0; i--)` walks backward through the string.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+For each character:
+- `char ch = s.charAt(i);` reads the current Roman symbol
+- `int value = getValue(ch);` converts it to its numeric value
+
+Then the code decides how to update `total`:
+- if `value < prevValue`, it does `total -= value;`
+- otherwise, it does `total += value;`
+
+Finally, `prevValue = value;` updates the comparison baseline for the next character to the left.
+
+The helper `getValue(char ch)` uses a `switch` expression to map:
+- `I -> 1`
+- `V -> 5`
+- `X -> 10`
+- `L -> 50`
+- `C -> 100`
+- `D -> 500`
+- `M -> 1000`
+
+After the loop ends, `total` is returned.
+
+### Example Walkthrough
+For **Example 1**, `s = "III"`:
+- Read rightmost `I`: `value = 1`, `prevValue = 0`, so add -> `total = 1`
+- Next `I`: `value = 1`, not smaller than `prevValue = 1`, so add -> `total = 2`
+- Next `I`: add again -> `total = 3`
+- Return `3`
+
+For **Example 2**, `s = "LVIII"`:
+- `I` -> add `1`, `total = 1`
+- `I` -> add `1`, `total = 2`
+- `I` -> add `1`, `total = 3`
+- `V` -> add `5`, `total = 8`
+- `L` -> add `50`, `total = 58`
+- Return `58`
+
+For **Example 3**, `s = "MCMXCIV"`:
+- `V` -> add `5`, `total = 5`, `prevValue = 5`
+- `I` -> smaller than `5`, subtract -> `total = 4`
+- `C` -> add `100`, `total = 104`
+- `X` -> smaller than `100`, subtract -> `total = 94`
+- `M` -> add `1000`, `total = 1094`
+- `C` -> smaller than `1000`, subtract -> `total = 994`
+- `M` -> add `1000`, `total = 1994`
+- Return `1994`
+
+### Key Variables Explained
+- `s`: the Roman numeral input string.
+- `total`: the running integer result.
+- `prevValue`: the numeric value of the symbol processed immediately to the right.
+- `ch`: the current Roman symbol.
+- `value`: the integer value returned by `getValue(ch)`.
+
+### Why This Works
+Roman numerals only subtract when a smaller symbol appears before a larger one. By scanning from right to left, the code can detect that rule locally: if the current symbol is less than `prevValue`, it belongs to a subtractive pair and must be removed from the running sum.
+
+If it is not smaller, it contributes normally and is added. Since every symbol is processed exactly once under the Roman numeral rules, the final `total` is correct.
+
+### Trick Used
+The main trick is the reverse traversal with `prevValue`, which eliminates the need to explicitly match pairs like `IV`, `IX`, `XL`, `XC`, `CD`, and `CM`.
+
+### Edge Cases Handled
+- **Repeated symbols**: values like `III` keep getting added because `value < prevValue` is false.
+- **Subtractive pairs**: patterns like `IV` and `CM` are handled by the subtraction branch.
+- **Single-character numerals**: the loop runs once and returns the mapped value directly.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — the loop visits each character in `s` once, and `getValue(ch)` is constant time.
+- **Space Complexity: `O(1)`** — only a few integer and character variables are used.

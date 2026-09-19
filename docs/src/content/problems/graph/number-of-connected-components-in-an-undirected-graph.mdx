@@ -104,24 +104,94 @@ public class NumberOfConnectedComponentsInAnUndirectedGraph {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks how many disconnected groups exist in an undirected graph with `n` labeled nodes and a list of edges. It is a common interview topic because it can be solved in multiple ways, and this particular implementation tests whether you recognize when Union-Find is cleaner than running DFS from every component.
+
 ### Approach
+Start by assuming every node is its own separate component. Then process each edge and merge the two endpoint components if they are not already connected.
 
-**Number of Connected Components in an Undirected Graph** involves repeatedly merging groups and querying whether two elements belong to the same group — perfect for Union-Find. The data structure maintains a forest of trees where each tree represents a component; union merges two trees and find identifies a root.
+Every successful merge reduces the total number of connected components by one. This is more efficient than rebuilding connectivity from scratch after each edge, especially because Union-Find supports very fast repeated merge and root queries.
 
-With path compression (flattening the tree on every find) and union by rank (always attaching the smaller tree under the larger), both operations run in near-constant amortised time O(α(n)), where α is the extremely slow-growing inverse Ackermann function.
+### Pattern Used
+Union-Find (Disjoint Set Union)
+
+### Key Insight
+You do not need to explicitly traverse each component; you only need to count how many times an edge connects two previously separate sets.
 
 ### Code Walkthrough
+In `countComponents(int n, int[][] edges)`:
+- `parent` stores the representative parent for each node.
+- `rank` stores a small tree-height heuristic used to keep unions balanced.
+- The `for` loop initializes every node as its own parent with `rank[i] = 1`.
 
-The solution is implemented in `countComponents(int n, int[][] edges)`:
+Next:
+- `components = n` starts with the assumption that all nodes are isolated.
+- The loop `for (int[] edge : edges)` processes each undirected edge.
+- For every edge, the code calls `union(edge[0], edge[1], parent, rank)`.
+- If `union(...)` returns `true`, two different components were merged, so `components--`.
+- At the end, `components` is returned.
 
-1. Initialise parent[i] = i and rank[i] = 0 for every node.
-2. find(x): recursively find the root, applying path compression along the way.
-3. union(x, y): find both roots; if different, attach the lower-rank tree under the higher-rank one.
-4. After processing all edges/queries, count distinct roots or answer connectivity queries.
+In `union(int x, int y, int[] parent, int[] rank)`:
+- `rootX = find(x, parent)` and `rootY = find(y, parent)` get the current set representatives.
+- If `rootX == rootY`, both nodes are already in the same component, so nothing changes and the method returns `false`.
+- Otherwise, the code attaches the smaller-rank tree under the larger-rank tree.
+- If both ranks are equal, it makes `rootX` the parent of `rootY` and increments `rank[rootX]`.
+- A successful merge returns `true`.
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+In `find(int x, int[] parent)`:
+- If `parent[x] != x`, the node is not the root.
+- `parent[x] = find(parent[x], parent);` performs path compression, making future lookups faster.
+- The method finally returns the root representative.
+
+### Example Walkthrough
+Use Example 1:
+- `n = 5`
+- `edges = [[0,1],[1,2],[3,4]]`
+
+Initial state:
+- `parent = [0,1,2,3,4]`
+- `rank = [1,1,1,1,1]`
+- `components = 5`
+
+Process `[0,1]`:
+- `find(0) = 0`, `find(1) = 1`
+- They are different, so `union` merges them.
+- `components` becomes `4`
+
+Process `[1,2]`:
+- `find(1)` compresses to the root of the first set.
+- `find(2) = 2`
+- Another successful merge happens.
+- `components` becomes `3`
+
+Process `[3,4]`:
+- `find(3) = 3`, `find(4) = 4`
+- They merge into a second group.
+- `components` becomes `2`
+
+The graph now has two connected components: `{0,1,2}` and `{3,4}`. The method returns `2`.
+
+### Key Variables Explained
+- `parent[i]`: current parent or representative link for node `i`.
+- `rank[i]`: balancing information used when attaching one root under another.
+- `components`: current number of connected components.
+- `rootX`, `rootY`: representatives of the sets containing `x` and `y`.
+- `edges`: each undirected connection that may merge two sets.
+
+### Why This Works
+The Union-Find structure maintains the invariant that all nodes in the same connected component share the same root representative. Initially this is true because every node is alone.
+
+Whenever an edge connects two different roots, those two components must belong to the same final connected component, so merging them is correct and reducing `components` by one is valid. If the roots are already equal, the edge stays inside an existing component and should not change the count.
+
+### Trick Used
+Combining path compression in `find` with union by `rank` so repeated connectivity checks stay almost constant time.
+
+### Edge Cases Handled
+- No edges: `components` remains `n`, which correctly treats every node as isolated.
+- Redundant edges inside the same component: `rootX == rootY` makes `union` return `false`, so the count is not reduced incorrectly.
+- Long parent chains: path compression flattens them during `find`.
+- Balanced merging: `rank` prevents the trees from becoming unnecessarily tall.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(V+E)`** — each vertex and each edge is processed at most once in the graph traversal.
-- **Space Complexity: `O(V)`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(n + e * alpha(n))`, where `e = edges.length`, because initialization takes `O(n)` and each `union`/`find` is amortized near-constant time.
+- Space Complexity: `O(n)` for the `parent` and `rank` arrays.

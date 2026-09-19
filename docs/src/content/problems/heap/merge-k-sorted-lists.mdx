@@ -115,25 +115,95 @@ public class MergeKSortedLists {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to merge `k` already sorted linked lists into one fully sorted linked list. The challenge is not sorting values from scratch, but combining multiple sorted streams efficiently.
+
+This is a common interview problem because it tests how well you exploit sorted input and whether you can improve on the naive "collect everything and sort" approach.
+
 ### Approach
+The code uses divide and conquer. Instead of merging all lists into one in a linear chain, it repeatedly splits the array of lists into two halves, solves each half recursively, and then merges the two sorted results.
 
-**Merge k Sorted Lists** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+This is better than merging lists one by one from left to right, because pairing lists in a balanced way avoids repeatedly rebuilding a very large intermediate list.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Pattern Used
+Divide and Conquer with Linked List Merge.
+
+### Key Insight
+If two sorted linked lists can be merged efficiently, then `k` sorted lists can be merged efficiently by recursively reducing the problem into smaller "merge two lists" subproblems.
 
 ### Code Walkthrough
+`mergeKLists(ListNode[] lists)` is the public entry point.
 
-The solution is implemented in `mergeKLists(ListNode[] lists)`:
+- It first checks `if (lists == null || lists.length == 0)` and returns `null` for empty input.
+- Otherwise, it starts the recursive process with `mergeKLists(lists, 0, lists.length - 1)`.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+`mergeKLists(ListNode[] lists, int left, int right)` handles one subrange of the array.
 
-&gt; **Note:** This solution also uses the **divide and conquer — split, solve recursively, combine** technique.
+- If `left == right`, that range contains exactly one list, so the method returns `lists[left]` directly.
+- It computes `mid = left + (right - left) / 2` to split the range safely.
+- It recursively builds `l1` from the left half and `l2` from the right half.
+- It then combines those two sorted lists by calling `mergeTwoLists(l1, l2)`.
+
+`mergeTwoLists(ListNode l1, ListNode l2)` performs the standard sorted merge.
+
+- `dummy` is a temporary starting node so the code can append nodes uniformly.
+- `current` always points to the last node in the merged list built so far.
+- While both `l1` and `l2` still have nodes, the code compares `l1.val` and `l2.val`.
+- The smaller node is attached to `current.next`, and that list pointer moves forward.
+- After each attachment, `current = current.next` advances the tail.
+- When one list runs out, the remaining nodes of the other list are appended in one step.
+- Finally, `dummy.next` returns the real head of the merged list.
+
+### Example Walkthrough
+Use Example 1: `lists = [[1,4,5],[1,3,4],[2,6]]`.
+
+- The first call works on indices `0..2`.
+- `mid = 1`, so the problem splits into `0..1` and `2..2`.
+- The `2..2` side directly returns `[2,6]`.
+
+For `0..1`:
+
+- It splits again into `0..0` and `1..1`.
+- Those directly return `[1,4,5]` and `[1,3,4]`.
+- `mergeTwoLists` compares heads:
+  - `1` vs `1` -> the code takes from `l2` because the `if` is strictly `<`.
+  - `1` vs `3` -> take from `l1`.
+  - `4` vs `3` -> take `3`.
+  - `4` vs `4` -> take from `l2`.
+  - append remaining `4,5`.
+- This produces `[1,1,3,4,4,5]`.
+
+Now merge `[1,1,3,4,4,5]` with `[2,6]`:
+
+- Take `1`, `1`, then compare `3` with `2` and take `2`.
+- Append `3,4,4,5`, then `6`.
+- Final merged list becomes `[1,1,2,3,4,4,5,6]`.
+
+### Key Variables Explained
+- `lists`: the input array containing all sorted linked lists.
+- `left`, `right`: the current subrange of `lists` being merged recursively.
+- `mid`: the split point that balances the recursion tree.
+- `l1`, `l2`: the two sorted partial results returned from recursive calls.
+- `dummy`: a helper node that simplifies merged-list construction.
+- `current`: the moving tail pointer of the merged result.
+- `l1`, `l2` inside `mergeTwoLists`: moving pointers over the two input lists.
+
+### Why This Works
+Each recursive call guarantees that the subrange `lists[left..right]` is merged into one sorted list before returning. The base case is correct because a single sorted list is already merged. The combine step is correct because `mergeTwoLists` always attaches the smaller current node, so the merged output stays sorted at every step.
+
+Because the recursion combines all subranges, the final returned list contains every original node exactly once and in ascending order.
+
+### Trick Used
+Balanced pairwise merging through divide and conquer, which avoids repeatedly merging one huge partial result with one small list.
+
+### Edge Cases Handled
+- `lists == null` or `lists.length == 0`: returns `null` immediately.
+- A subproblem with one list: `left == right` returns that list unchanged.
+- Empty lists inside the array: `mergeTwoLists` naturally handles `l1 == null` or `l2 == null` by appending the other list.
+- Duplicate values across lists: the comparison logic still merges them in sorted order.
 
 ### Complexity Analysis
+Let `N` be the total number of nodes across all lists and `k` be the number of lists.
 
-- **Time Complexity: `O(n log k)`** — see the analysis for full details.
-- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `O(N log k)` because each recursion level processes all nodes through merges, and there are `O(log k)` levels in the balanced split tree.
+- **Space Complexity:** `O(log k)` auxiliary space from the recursive call stack. The merged list reuses existing nodes, so no extra node array or heap is created.

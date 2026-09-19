@@ -105,20 +105,88 @@ public class DesignHitCounter {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+We need a data structure that records hits over time and can report how many occurred in the last 5 minutes, where timestamps arrive in non-decreasing order. The interesting part is supporting repeated updates and queries efficiently instead of storing every hit forever.
 
-**Design Hit Counter** is a queue problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(1)` time and `O(n)` space.
+This is a common interview design question because it tests whether you notice the fixed 300-second window and exploit that bound.
+
+### Approach
+A straightforward design would push every hit into a queue and remove expired entries during queries. That works, but this implementation is even tighter because the time window is always exactly 300 seconds.
+
+The solution uses two fixed arrays of length `300`:
+- `times[index]` stores the timestamp currently assigned to that bucket
+- `hits[index]` stores how many hits happened at that exact timestamp
+
+The bucket index is `timestamp % 300`. If a bucket still belongs to the same timestamp, increment its hit count. If it belongs to an older timestamp, overwrite it because anything older than 300 seconds can no longer matter for future queries.
+
+### Pattern Used
+The solution primarily relies on **direct indexing with a circular buffer**.
+
+### Key Insight
+Because only the last 300 seconds matter, we only need 300 reusable buckets, not an ever-growing history.
 
 ### Code Walkthrough
+The class defines two fields:
+- `private final int[] times;`
+- `private final int[] hits;`
 
-The solution is implemented in `hit(int timestamp)`:
+The constructor allocates both arrays with size `300`.
 
-1. **Initialise** the necessary data structures (`index`, `totalHits`, `i`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+In `hit(int timestamp)`:
+- compute `int index = timestamp % 300`
+- if `times[index] != timestamp`, that bucket belongs to an old second
+  - set `times[index] = timestamp`
+  - reset `hits[index] = 1`
+- otherwise the hit happened in the same second already stored there, so just do `hits[index]++`
+
+In `getHits(int timestamp)`:
+- start with `int totalHits = 0`
+- loop through all `300` buckets
+- if `timestamp - times[i] < 300`, that bucket is still inside the 5-minute window
+- add `hits[i]` into `totalHits`
+- return `totalHits`
+
+The chronological-order guarantee matters because once a bucket is reused for a newer timestamp, no future query will need the overwritten older second.
+
+### Example Walkthrough
+Use the given sequence:
+- `hit(1)` → `index = 1`, so `times[1] = 1`, `hits[1] = 1`
+- `hit(2)` → `index = 2`, so `times[2] = 2`, `hits[2] = 1`
+- `hit(3)` → `index = 3`, so `times[3] = 3`, `hits[3] = 1`
+
+Now `getHits(4)` scans all buckets:
+- buckets for times `1`, `2`, and `3` satisfy `4 - times[i] < 300`
+- total becomes `3`
+
+Next `hit(300)`:
+- `index = 0`
+- `times[0] != 300`, so store `times[0] = 300` and `hits[0] = 1`
+
+Now `getHits(300)` scans again:
+- time `1` is still counted because `300 - 1 = 299 < 300`
+- times `2`, `3`, and `300` are also counted
+- total becomes `4`, matching the example output
+
+### Key Variables Explained
+- `times`: for each bucket, remembers which exact timestamp currently owns it
+- `hits`: for each bucket, stores how many hits occurred at `times[i]`
+- `index`: `timestamp % 300`, the circular-buffer slot for that second
+- `totalHits`: running sum built during `getHits`
+
+### Why This Works
+Each array slot represents at most one exact timestamp. When the same second receives multiple hits, the code increments the existing bucket. When a timestamp maps to a slot whose stored time is older, overwriting is safe because anything at least 300 seconds old is outside the sliding window for all future timestamps.
+
+During `getHits`, the condition `timestamp - times[i] < 300` precisely keeps only buckets from the last 5 minutes. Summing those buckets therefore returns exactly the number of recent hits.
+
+### Trick Used
+The key trick is **using `timestamp % 300` to turn the last 5 minutes into a fixed-size circular buffer**.
+
+### Edge Cases Handled
+- Multiple hits in the same second: `hits[index]++` accumulates them
+- Bucket reuse after 300 seconds: `if (times[index] != timestamp)` resets stale data before counting a new second
+- Query exactly 300 seconds later: `timestamp - times[i] < 300` correctly excludes hits that are too old and includes hits from the last 299-second difference
+- Large timestamps: modulo arithmetic keeps storage fixed at 300 buckets
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity:** `hit` is `O(1)`, and `getHits` is `O(300)`, which is `O(1)` because the loop always runs over a fixed 300 buckets
+- **Space Complexity:** `O(300)`, which is `O(1)` auxiliary space because the two arrays have constant size independent of the number of calls

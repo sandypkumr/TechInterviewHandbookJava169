@@ -92,23 +92,88 @@ public class LetterCombinationsOfAPhoneNumber {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to generate every string that can be formed by replacing each digit with its mapped phone keypad letters. Because each position has multiple choices and every full combination is valid, the task is naturally a search through a decision tree.
+
+It is a common interview problem because it tests recursive thinking, tree exploration, and whether you can build combinations without losing track of state.
+
 ### Approach
+The code builds the answer one character at a time. For the current digit, it tries every mapped letter, appends that letter to the current partial combination, and then recursively solves the rest of the digits.
 
-**Letter Combinations of a Phone Number** requires enumerating all valid combinations/permutations/subsets. Backtracking systematically tries every candidate and immediately abandons ("prunes") any branch that cannot possibly lead to a valid solution, making it far faster than brute-force enumeration in practice.
+This is better than manually generating nested loops because the number of digits is variable. Backtracking gives one clean template that works for length `1` through `4` and reuses the same `StringBuilder` instead of creating unnecessary intermediate strings on every step.
 
-Think of solving a sudoku: you place a digit, recursively try to solve the rest, and if you reach a contradiction you erase that digit (backtrack) and try the next. The key is that pruning can cut enormous branches of the search tree early.
+### Pattern Used
+Backtracking with depth-first search.
+
+### Key Insight
+At position `index`, the only work that matters is trying each letter for `digits.charAt(index)` and then recursively finishing the suffix starting at `index + 1`.
 
 ### Code Walkthrough
+The `phoneMap` stores the exact digit-to-letter mapping for digits `'2'` through `'9'`.
 
-The solution is implemented in `letterCombinations(String digits)`:
+In `letterCombinations(String digits)`:
+- `result` collects every finished combination.
+- The guard `if (digits == null || digits.length() == 0)` returns an empty list immediately for invalid or empty input.
+- `backtrack(result, new StringBuilder(), digits, 0)` starts the search with an empty combination and at the first digit.
 
-1. Define what constitutes a valid complete solution (base case).
-2. At each step, iterate over all possible next choices.
-3. Apply a choice (mutate state), then recurse.
-4. After recursion returns, undo the choice (backtrack) to restore state.
-5. Apply a pruning condition to skip choices that cannot lead to a valid solution.
+In `backtrack(List<String> result, StringBuilder current, String digits, int index)`:
+- The base case is `if (index == digits.length())`.
+- When that happens, `current` already holds one complete valid combination, so `current.toString()` is added to `result`.
+- Otherwise, the code reads the available letters with `phoneMap.get(digits.charAt(index))`.
+- The loop `for (char c : letters.toCharArray())` tries each possible letter for the current digit.
+- `current.append(c)` chooses a letter.
+- `backtrack(result, current, digits, index + 1)` explores all combinations that begin with that choice.
+- `current.deleteCharAt(current.length() - 1)` undoes the choice so the next letter can be tried cleanly.
+
+### Example Walkthrough
+Use **Example 1**: `digits = "23"`.
+
+Start:
+- `current = ""`, `index = 0`
+- `digits.charAt(0)` is `'2'`, so `letters = "abc"`
+
+Branch 1 with `'a'`:
+- append `'a'` -> `current = "a"`
+- recurse with `index = 1`
+- now digit `'3'` maps to `"def"`
+- append `'d'` -> `current = "ad"`, `index = 2`, base case -> add `"ad"`
+- backtrack to `current = "a"`
+- append `'e'` -> add `"ae"`
+- append `'f'` -> add `"af"`
+
+Branch 2 with `'b'`:
+- produce `"bd"`, `"be"`, `"bf"`
+
+Branch 3 with `'c'`:
+- produce `"cd"`, `"ce"`, `"cf"`
+
+Final `result`:
+- `["ad","ae","af","bd","be","bf","cd","ce","cf"]`
+
+### Key Variables Explained
+- `phoneMap`: maps each digit to its available letters.
+- `result`: final list of completed combinations.
+- `current`: mutable path being built for the current recursive branch.
+- `digits`: original input string, shared across recursive calls.
+- `index`: which digit we are currently processing.
+- `letters`: candidate letters for the current digit.
+
+### Why This Works
+At every recursive level, the algorithm fixes exactly one character of the final answer. Because the loop tries every letter in `phoneMap` for the current digit, no valid combination is missed.
+
+Because `index` always moves forward by one, every completed string has exactly one choice per digit and is added only when all digits have been processed. The backtracking step restores `current` to the exact previous state before exploring the next branch, so branches do not interfere with each other.
+
+### Trick Used
+Using a single `StringBuilder current` plus `append` and `deleteCharAt` avoids creating a new partial string at every recursive step.
+
+### Edge Cases Handled
+- `digits == null`: returns an empty list immediately.
+- `digits.length() == 0`: also returns an empty list instead of recursing.
+- Digits with 4 letters like `'7'` and `'9'`: handled naturally because the loop iterates over whatever string `phoneMap` returns.
+- Single-digit input such as Example 2: recursion reaches the base case after one level and adds each one-letter combination.
 
 ### Complexity Analysis
+Let `n` be `digits.length()`.
 
-- **Time Complexity: `O(4^n)`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity:** `O(4^n * n)` in the worst case. Each digit can branch to at most 4 letters, and converting `current` to a string at the base case costs `O(n)` for each completed combination.
+- **Space Complexity:** `O(n)` auxiliary recursion space, excluding the output. The recursion depth and `StringBuilder current` both grow to at most `n`. The returned `result` itself can contain up to `4^n` strings.

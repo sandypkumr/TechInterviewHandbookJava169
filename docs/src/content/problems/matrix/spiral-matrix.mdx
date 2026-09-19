@@ -92,23 +92,102 @@ public class SpiralMatrix {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to return every element of the matrix exactly once, but in spiral order: left to right, top to bottom, right to left, and bottom to top, repeating inward. The challenge is managing boundaries cleanly without revisiting cells.
+
+It is a popular interview problem because it tests simulation skills, careful boundary handling, and off-by-one correctness.
+
 ### Approach
+A brute-force solution could track visited cells with another matrix and walk step by step while changing directions. That works, but it adds extra space and more bookkeeping.
 
-**Spiral Matrix** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+This solution is simpler: keep four moving boundaries — `top`, `bottom`, `left`, and `right`.
+- read the current top row
+- read the current right column
+- if rows remain, read the current bottom row in reverse
+- if columns remain, read the current left column upward
+- then shrink the boundaries and continue
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+That way, every layer of the matrix is peeled off in one iteration.
+
+### Pattern Used
+The solution primarily relies on **direct iteration using four shrinking boundaries**.
+
+### Key Insight
+Instead of tracking visited cells, keep the current unprocessed rectangle and shrink it after traversing each side.
 
 ### Code Walkthrough
+The method creates `result` first. If `matrix == null || matrix.length == 0`, it immediately returns the empty list.
 
-The solution is implemented in `spiralOrder(int[][] matrix)`:
+Then it stores dimensions in `m` and `n`, and initializes:
+- `top = 0`
+- `bottom = m - 1`
+- `left = 0`
+- `right = n - 1`
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+The `while (top <= bottom && left <= right)` loop means there is still an unprocessed rectangle.
+
+Inside each round:
+- the first `for` loop runs `j` from `left` to `right` and adds `matrix[top][j]`
+- then `top++` removes that row from future work
+
+Next:
+- the second `for` loop runs `i` from `top` to `bottom` and adds `matrix[i][right]`
+- then `right--` removes that column
+
+Before reading the bottom row, the code checks `if (top <= bottom)`.
+- if true, it runs `j` from `right` down to `left` and adds `matrix[bottom][j]`
+- then `bottom--`
+
+Before reading the left column, the code checks `if (left <= right)`.
+- if true, it runs `i` from `bottom` down to `top` and adds `matrix[i][left]`
+- then `left++`
+
+When the boundaries cross, all cells have been added and the method returns `result`.
+
+### Example Walkthrough
+Use Example 1: `[[1,2,3],[4,5,6],[7,8,9]]`.
+
+Start with:
+- `top = 0`, `bottom = 2`
+- `left = 0`, `right = 2`
+- `result = []`
+
+First layer:
+- top row: add `1, 2, 3` → `result = [1,2,3]`, then `top = 1`
+- right column: add `6, 9` → `result = [1,2,3,6,9]`, then `right = 1`
+- bottom row reversed: add `8, 7` → `result = [1,2,3,6,9,8,7]`, then `bottom = 1`
+- left column upward: add `4` → `result = [1,2,3,6,9,8,7,4]`, then `left = 1`
+
+Second layer:
+- now `top = 1`, `bottom = 1`, `left = 1`, `right = 1`
+- top row adds `5` → `result = [1,2,3,6,9,8,7,4,5]`
+- boundaries cross, so traversal stops
+
+That matches the expected output.
+
+### Key Variables Explained
+- `result`: output list storing the spiral order
+- `m`, `n`: matrix dimensions
+- `top`: first remaining row
+- `bottom`: last remaining row
+- `left`: first remaining column
+- `right`: last remaining column
+- loop variables `i` and `j`: walk vertically and horizontally across the current boundary
+
+### Why This Works
+At the start of each `while` iteration, the rectangle bounded by `top..bottom` and `left..right` is exactly the part not yet processed. The four traversals read its outer border without touching any cell outside that border.
+
+After each side is processed, the corresponding boundary moves inward, so that side can never be visited again. The conditional checks prevent duplicate processing when only one row or one column remains.
+
+### Trick Used
+The key trick is the **boundary checks before traversing the bottom row and left column**, which prevent duplicates in matrices with a single remaining row or column.
+
+### Edge Cases Handled
+- Empty matrix: `if (matrix == null || matrix.length == 0)` returns an empty list immediately
+- One row left: `if (top <= bottom)` ensures the bottom-row traversal only happens when valid
+- One column left: `if (left <= right)` ensures the left-column traversal only happens when valid
+- Non-square matrices: the independent `m` and `n` boundaries work for rectangular inputs too
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(m * n)` because each matrix cell is appended to `result` exactly once
+- **Space Complexity:** `O(1)` auxiliary space for the four boundaries and loop variables; the `result` list itself stores `m * n` output values

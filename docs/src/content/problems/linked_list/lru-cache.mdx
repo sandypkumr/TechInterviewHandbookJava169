@@ -136,23 +136,135 @@ public class LRUCache {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks us to build a cache that supports both lookup and update in constant average time, while also removing the least recently used entry when capacity is exceeded. That means we need to track two things at once: fast access by `key` and the recency order of nodes.
+
+This is a classic interview design question because it tests whether you can combine data structures instead of forcing one structure to do everything.
+
 ### Approach
+A plain `HashMap` gives fast lookup, but it does not remember which entry was used most recently. A plain linked list can maintain usage order, but finding an arbitrary key inside it would be too slow.
 
-The key insight for **LRU Cache** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+This solution combines both:
+- `map` stores `key -> Node` for O(1) access.
+- A doubly linked list stores nodes from most recently used to least recently used.
+- Every `get` or `put` on an existing key moves that node to the front.
+- When the cache is full, the node just before `tail` is evicted.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+This is better than brute force because no operation scans the cache.
+
+### Pattern Used
+This solution uses a **Hash Map + Doubly Linked List** design pattern.
+
+### Key Insight
+The crucial idea is that the hash map tells us which node to update, and the doubly linked list lets us remove and reinsert that exact node in O(1) time.
 
 ### Code Walkthrough
+The inner `Node` class stores four fields: `key`, `value`, `prev`, and `next`. The `key` is stored inside the node so eviction can remove the same key from `map`.
 
-The solution is implemented in `get(int key)`:
+The class-level fields are:
+- `capacity` for the maximum number of cache entries.
+- `head` and `tail` as dummy boundary nodes.
+- `map` as `Map<Integer, Node>` for direct access.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+In `LRUCache(int capacity)`, the constructor:
+- saves `capacity`,
+- creates `map`,
+- creates dummy `head` and `tail`,
+- links `head.next = tail` and `tail.prev = head`.
+
+This means the real cache nodes will always live between `head` and `tail`.
+
+In `get(int key)`:
+- if `map` does not contain `key`, it returns `-1`.
+- otherwise it fetches `node = map.get(key)`.
+- `remove(node)` detaches it from its current position.
+- `addToHead(node)` inserts it right after `head`, marking it as most recently used.
+- finally it returns `node.value`.
+
+In `put(int key, int value)` there are two cases.
+- If `map.containsKey(key)`, the node already exists. The code removes that node, updates `node.value = value`, and puts it back at the front.
+- Otherwise, a new key is being inserted. If `map.size() == capacity`, the least recently used node is `tail.prev`. The code removes that node from the list and then removes `tailPrev.key` from `map`.
+
+After eviction if needed, it creates `newNode = new Node(key, value)`, inserts it with `addToHead(newNode)`, and stores it in `map`.
+
+The helper `addToHead(Node node)` rewires four pointers so `node` becomes the first real node after `head`.
+
+The helper `remove(Node node)` rewires `node.prev.next` and `node.next.prev`, deleting `node` from the list in O(1) time.
+
+### Example Walkthrough
+Use the given example with capacity `2`.
+
+Start:
+- cache is empty
+- list order is `head <-> tail`
+- `map = {}`
+
+`put(1, 1)`:
+- key `1` is new
+- cache is not full
+- create node `(1,1)` and add it after `head`
+- order becomes `1`
+
+`put(2, 2)`:
+- key `2` is new
+- add it to the front
+- order becomes `2 -> 1`
+- `1` is now least recently used
+
+`get(1)`:
+- find node `1` in `map`
+- remove it from the back part of the list and move it to the front
+- order becomes `1 -> 2`
+- return `1`
+
+`put(3, 3)`:
+- cache is full
+- `tail.prev` is node `2`, so `2` is evicted
+- insert `3` at the front
+- order becomes `3 -> 1`
+
+`get(2)`:
+- `2` is not in `map`
+- return `-1`
+
+`put(4, 4)`:
+- cache is full again
+- `tail.prev` is now node `1`, so `1` is evicted
+- insert `4` at the front
+- order becomes `4 -> 3`
+
+Then:
+- `get(1)` returns `-1`
+- `get(3)` moves `3` to the front and returns `3`
+- `get(4)` returns `4`
+
+### Key Variables Explained
+- `capacity`: maximum number of active cache entries.
+- `map`: gives O(1) access from `key` to the exact `Node`.
+- `head`: dummy node before the most recently used item.
+- `tail`: dummy node after the least recently used item.
+- `tailPrev`: the node chosen for eviction when the cache is full.
+- `newNode`: the freshly created node for a new key.
+
+### Why This Works
+The linked list always maintains a valid recency invariant:
+- the node nearest `head` is the most recently used,
+- the node nearest `tail` is the least recently used.
+
+Every successful `get` and every `put` on an existing key moves that node to the front, so the ordering stays correct after access. Every new insertion also goes to the front because it was just used. When eviction is necessary, removing `tail.prev` is correct because that is exactly the least recently used node under this invariant.
+
+Because `map` always points to the same nodes currently in the list, access and updates remain O(1) on average.
+
+### Trick Used
+Using **dummy `head` and `tail` sentinel nodes** avoids special-case pointer logic when adding or removing from the ends of the doubly linked list.
+
+### Edge Cases Handled
+- Missing key: `get` returns `-1` immediately with `if (!map.containsKey(key))`.
+- Updating an existing key: `put` removes the old node position, updates `node.value`, and moves it to the front.
+- Full cache insertion: `if (map.size() == capacity)` evicts exactly one least recently used node.
+- Capacity of `1`: the same eviction logic still works because the only real node will be `tail.prev`.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(1)` average for both `get` and `put`, because `map.containsKey`, `map.get`, `map.put`, and `map.remove` are average O(1), and `remove` / `addToHead` each do constant pointer updates.
+- **Space Complexity:** `O(capacity)`, because `map` and the linked list store at most `capacity` real cache nodes.
 
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.

@@ -72,23 +72,120 @@ public class HouseRobber {
 
 ## Explanation
 
+### Problem Analysis
+
+The problem asks for the maximum money you can collect from a row of houses when robbing two adjacent houses is forbidden.
+That adjacency rule creates a repeated choice at every index: either rob the current house and skip the previous one, or skip the current house and keep the best result so far.
+This is a classic interview problem because it tests whether you can turn a brute-force pick/skip recursion into a clean dynamic programming recurrence.
+
 ### Approach
 
-**House Robber** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+A brute-force solution would try every valid combination of robbed houses, which quickly becomes exponential.
+This code instead builds the answer left to right using dynamic programming.
+For each position, it stores the best amount possible up to that house.
+That works because once you know the best answers for earlier houses, the current decision depends only on those already-computed values.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+
+Dynamic Programming.
+
+### Key Insight
+
+At house `i`, the best answer is either `dp[i - 1]` if we skip this house, or `dp[i - 2] + nums[i]` if we rob it.
 
 ### Code Walkthrough
 
-The solution is implemented in `rob(int[] nums)`:
+The method starts with a special case:
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+- If `nums.length == 1`, it returns `nums[0]` immediately because there is only one house to consider.
+
+Then it prepares the DP table:
+
+- `int n = nums.length;`
+- `int[] dp = new int[n];`
+
+Here, `dp[i]` means the maximum money that can be robbed from houses `0` through `i`.
+
+The base cases are filled next:
+
+- `dp[0] = nums[0];`
+  - With only the first house available, the best you can do is rob it.
+- `dp[1] = Math.max(nums[0], nums[1]);`
+  - For the first two houses, you cannot rob both, so you take the larger amount.
+
+The loop handles the remaining houses:
+
+- `for (int i = 2; i < n; i++)`
+- `dp[i] = Math.max(dp[i - 1], dp[i - 2] + nums[i]);`
+
+For every house `i`:
+
+- `dp[i - 1]` represents skipping house `i`.
+- `dp[i - 2] + nums[i]` represents robbing house `i`, which forces you to avoid house `i - 1`.
+- `Math.max(...)` keeps whichever choice gives more money.
+
+Finally:
+
+- `return dp[n - 1];`
+
+The last DP entry stores the best answer for the full street.
+
+### Example Walkthrough
+
+Use **Example 2**: `nums = [2,7,9,3,1]`.
+
+Initial setup:
+
+- `dp[0] = 2`
+- `dp[1] = Math.max(2, 7) = 7`
+
+Now fill the rest:
+
+- `i = 2`
+  - Skip current house: `dp[1] = 7`
+  - Rob current house: `dp[0] + nums[2] = 2 + 9 = 11`
+  - `dp[2] = 11`
+- `i = 3`
+  - Skip current house: `dp[2] = 11`
+  - Rob current house: `dp[1] + nums[3] = 7 + 3 = 10`
+  - `dp[3] = 11`
+- `i = 4`
+  - Skip current house: `dp[3] = 11`
+  - Rob current house: `dp[2] + nums[4] = 11 + 1 = 12`
+  - `dp[4] = 12`
+
+The method returns `dp[4] = 12`.
+That matches the example result from robbing houses with values `2`, `9`, and `1`.
+
+### Key Variables Explained
+
+- `nums`: the money available in each house.
+- `n`: total number of houses.
+- `dp`: DP array where `dp[i]` stores the best total from index `0` to `i`.
+- `i`: current house being evaluated in the loop.
+
+### Why This Works
+
+The recurrence covers the only two legal possibilities for each house: rob it or skip it.
+Because robbing house `i` blocks only house `i - 1`, the best compatible earlier result is exactly `dp[i - 2]`.
+Because skipping house `i` leaves the previous best unchanged, that option is `dp[i - 1]`.
+Since the code takes the maximum of these two complete choices at every index, each `dp[i]` is optimal for its prefix, and the final answer is optimal for the whole array.
+
+### Trick Used
+
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+
+- Single-house input: `if (nums.length == 1)` returns the only valid answer.
+- Two-house setup: `dp[1] = Math.max(nums[0], nums[1])` correctly handles the smallest non-trivial case.
+- Houses with `0` money: the recurrence still works because skipping can beat robbing a zero-value house.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`**
+  - The code initializes a few values and then runs one loop from `i = 2` to `n - 1`.
+- **Space Complexity: `O(n)`**
+  - The `dp` array has one entry per house.
+  - The existing `O(1)` claim in the frontmatter does not match this exact implementation, because the code stores all intermediate states.
+

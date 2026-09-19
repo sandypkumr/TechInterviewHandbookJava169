@@ -72,23 +72,110 @@ public class KthSmallestElementInABST {
 
 ## Explanation
 
+### Problem Analysis
+
+In a BST, an in-order traversal visits nodes in sorted ascending order. So finding the `k`th smallest value becomes a matter of visiting nodes in that order and stopping when the `k`th visit happens.
+
+This is a common interview problem because it checks whether you know the relationship between BST structure and traversal order.
+
 ### Approach
 
-**Kth Smallest Element in a BST** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+The code performs a recursive in-order traversal: left subtree, current node, right subtree. It keeps a running visit count in `count`, and when `count == k`, it stores the answer in `result`.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+This is better than collecting all node values into a list first, because the code can identify the answer during traversal without extra storage for all values.
+
+### Pattern Used
+
+DFS with in-order traversal.
+
+### Key Insight
+
+For a BST, the nodes appear in sorted order during in-order traversal, so the moment `count` reaches `k`, the current node is the answer.
 
 ### Code Walkthrough
 
-The solution is implemented in `kthSmallest(TreeNode root, int k)`:
+The class stores two fields:
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+```java
+int count = 0;
+int result = -1;
+```
+
+- `count` tracks how many nodes have been visited in sorted order.
+- `result` stores the value of the `k`th visited node.
+
+The public method:
+
+```java
+public int kthSmallest(TreeNode root, int k) {
+    inorder(root, k);
+    return result;
+}
+```
+
+It delegates the real work to `inorder(TreeNode node, int k)`.
+
+Inside `inorder`:
+
+1. If `node == null`, return immediately.
+2. Recurse into `node.left`.
+3. Increment `count`.
+4. If `count == k`, assign `result = node.val` and `return`.
+5. Otherwise recurse into `node.right`.
+
+That order is exactly what makes the traversal sorted for a BST.
+
+### Example Walkthrough
+
+Use Example 2:
+
+```text
+root = [5,3,6,2,4,null,null,1], k = 3
+```
+
+In-order traversal order is: `1, 2, 3, 4, 5, 6`
+
+Step by step:
+
+1. Start at `5`, recurse left to `3`
+2. Recurse left to `2`
+3. Recurse left to `1`
+4. `1.left` is `null`, so visit `1`
+   - `count = 1`
+   - not equal to `k`
+5. Return to `2` and visit `2`
+   - `count = 2`
+   - not equal to `k`
+6. Return to `3` and visit `3`
+   - `count = 3`
+   - now `count == k`, so set `result = 3`
+7. The final returned answer is `3`
+
+### Key Variables Explained
+
+- `count`: number of nodes visited so far in in-order sequence.
+- `result`: answer once the `k`th node is reached.
+- `root`: initial BST root passed into `kthSmallest`.
+- `node`: current node being processed inside `inorder`.
+- `k`: target rank we are looking for.
+
+### Why This Works
+
+An in-order traversal of a BST always visits values in ascending order. That means the first visited node is the 1st smallest, the second visited node is the 2nd smallest, and so on.
+
+Because the code increments `count` exactly when a node is visited in that sorted order, the node where `count == k` must be the `k`th smallest value.
+
+### Trick Used
+
+The trick is using BST in-order ordering directly, so no sorting or extra array of values is needed.
+
+### Edge Cases Handled
+
+- **Null child pointers**: `if (node == null)` stops recursion cleanly.
+- **`k = 1`**: the first visited node in in-order is returned.
+- **Leaf nodes**: they are processed correctly because both recursive child calls simply return.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(h+k)`** — see the analysis for full details.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)` in the worst case** — this implementation may still continue through additional recursive calls after setting `result`, so in the worst case it can visit all nodes.
+- **Space Complexity: `O(h)`** — recursion uses call-stack space proportional to the tree height `h`.

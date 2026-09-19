@@ -77,23 +77,86 @@ public class LowestCommonAncestorOfABinarySearchTree {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the lowest node in a BST that has both `p` and `q` in its subtree, allowing a node to be its own ancestor. The important detail is that the tree is not just any binary tree—it is a binary search tree, so every comparison against `root.val` tells us which side can still contain the answer.
+
+This is a common interview question because it tests whether you can use BST ordering to avoid unnecessary traversal instead of falling back to a full-tree LCA solution.
+
 ### Approach
+The code walks downward from the current `root` and uses the BST property to decide where both target nodes must be.
 
-**Lowest Common Ancestor of a Binary Search Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+- If both `p` and `q` are smaller than `root`, the answer must be in the left subtree.
+- If both are larger than `root`, the answer must be in the right subtree.
+- Otherwise, the current `root` is exactly where the paths to `p` and `q` split, so it is the LCA.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+This is better than brute force because it never explores a subtree that cannot possibly contain both nodes.
+
+### Pattern Used
+This solution uses **BST-guided DFS/recursion**.
+
+### Key Insight
+In a BST, the first node where `p` and `q` stop going to the same side is their lowest common ancestor.
 
 ### Code Walkthrough
+The public method is `lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q)`.
 
-The solution is implemented in `lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q)`:
+- `if (root == null) { return null; }`
+  - This is the defensive base case. If recursion reaches beyond a leaf, there is no node to return.
+- `if (p.val < root.val && q.val < root.val)`
+  - Both target values are smaller than `root.val`, so both nodes must lie in `root.left`.
+  - The method recurses with `lowestCommonAncestor(root.left, p, q)`.
+- `else if (p.val > root.val && q.val > root.val)`
+  - Both target values are larger than `root.val`, so both nodes must lie in `root.right`.
+  - The method recurses with `lowestCommonAncestor(root.right, p, q)`.
+- `else { return root; }`
+  - This covers two important situations:
+    - `p` and `q` are on different sides of `root`.
+    - One of `p` or `q` is equal to `root`.
+  - In both cases, the current `root` is the lowest node that can be ancestor to both.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+### Example Walkthrough
+Use **Example 1**: `root = [6,2,8,0,4,7,9,null,null,3,5]`, `p = 2`, `q = 8`.
+
+- Start at `root = 6`.
+- Compare `p.val` and `q.val` with `root.val`:
+  - `2 < 6`
+  - `8 > 6`
+- They do not both fall to the left, and they do not both fall to the right.
+- That means `6` is the first split point between the two search paths.
+- The code reaches the final `else` block and returns `root`.
+- Output is `6`.
+
+For **Example 2**, `p = 2` and `q = 4` both start on the left of `6`, so recursion moves to node `2`. At node `2`, one node is the current node itself and the other lies in its subtree, so the method returns `2`.
+
+### Key Variables Explained
+- `root`: the current node being tested as a possible LCA.
+- `p`: one target node.
+- `q`: the other target node.
+- `root.left`: the only possible next subtree when both targets are smaller than `root.val`.
+- `root.right`: the only possible next subtree when both targets are larger than `root.val`.
+
+### Why This Works
+The BST property guarantees that every value in the left subtree is smaller than `root.val`, and every value in the right subtree is larger.
+
+Because of that invariant:
+- if both `p` and `q` are smaller, the LCA cannot be on the right or at the current node,
+- if both are larger, the LCA cannot be on the left or at the current node,
+- and if they split across the current node, then this is the lowest point where both remain reachable.
+
+Each recursive call keeps only the subtree that still contains both targets, so the returned node is correct.
+
+### Trick Used
+The trick is using the **BST ordering to prune an entire subtree on every recursive step**.
+
+### Edge Cases Handled
+- `root == null`: returns `null` safely.
+- One node is the ancestor of the other: handled by the final `else`, which returns `root` when one value matches or the values split.
+- Very small BST such as `[2,1]`: the same comparison logic still works immediately.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(h)`** — see the analysis for full details.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(h)`**
+  - Each recursive call moves down exactly one level of the BST.
+  - In the worst case, the code visits one node per level until it finds the split point.
+- **Space Complexity: `O(h)`**
+  - This implementation is recursive, so the call stack can grow to the tree height `h`.
+  - Even though it does not allocate extra data structures, the recursion stack is not `O(1)`.

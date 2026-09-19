@@ -86,25 +86,141 @@ public class WordBreak {
 
 ## Explanation
 
+### Problem Analysis
+
+The problem asks whether the full string `s` can be split into valid dictionary words with no leftover characters.
+This is a classic interview problem because brute force branching is easy to think of, but it quickly becomes inefficient without caching repeated subproblems.
+The key challenge is deciding, for every prefix of the string, whether it can be formed from earlier valid prefixes plus one matching word.
+
 ### Approach
 
-**Word Break** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+This solution uses bottom-up dynamic programming on string prefixes.
+Instead of recursively trying every cut, it builds an array `dp` where each position answers: "Can the prefix ending here be segmented?"
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+Why this approach is chosen:
+
+- Brute force recursion rechecks the same suffixes many times.
+- DP computes each prefix result once and reuses it.
+- The code stays simple because it directly tests every dictionary word against each ending position.
+
+### Pattern Used
+
+Dynamic Programming.
+
+### Key Insight
+
+If a word ends at position `i` and the prefix before that word was already breakable, then the prefix up to `i` is also breakable.
 
 ### Code Walkthrough
 
-The solution is implemented in `wordBreak(String s, List<String> wordDict)`:
+The method starts with:
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+- `int n = s.length();`
+- `boolean[] dp = new boolean[n + 1];`
+- `dp[0] = true;`
 
-&gt; **Note:** This solution also uses the **trie (prefix tree) for efficient string prefix operations** technique.
+Here, `dp[i]` means the substring `s[0...i-1]` can be segmented using words from `wordDict`.
+Setting `dp[0] = true` is the base case: an empty prefix is always valid.
+
+The outer loop is:
+
+- `for (int i = 1; i <= n; i++)`
+
+This checks every prefix ending at index `i`.
+
+Inside it, the code iterates through the dictionary:
+
+- `for (String word : wordDict)`
+
+For each `word`, it computes:
+
+- `int len = word.length();`
+
+Then it verifies two things:
+
+- `i >= len`, so the word can fit at the end of the current prefix
+- `s.substring(i - len, i).equals(word)`, so the last `len` characters actually match `word`
+
+If both conditions hold, the update is:
+
+- `dp[i] = dp[i] || dp[i - len];`
+
+This means:
+
+- if the previous prefix `dp[i - len]` was already segmentable
+- and `word` exactly fills the remaining suffix ending at `i`
+- then `dp[i]` becomes `true`
+
+Finally, the method returns:
+
+- `return dp[n];`
+
+So the answer is whether the entire string can be segmented.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+- `s = "leetcode"`
+- `wordDict = ["leet", "code"]`
+
+Start state:
+
+- `n = 8`
+- `dp = [true, false, false, false, false, false, false, false, false]`
+
+Now process each `i`:
+
+- `i = 1, 2, 3`: neither `"leet"` nor `"code"` can fully match the ending substring, so these remain `false`
+- `i = 4`:
+  - `word = "leet"`, `len = 4`
+  - `s.substring(0, 4) = "leet"`, which matches
+  - `dp[4] = dp[4] || dp[0] = true`
+- `i = 5, 6, 7`: no valid ending word gives a `true` previous state, so they stay `false`
+- `i = 8`:
+  - `word = "code"`, `len = 4`
+  - `s.substring(4, 8) = "code"`, which matches
+  - `dp[8] = dp[8] || dp[4] = true`
+
+Final state:
+
+- `dp[8] = true`
+
+So `"leetcode"` can be segmented as `"leet" + "code"`, and the method returns `true`.
+
+### Key Variables Explained
+
+- `n`: length of the input string `s`
+- `dp`: boolean DP array where `dp[i]` tells whether the first `i` characters can be segmented
+- `i`: current prefix length being evaluated
+- `word`: current dictionary word under consideration
+- `len`: length of `word`, used to check whether it can end at position `i`
+- `s.substring(i - len, i)`: the suffix of the current prefix that is compared against `word`
+
+### Why This Works
+
+The algorithm maintains a clean invariant: after processing index `i`, `dp[i]` is `true` exactly when some valid segmentation exists for the first `i` characters.
+That invariant holds because the code only sets `dp[i]` when it finds a real dictionary word ending at `i` and a previously valid prefix `dp[i - len]`.
+Since every possible ending word from `wordDict` is checked for every `i`, no valid segmentation is missed.
+Therefore, when the loops finish, `dp[n]` correctly represents whether the whole string can be broken into dictionary words.
+
+### Trick Used
+
+Using `dp[i - len]` to instantly reuse an already-solved prefix instead of recomputing all earlier splits again.
+
+### Edge Cases Handled
+
+- Empty prefix: `dp[0] = true` allows the first matching word to start at index `0`
+- Words longer than the current prefix: `if (i >= len ...)` prevents invalid substring boundaries
+- Reusing dictionary words multiple times: the DP transition does not restrict reuse, so cases like `"applepenapple"` work naturally
+- Impossible segmentations: if no word creates a valid transition, the corresponding `dp[i]` stays `false`, which correctly handles inputs like `"catsandog"`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n³)`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).
+- **Time Complexity: `O(n * m * L)`**
+  - `n` is `s.length()`
+  - `m` is `wordDict.length`
+  - `L` is the cost of comparing a candidate suffix with a word
+  - The code checks every `word` for every `i`, and `s.substring(i - len, i).equals(word)` costs up to the word length
+- **Space Complexity: `O(n)`**
+  - The only extra data structure is `boolean[] dp` of size `n + 1`

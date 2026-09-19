@@ -80,20 +80,103 @@ public class RotateList {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks us to rotate a linked list to the right by `k` positions. A right rotation moves the last nodes to the front while preserving their relative order.
 
-**Rotate List** is a linked list problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(?)` time and `O(?)` space.
+It is a frequent interview question because it checks whether you can reason about list length, modular arithmetic, and pointer cutting/reconnecting without wasting extra space.
+
+### Approach
+The code first computes the length and reaches the tail. It then connects the tail back to `head`, temporarily turning the list into a circle. Once the list is circular, the only remaining job is to find the new tail, cut the circle there, and return the next node as the new head.
+
+This is better than rotating one step at a time `k` times, which could be far too slow when `k` is large.
+
+### Pattern Used
+Linked List Cycle Formation with Pointer Traversal.
+
+### Key Insight
+After making the list circular, rotating right by `k` is equivalent to walking to the `(length - (k % length))`th position and breaking the circle there.
 
 ### Code Walkthrough
+The method `rotateRight(ListNode head, int k)` starts with:
+- `if (head == null || head.next == null || k == 0) return head;`
+This handles trivial cases immediately.
 
-The solution is implemented in `rotateRight(ListNode head, int k)`:
+Next, it computes the list length:
+- `current = head`
+- `length = 1`
+- while `current.next != null`, advance `current` and increment `length`
 
-1. **Initialise** the necessary data structures (`length`, `stepsToNewHead`, `i`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+When this loop ends:
+- `current` is the last node of the original list
+- `length` is the number of nodes
+
+Then the code makes the list circular:
+- `current.next = head;`
+
+Now it reduces unnecessary rotation count:
+- `k = k % length;`
+If `k` is larger than the list size, full cycles do not change the list.
+
+To locate the new head:
+- `stepsToNewHead = length - k`
+- `newTail = head`
+- move `newTail` forward in the `for` loop from `i = 1` to `i < stepsToNewHead`
+
+After that loop:
+- `newTail` is the node just before the rotated head
+- `newHead = newTail.next`
+
+Finally, the circle is broken:
+- `newTail.next = null;`
+
+The method returns `newHead`.
+
+### Example Walkthrough
+Use Example 1: `head = [1,2,3,4,5]`, `k = 2`.
+
+Length pass:
+- `length = 5`
+- `current` finishes at node `5`
+
+Make circular:
+- `5.next = 1`
+
+Reduce rotations:
+- `k = 2 % 5 = 2`
+- `stepsToNewHead = 5 - 2 = 3`
+
+Find `newTail`:
+- start `newTail = 1`
+- move once to `2`
+- move again to `3`
+
+Now:
+- `newHead = newTail.next = 4`
+- break link by setting `3.next = null`
+
+The resulting list is `4 -> 5 -> 1 -> 2 -> 3`, which matches the output `[4,5,1,2,3]`.
+
+### Key Variables Explained
+- `current`: traverses the list to find the original tail.
+- `length`: counts how many nodes are in the list.
+- `k`: reduced with modulo so only the effective rotation remains.
+- `stepsToNewHead`: number of nodes to move from the front before the new head starts.
+- `newTail`: node that should end the rotated list.
+- `newHead`: node returned as the head after rotation.
+
+### Why This Works
+A right rotation by `k` means the last `k` nodes move in front. Connecting the tail to the head makes every possible rotation representable as a different cut point on the same cycle. By reducing `k` with modulo and cutting after `length - k` nodes, the code places exactly the last `k` nodes in front and preserves order on both sides of the cut.
+
+### Trick Used
+Turning the list into a temporary cycle avoids repeated shifting and makes the rotation a single cut operation.
+
+### Edge Cases Handled
+- Empty list: returned immediately.
+- Single-node list: returned immediately.
+- `k = 0`: returned immediately.
+- `k >= length`: normalized using `k % length`.
+- Effective rotation of `0`: `stepsToNewHead` becomes `length`, so the cut restores the original list.
 
 ### Complexity Analysis
-
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n)`** — one traversal finds the length and tail, and another partial traversal finds `newTail`; together this is linear.
+- **Space Complexity: `O(1)`** — the algorithm uses only a few pointers and integer variables.

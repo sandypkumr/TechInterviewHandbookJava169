@@ -78,23 +78,79 @@ public class LowestCommonAncestorOfABinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+We need the lowest node in the tree that has both `p` and `q` in its subtree, allowing a node to be its own descendant. Since the tree is not a BST, node values do not help with navigation, so the algorithm has to search both sides when needed.
+
+This is a common interview problem because it tests recursive reasoning on trees and whether you can interpret what information a subtree should return.
+
 ### Approach
+The solution does a DFS and lets each recursive call answer one question: does this subtree contain `p`, `q`, or their lowest common ancestor already? If the left subtree returns one target and the right subtree returns the other, the current `root` must be the LCA.
 
-**Lowest Common Ancestor of a Binary Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+This is better than building parent maps here because the recursive structure already gives the needed information directly.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+Depth-First Search (DFS) with recursion.
+
+### Key Insight
+A node is the LCA exactly when one target is found in its left subtree and the other is found in its right subtree, or when the current node itself is one of the targets.
 
 ### Code Walkthrough
+`lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q)` is the recursive method.
 
-The solution is implemented in `lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q)`:
+The base case is `if (root == null || root == p || root == q) return root;`.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+That line does three important things:
+- Stops at empty subtrees
+- Immediately reports when `p` is found
+- Immediately reports when `q` is found
+
+The recursive calls `TreeNode left = lowestCommonAncestor(root.left, p, q);` and `TreeNode right = lowestCommonAncestor(root.right, p, q);` ask both subtrees for their result.
+
+If both `left` and `right` are non-null, it means one target came from each side, so `return root;` makes the current node the LCA.
+
+Otherwise, the method returns `left != null ? left : right;`, which passes the found target or previously discovered ancestor upward.
+
+### Example Walkthrough
+Use Example 1: `root = [3,5,1,6,2,0,8,null,null,7,4]`, `p = 5`, `q = 1`.
+
+At node `3`:
+- Recurse left into subtree rooted at `5`
+- Recurse right into subtree rooted at `1`
+
+Left recursion:
+- `root == p`, so it immediately returns node `5`
+
+Right recursion:
+- `root == q`, so it immediately returns node `1`
+
+Back at node `3`:
+- `left` is `5`
+- `right` is `1`
+- Both are non-null, so `3` is returned as the LCA
+
+That matches the expected output `3`.
+
+For Example 2, when searching for `p = 5` and `q = 4`, the left subtree rooted at `5` already contains both targets, so the recursion returns `5` upward without needing node `3` to become the answer.
+
+### Key Variables Explained
+- `root`: current node being evaluated.
+- `p`, `q`: the two target nodes.
+- `left`: result returned from the left subtree.
+- `right`: result returned from the right subtree.
+
+### Why This Works
+Each recursive call returns one of three meaningful results: `null` if neither target exists in that subtree, one of the targets if exactly one has been found so far, or the LCA if it was already determined below.
+
+When both `left` and `right` are non-null, the current node is the first place where the search paths from `p` and `q` meet, which is exactly the definition of the lowest common ancestor.
+
+### Trick Used
+The important trick is the early return `root == p || root == q`, which lets a target node bubble upward and also correctly handles the case where one target is an ancestor of the other.
+
+### Edge Cases Handled
+- Current subtree is empty: `root == null` returns `null`.
+- One target is an ancestor of the other: the ancestor is returned by the base case and remains the final answer.
+- Targets lie in different subtrees: `left != null && right != null` detects that split and returns the current node.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(n)` because in the worst case the recursion may visit every node once.
+- Space Complexity: `O(h)` for the recursion stack, where `h` is the tree height; in the worst-case skewed tree, this becomes `O(n)`.

@@ -97,25 +97,105 @@ public class SmallestRangeCoveringElementsFromKLists {
 
 ## Explanation
 
+### Problem Analysis
+We need the smallest interval `[a, b]` such that at least one number from every sorted list lies inside that interval. Since every list is sorted, the best range can be found by carefully advancing through the lists instead of checking all cross-list combinations.
+
+This is a classic interview problem because it combines ordered data, range minimization, and a heap-based way to track the current minimum among `k` active candidates.
+
 ### Approach
+The code keeps one active element from each list in a min-heap. That guarantees we always know the current smallest value in the candidate range, while `currentMax` tracks the largest value among those same active elements.
 
-**Smallest Range Covering Elements from K Lists** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+At any moment, the heap top and `currentMax` define a valid range covering all lists. To possibly shrink that range, the only useful move is to advance the list that currently contributes the minimum value.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Pattern Used
+Heap / Priority Queue.
+
+### Key Insight
+When one element from each list is active, the current minimum is the only endpoint we can improve directly, so we repeatedly pop that minimum and advance only its list.
 
 ### Code Walkthrough
+`smallestRange(List<List<Integer>> nums)` starts by building a min-heap:
 
-The solution is implemented in `smallestRange(List<List<Integer>> nums)`:
+- `PriorityQueue<int[]> minHeap = new PriorityQueue<>((a, b) -> a[0] - b[0]);`
+- Each heap entry is an `int[]` storing `{value, listIndex, elementIndex}`.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+The initialization loop loads the first element from every list:
 
-&gt; **Note:** This solution also uses the **sliding window to avoid redundant re-computation** technique.
+- `val = nums.get(i).get(0)` is the first number of list `i`.
+- `minHeap.offer(new int[]{val, i, 0})` puts that number into the heap.
+- `currentMax = Math.max(currentMax, val)` tracks the largest active number.
+
+`rangeStart = 0` and `rangeEnd = Integer.MAX_VALUE` represent the best range found so far.
+
+The main loop runs while `minHeap.size() == nums.size()`:
+
+- This condition means we still have one active element from every list, so the current window is valid.
+- `entry = minHeap.poll()` removes the smallest active value.
+- `val`, `listIndex`, and `elementIndex` unpack that heap entry.
+
+The code then checks whether `[val, currentMax]` is better than the current best range:
+
+- `if (currentMax - val < rangeEnd - rangeStart)` updates `rangeStart` and `rangeEnd`.
+- It only replaces the answer when the new range is strictly shorter.
+
+Next, the algorithm advances only the list that supplied the minimum:
+
+- If `elementIndex + 1 < nums.get(listIndex).size()`, there is another value in that list.
+- `nextVal` is pushed into the heap with its updated coordinates.
+- `currentMax = Math.max(currentMax, nextVal)` expands the right boundary only when necessary.
+- If there is no next value, the loop breaks because we can no longer keep one element from every list.
+
+Finally, `new int[]{rangeStart, rangeEnd}` is returned.
+
+### Example Walkthrough
+Use Example 1: `nums = [[4,10,15,24,26],[0,9,12,20],[5,18,22,30]]`.
+
+Initial heap and maximum:
+
+- Heap contains `(4,list0,0)`, `(0,list1,0)`, `(5,list2,0)`.
+- `currentMax = 5`.
+- Current valid range is `[0,5]`.
+
+Step through the loop:
+
+- Pop `0` from list 1. Best range becomes `[0,5]`.
+- Push `9` from list 1. Now `currentMax = 9`.
+- Pop `4` from list 0. Range `[4,9]` is shorter, so update answer.
+- Push `10` from list 0. `currentMax = 10`.
+- Pop `5` from list 2. Range `[5,10]` has the same width as `[4,9]`, so this code keeps the older answer because it only updates on a strictly smaller width.
+- Push `18` from list 2. `currentMax = 18`.
+- Continue similarly through `9`, `10`, `12`, `15`, `18`.
+- When the active values become `24` from list 0, `20` from list 1, and `22` from list 2, the range is `[20,24]`.
+- Its width is `4`, which is better than previous candidates, so the answer updates to `[20,24]`.
+- Eventually list 1 runs out after `20`, so the loop stops.
+
+The returned answer is `[20,24]`.
+
+### Key Variables Explained
+- `minHeap`: stores one current candidate from each list, ordered by value.
+- `int[] entry`: a heap item of the form `{value, listIndex, elementIndex}`.
+- `currentMax`: the maximum value among the heap's active candidates.
+- `rangeStart`, `rangeEnd`: the best range found so far.
+- `listIndex`: identifies which list produced the current minimum.
+- `elementIndex`: points to the current position inside that list.
+- `nextVal`: the next number pulled from the same list after popping its current minimum.
+
+### Why This Works
+The heap always contains exactly one chosen element from each list while the loop condition holds. That means `[minHeap minimum, currentMax]` is always a valid covering range. If we want a smaller valid range, moving any list except the one holding the current minimum cannot increase the left boundary, so it cannot directly fix the limiting endpoint.
+
+By always advancing the list that contributes the minimum, the algorithm systematically explores all necessary candidate ranges without missing the optimal one.
+
+### Trick Used
+The key optimization is tracking `currentMax` separately so the algorithm gets each candidate range in `O(1)` after every heap pop, instead of rescanning all `k` active elements.
+
+### Edge Cases Handled
+- `k = 1`: the heap has one element, and the smallest valid range can collapse to a single list value.
+- Lists with identical values: the heap still works because entries also carry `listIndex` and `elementIndex`.
+- Negative numbers: comparisons are purely numeric, so signed values are handled naturally.
+- When one list is exhausted: the `else { break; }` stops because no future range can cover every list anymore.
 
 ### Complexity Analysis
+Let `N` be the total number of elements across all lists and `k` be `nums.size()`.
 
-- **Time Complexity: `O(n log k)`** — see the analysis for full details.
-- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `O(N log k)` because each element is inserted into and removed from the heap at most once, and each heap operation costs `O(log k)`.
+- **Space Complexity:** `O(k)` because the heap holds at most one active element from each list.

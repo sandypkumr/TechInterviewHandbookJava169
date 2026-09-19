@@ -75,23 +75,112 @@ public class BinaryTreeMaximumPathSum {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the maximum sum of any non-empty path in the tree, where the path can start and end anywhere but cannot reuse a node. That makes it more subtle than root-to-leaf problems, because the best path may pass through some middle node and use both its left and right sides.
+
+This is a frequent interview problem because it tests postorder reasoning, recursive state design, and handling of negative values.
+
 ### Approach
+The code uses DFS to compute, for each node, the best downward path that can be extended to its parent.
 
-**Binary Tree Maximum Path Sum** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+At the same time, it checks whether the best overall path might pass through the current node using:
+- the node itself,
+- the best usable contribution from the left subtree,
+- the best usable contribution from the right subtree.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+This is better than brute force because it avoids enumerating all possible paths, which would be far too expensive.
+
+### Pattern Used
+This solution uses **postorder DFS with tree DP**.
+
+### Key Insight
+For each node, keep only the best single-branch gain to return upward, but use both branches locally when updating the global answer `maxSum`.
 
 ### Code Walkthrough
+The class-level field `private int maxSum;` stores the best path sum seen anywhere in the tree.
 
-The solution is implemented in `maxPathSum(TreeNode root)`:
+In `maxPathSum(TreeNode root)`:
+- `maxSum = Integer.MIN_VALUE;`
+  - Initializes the answer so even an all-negative tree is handled correctly.
+- `findMaxPath(root);`
+  - Runs the DFS to fill `maxSum`.
+- `return maxSum;`
+  - Returns the global best path.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+Inside `findMaxPath(TreeNode node)`:
+
+- `if (node == null) return 0;`
+  - A missing child contributes nothing.
+- `int left = Math.max(findMaxPath(node.left), 0);`
+  - Recursively get the best downward gain from the left.
+  - If it is negative, replace it with `0` so it is not used.
+- `int right = Math.max(findMaxPath(node.right), 0);`
+  - Do the same for the right side.
+- `int currentMax = node.val + left + right;`
+  - This is the best path that passes through the current `node` and may use both children.
+- `maxSum = Math.max(maxSum, currentMax);`
+  - Update the global answer if this path is better.
+- `return node.val + Math.max(left, right);`
+  - Return only one branch upward, because a parent path cannot fork into both sides through this child.
+
+### Example Walkthrough
+Use **Example 2**: `root = [-10,9,20,null,null,15,7]`.
+
+Start from the leaves:
+- Node `9`:
+  - `left = 0`, `right = 0`
+  - `currentMax = 9`
+  - `maxSum = 9`
+  - return value is `9`
+- Node `15`:
+  - `currentMax = 15`
+  - `maxSum = 15`
+  - returns `15`
+- Node `7`:
+  - `currentMax = 7`
+  - `maxSum` stays `15`
+  - returns `7`
+
+Now process node `20`:
+- `left = 15`
+- `right = 7`
+- `currentMax = 20 + 15 + 7 = 42`
+- `maxSum` becomes `42`
+- return value is `20 + max(15, 7) = 35`
+
+Finally process root `-10`:
+- `left = 9`
+- `right = 35`
+- `currentMax = -10 + 9 + 35 = 34`
+- `maxSum` remains `42`
+- The algorithm returns overall answer `42`
+
+That matches the path `15 -> 20 -> 7`.
+
+### Key Variables Explained
+- `maxSum`: global maximum path sum found anywhere in the tree.
+- `node`: current node being processed in DFS.
+- `left`: best non-negative downward contribution from `node.left`.
+- `right`: best non-negative downward contribution from `node.right`.
+- `currentMax`: best path sum that uses the current node as the highest connecting point.
+
+### Why This Works
+Every path in the tree has some highest node where the path turns or stops. When DFS processes that node, `left` and `right` already represent the best usable downward gains from both sides. So `currentMax = node.val + left + right` evaluates the best path whose highest point is the current node.
+
+Returning `node.val + Math.max(left, right)` is also correct, because any path extended to the parent can continue through only one child branch. By checking every node once, the code considers every possible highest point of a valid path.
+
+### Trick Used
+The trick is **clamping negative subtree gains to `0` with `Math.max(..., 0)` so bad branches are automatically dropped**.
+
+### Edge Cases Handled
+- All-negative trees: `maxSum` starts at `Integer.MIN_VALUE`, so the least negative node can still become the answer.
+- Null children: `findMaxPath(null)` returns `0`.
+- Best path does not include the root: handled because `maxSum` is updated at every node, not only at `root`.
+- One-sided optimal path: the return statement naturally keeps only the better of `left` and `right`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)`**
+  - Each node is visited once, and each visit performs constant-time work.
+- **Space Complexity: `O(h)`**
+  - The recursion stack grows with the tree height `h`.
+  - In the worst skewed case, that can become `O(n)`.

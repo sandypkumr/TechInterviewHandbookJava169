@@ -111,24 +111,135 @@ public class AccountsMerge {
 
 ## Explanation
 
+### Problem Analysis
+Each account gives a name followed by one or more emails, and accounts belonging to the same person may appear multiple times. The key detail is that shared email addresses, not shared names, determine whether two accounts must be merged.
+
+This is a common interview problem because it tests whether you can model “belongs to the same group” as connected components and then rebuild the grouped result cleanly.
+
 ### Approach
+The code treats every email as a node in a Union-Find structure. If two emails appear in the same account, they must belong to the same person, so they are unioned into one component.
 
-**Accounts Merge** involves repeatedly merging groups and querying whether two elements belong to the same group — perfect for Union-Find. The data structure maintains a forest of trees where each tree represents a component; union merges two trees and find identifies a root.
+The solution proceeds in three stages:
+- map every email to its owner name and initialize each email as its own parent
+- union all emails within the same account
+- group emails by their final root and output each component in sorted order
 
-With path compression (flattening the tree on every find) and union by rank (always attaching the smaller tree under the larger), both operations run in near-constant amortised time O(α(n)), where α is the extremely slow-growing inverse Ackermann function.
+This is more efficient than repeatedly merging whole account lists, because Union-Find is designed exactly for dynamic grouping.
+
+### Pattern Used
+Union-Find (Disjoint Set Union) with path compression.
+
+### Key Insight
+All emails in the same connected component belong to the same merged account, even if the connection is indirect through multiple original accounts.
 
 ### Code Walkthrough
+The method `accountsMerge(List<List<String>> accounts)` starts with two maps:
+- `emailToName` maps each email to the account holder's name
+- `parent` stores the Union-Find parent of each email
 
-The solution is implemented in `accountsMerge(List<List<String>> accounts)`:
+In the first loop over `accounts`, the code reads:
+- `String name = account.getFirst();`
 
-1. Initialise parent[i] = i and rank[i] = 0 for every node.
-2. find(x): recursively find the root, applying path compression along the way.
-3. union(x, y): find both roots; if different, attach the lower-rank tree under the higher-rank one.
-4. After processing all edges/queries, count distinct roots or answer connectivity queries.
+Then for every email in that account:
+- `emailToName.put(email, name);`
+- `parent.put(email, email);`
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+So every email is registered and initially points to itself.
+
+The second pass performs the unions. For each account:
+- `String firstEmail = account.get(1);`
+
+Then every later email in the same account is unioned with `firstEmail`:
+- `union(parent, firstEmail, account.get(i));`
+
+That makes all emails in one account part of the same set.
+
+After all unions are done, the code builds grouped components using:
+- `Map<String, TreeSet<String>> unions = new HashMap<>();`
+
+For each `email` in `parent.keySet()`:
+- `String root = find(parent, email);`
+- `unions.computeIfAbsent(root, x -> new TreeSet<>()).add(email);`
+
+This finds the representative of the component and inserts the email into a `TreeSet`, which keeps emails sorted automatically.
+
+Finally, the result is built:
+- create `merged = new ArrayList<>()`
+- `merged.add(emailToName.get(root))`
+- `merged.addAll(unions.get(root))`
+- `result.add(merged)`
+
+The helper `union(...)` finds the roots `p1` and `p2` and links one root to the other if they differ.
+
+The helper `find(...)` performs path compression:
+- if an email is not its own parent, recursively find the ultimate parent
+- update `parent.put(email, ...)` so future lookups are faster
+
+### Example Walkthrough
+Use Example 1.
+
+Accounts:
+- `['John','johnsmith@mail.com','john_newyork@mail.com']`
+- `['John','johnsmith@mail.com','john00@mail.com']`
+- `['Mary','mary@mail.com']`
+- `['John','johnnybravo@mail.com']`
+
+After initialization:
+- each email is its own parent
+- `emailToName` maps each email to `John` or `Mary`
+
+Union phase:
+- In the first account, `john_newyork@mail.com` is unioned with `johnsmith@mail.com`
+- In the second account, `john00@mail.com` is unioned with `johnsmith@mail.com`
+- The third and fourth accounts have only one email, so no extra union is needed
+
+Now these three emails are connected:
+- `johnsmith@mail.com`
+- `john_newyork@mail.com`
+- `john00@mail.com`
+
+Grouping phase:
+- `find(...)` returns the same root for those three emails, so they go into one `TreeSet`
+- `mary@mail.com` forms its own group
+- `johnnybravo@mail.com` forms its own group
+
+Because `TreeSet` sorts automatically, the merged John account becomes:
+- `['John', 'john00@mail.com', 'john_newyork@mail.com', 'johnsmith@mail.com']`
+
+That matches the expected output.
+
+### Key Variables Explained
+- `emailToName`: remembers which name should be placed at the front of each merged account.
+- `parent`: Union-Find parent map for every email.
+- `account`: current list being processed from `accounts`.
+- `firstEmail`: anchor email used to union all emails of the same account together.
+- `unions`: maps each root email to the sorted set of emails in that component.
+- `result`: final list of merged accounts.
+- `p1`, `p2`: roots found during `union(...)`.
+- `root`: representative email returned by `find(...)` for grouping.
+
+### Why This Works
+The Union-Find invariant is that emails connected directly or indirectly by account membership end up with the same root.
+
+- Every email starts in its own singleton set.
+- Unioning each account's emails with `firstEmail` guarantees all emails from that account are in one component.
+- If two accounts share an email, unions from both accounts connect them into the same larger component.
+- During grouping, calling `find(...)` on every email collapses the structure to the correct representative, so each connected component is collected exactly once.
+
+Since the problem defines shared-email accounts as belonging to the same person, grouping by connected component is exactly the correct result.
+
+### Trick Used
+Using a `TreeSet` for each component so the emails are kept sorted automatically while they are grouped.
+
+### Edge Cases Handled
+- Accounts with only one email: they remain a single-node component and are still returned correctly.
+- Same name used by different people: the code merges only by shared email, never by name alone.
+- Indirect merges across multiple accounts: Union-Find captures transitive connections automatically.
+- Repeated `find(...)` calls on deep chains: path compression in `find(...)` flattens them for future lookups.
 
 ### Complexity Analysis
+Let `E` be the total number of email entries across all accounts.
 
-- **Time Complexity: `O(n·k·log(n·k))`** — see the analysis for full details.
-- **Space Complexity: `O(n·k)`** — auxiliary space proportional to the input is required.
+- **Time Complexity:** `O(E log E)` overall. Building the maps is `O(E)`, Union-Find operations are near-linear with path compression, and inserting emails into `TreeSet` objects adds the sorting cost that dominates the total.
+- **Space Complexity:** `O(E)` because `emailToName`, `parent`, `unions`, and the output all store emails proportional to the input size.
+

@@ -66,23 +66,90 @@ public class SameTree {
 
 ## Explanation
 
+### Problem Analysis
+We need to determine whether two binary trees are identical in both structure and node values. Matching values alone are not enough; the left and right child layout must also match exactly.
+
+This is a standard interview problem because it tests recursive tree comparison. The main skill is recognizing that two trees are the same only if their roots match and their corresponding subtrees also match.
+
 ### Approach
+The code compares the two trees node-by-node using recursive DFS. At each step, it handles the null cases first, then checks whether the current values match, and finally compares the left subtrees and right subtrees.
 
-**Same Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+This is better than trying to serialize both trees first or collecting traversals into arrays. Direct recursive comparison is simpler and stops early as soon as a mismatch is found.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+DFS recursion on two trees simultaneously.
+
+### Key Insight
+Two trees are the same if and only if the current pair of nodes match and both corresponding child pairs also match.
 
 ### Code Walkthrough
+The method is `isSameTree(TreeNode p, TreeNode q)`.
 
-The solution is implemented in `isSameTree(TreeNode p, TreeNode q)`:
+- `if (p == null && q == null) { return true; }`
+  - If both nodes are missing, the trees match at this position.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+- `if (p == null || q == null) { return false; }`
+  - If only one node exists, the structures differ immediately.
+
+- `return p.val == q.val && isSameTree(p.left, q.left) && isSameTree(p.right, q.right);`
+  - First compare the current values.
+  - Then recursively compare the left children.
+  - Then recursively compare the right children.
+  - Because `&&` short-circuits, the method stops early once any check becomes false.
+
+There is no extra storage because the recursion itself expresses the comparison.
+
+### Example Walkthrough
+Use Example 1: `p = [1,2,3]`, `q = [1,2,3]`.
+
+- Compare roots `1` and `1`.
+  - values match, so continue.
+
+- Compare left children `2` and `2`.
+  - values match.
+  - their left children are both `null`, so return `true`.
+  - their right children are both `null`, so return `true`.
+  - subtree at value `2` matches.
+
+- Compare right children `3` and `3`.
+  - values match.
+  - both left children are `null`.
+  - both right children are `null`.
+  - subtree at value `3` matches.
+
+Since root values, left subtrees, and right subtrees all match, the final answer is `true`.
+
+For Example 2, the method returns `false` when one side has a node where the other side has `null`, which correctly detects the structural mismatch.
+
+### Key Variables Explained
+- `p`: current node from the first tree.
+- `q`: current node from the second tree.
+- `p.val == q.val`: value comparison at the current position.
+- `isSameTree(p.left, q.left)`: verifies left-subtree equality.
+- `isSameTree(p.right, q.right)`: verifies right-subtree equality.
+
+### Why This Works
+The method enforces the exact definition of identical trees. A pair of subtrees can only be equal when:
+
+- both roots are absent, or
+- both roots are present, have the same value, and their left and right subtrees are also equal
+
+Those are precisely the cases the code checks. Because every corresponding node pair is compared once, and any mismatch returns `false` immediately, the algorithm is both correct and efficient.
+
+### Trick Used
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+- Both trees empty: the first `if` returns `true`.
+- One tree empty and the other non-empty: the second `if` returns `false`.
+- Same values but different structure: recursive null checks detect the mismatch.
+- Same structure but different values: `p.val == q.val` fails.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`**
+  - Each corresponding node pair is compared once.
+  - In the worst case, all nodes must be checked.
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Space Complexity: `O(h)`**
+  - Extra space comes only from the recursion stack.
+  - `h` is the height of the trees.

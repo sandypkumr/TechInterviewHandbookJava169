@@ -78,23 +78,100 @@ public class LongestRepeatingCharacterReplacement {
 
 ## Explanation
 
+### Problem Analysis
+We need the length of the longest substring that can be turned into all one repeated character after at most `k` replacements.
+This is a classic interview problem because it looks combinational at first, but the correct solution comes from maintaining a valid window instead of trying every substring.
+
 ### Approach
+The code uses a sliding window `[left, right]` and tracks how many times each uppercase letter appears inside that window.
+A window is usable if all characters except the most frequent one can be replaced within `k` operations. That means the number of required replacements is `window length - maxCount`, so we expand with `right` and shrink with `left` only when that value becomes too large.
 
-**Longest Repeating Character Replacement** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+### Pattern Used
+Sliding Window
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Key Insight
+A window is valid whenever its size minus the frequency of its most common character is at most `k`, because those are exactly the characters we would replace.
 
 ### Code Walkthrough
+The method `characterReplacement(String s, int k)` starts with:
+- `int[] count = new int[26];`
+- `int maxCount = 0;`
+- `int left = 0;`
+- `int maxLength = 0;`
 
-The solution is implemented in `characterReplacement(String s, int k)`:
+The loop `for (int right = 0; right < s.length(); right++)` expands the window one character at a time.
+- `count[s.charAt(right) - 'A']++` updates the frequency of the newly included character.
+- `maxCount = Math.max(maxCount, count[s.charAt(right) - 'A'])` stores the highest single-character frequency seen in the current expansion history.
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+Then the code checks whether the window needs too many replacements:
+- `while (right - left + 1 - maxCount > k)`
+
+If that condition is true, the window is invalid.
+- `count[s.charAt(left) - 'A']--` removes the leftmost character from the frequency table.
+- `left++` shrinks the window until it becomes valid again.
+
+After the window is valid, the code updates:
+- `maxLength = Math.max(maxLength, right - left + 1);`
+
+At the end, `maxLength` is returned.
+
+### Example Walkthrough
+Use Example 2: `s = "AABABBA"`, `k = 1`.
+
+Start with `left = 0`, `maxCount = 0`, `maxLength = 0`.
+
+`right = 0`, char = `'A'`
+- `count['A'] = 1`, `maxCount = 1`
+- Window = `"A"`, replacements needed = `1 - 1 = 0`
+- `maxLength = 1`
+
+`right = 1`, char = `'A'`
+- `count['A'] = 2`, `maxCount = 2`
+- Window = `"AA"`, replacements needed = `2 - 2 = 0`
+- `maxLength = 2`
+
+`right = 2`, char = `'B'`
+- Window = `"AAB"`
+- `maxCount = 2`, replacements needed = `3 - 2 = 1`
+- Valid, so `maxLength = 3`
+
+`right = 3`, char = `'A'`
+- Window = `"AABA"`
+- `count['A'] = 3`, `maxCount = 3`
+- Replacements needed = `4 - 3 = 1`
+- Valid, so `maxLength = 4`
+
+`right = 4`, char = `'B'`
+- Window = `"AABAB"`
+- Replacements needed = `5 - 3 = 2`, too many
+- Shrink once: remove `s[left] = 'A'`, then `left = 1`
+- Window becomes valid again
+
+The algorithm keeps sliding and never finds a valid window longer than `4`, so it returns `4`.
+
+### Key Variables Explained
+- `count`: frequency array for letters `'A'` to `'Z'` inside the current window
+- `left`: left boundary of the sliding window
+- `right`: right boundary added by the outer loop
+- `maxCount`: highest frequency of any single character seen for the window logic
+- `maxLength`: best valid window length found so far
+
+### Why This Works
+For any window, the cheapest way to make all characters equal is to keep the majority character and replace everything else.
+So the minimum replacements needed is exactly `window length - most frequent character count`. The code enforces that invariant with `while (right - left + 1 - maxCount > k)`. Once the condition is false, the current window can be converted into a repeated-character substring, so it is safe to use it to update `maxLength`.
+
+### Trick Used
+The optimization is keeping `maxCount` as a running maximum instead of recomputing the true maximum frequency every time the window shrinks.
+
+### Edge Cases Handled
+- `k = 0`: the while condition still works and only allows windows that already contain one repeated character
+- Entire string already valid: the window keeps expanding and returns `s.length()`
+- Frequent shrinking near the boundary: `left` moves only forward, so no index is revisited unnecessarily
+- Single-character string: one loop iteration makes `maxLength = 1`
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — each element enters and leaves the window at most once, so the total work across all iterations is linear.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(n)`
+  - `right` moves from left to right once
+  - `left` also moves from left to right at most once overall
+- Space Complexity: `O(1)`
+  - `count` has fixed size 26 regardless of input length

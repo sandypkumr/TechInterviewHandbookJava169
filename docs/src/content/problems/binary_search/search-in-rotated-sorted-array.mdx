@@ -96,23 +96,110 @@ public class SearchInRotatedSortedArray {
 
 ## Explanation
 
+### Problem Analysis
+
+The array was originally sorted, then rotated once at an unknown pivot. We still need to find `target` in `O(log n)`, so a normal linear scan is not acceptable.
+
+This is a common interview problem because it checks whether you can adapt binary search when the data is "almost sorted" but not completely sorted end to end.
+
 ### Approach
 
-**Search in Rotated Sorted Array** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+At any midpoint, one side of the array must still be sorted. The code uses that fact to decide whether `target` belongs to the sorted half or the other half, then discards the impossible side.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+This is better than brute force because each iteration removes half of the remaining range instead of checking elements one by one.
+
+### Pattern Used
+
+Modified Binary Search.
+
+### Key Insight
+
+Even after rotation, for every `mid`, either the left segment `nums[left...mid]` or the right segment `nums[mid...right]` is guaranteed to be sorted.
 
 ### Code Walkthrough
 
-The solution is implemented in `search(int[] nums, int target)`:
+The method starts with the full search window:
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+```java
+int left = 0;
+int right = nums.length - 1;
+```
+
+Inside `while (left <= right)`, it computes:
+
+```java
+int mid = left + (right - left) / 2;
+```
+
+If `nums[mid] == target`, it immediately returns `mid`.
+
+If not, the code determines which side is sorted:
+
+- `if (nums[left] <= nums[mid])` means the left half is sorted.
+- Otherwise, the right half is sorted.
+
+When the left half is sorted:
+
+- If `target` lies between `nums[left]` and `nums[mid]`, the answer must be on the left, so `right = mid - 1`.
+- Otherwise, search the other half with `left = mid + 1`.
+
+When the right half is sorted:
+
+- If `target` lies between `nums[mid]` and `nums[right]`, move rightward with `left = mid + 1`.
+- Otherwise, move leftward with `right = mid - 1`.
+
+If the loop ends, `target` does not exist, so the code returns `-1`.
+
+### Example Walkthrough
+
+Use Example 1:
+
+```text
+nums = [4,5,6,7,0,1,2], target = 0
+```
+
+Step by step:
+
+1. `left = 0`, `right = 6`
+2. `mid = 3`, so `nums[mid] = 7`
+3. `nums[left] <= nums[mid]` is `4 <= 7`, so the left half `[4,5,6,7]` is sorted
+4. Check whether `0` is in that sorted half:
+   - `4 <= 0 && 0 < 7` is false
+   - so move to the other half: `left = 4`
+5. `left = 4`, `right = 6`
+6. `mid = 5`, so `nums[mid] = 1`
+7. `nums[left] <= nums[mid]` is `0 <= 1`, so left half `[0,1]` is sorted
+8. Check whether `0` is in that half:
+   - `0 <= 0 && 0 < 1` is true
+   - so `right = 4`
+9. `left = 4`, `right = 4`
+10. `mid = 4`, so `nums[mid] = 0`
+11. Match found, return `4`
+
+### Key Variables Explained
+
+- `left`: current left boundary of the candidate range.
+- `right`: current right boundary of the candidate range.
+- `mid`: midpoint used to inspect the current range.
+- `nums[left]`, `nums[mid]`, `nums[right]`: these values reveal which half is sorted and whether `target` can lie there.
+
+### Why This Works
+
+The code maintains the invariant that if `target` exists, it is inside `nums[left...right]`. In every iteration, one half is definitely sorted, and the boundary comparisons tell us whether `target` can be inside that sorted half.
+
+If it can, the other half is discarded. If it cannot, the sorted half is discarded. Because no valid location for `target` is removed incorrectly, the algorithm stays correct while shrinking the range logarithmically.
+
+### Trick Used
+
+The trick is identifying the sorted half on each iteration using `nums[left] <= nums[mid]`, then using range checks to decide which side can still contain `target`.
+
+### Edge Cases Handled
+
+- **Array of length 1**: the loop checks that single element and returns either its index or `-1`.
+- **Array not rotated at all**: one half is still sorted every time, so the logic behaves like regular binary search.
+- **Target absent**: the range shrinks until `left > right`, then the method returns `-1`.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log n)`** — each loop iteration discards half of the remaining search range.
+- **Space Complexity: `O(1)`** — only `left`, `right`, and `mid` are used beyond the input array.

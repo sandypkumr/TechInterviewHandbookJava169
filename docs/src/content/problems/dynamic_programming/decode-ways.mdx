@@ -113,23 +113,104 @@ public class DecodeWays {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the number of valid ways to split a digit string into 1-digit and 2-digit chunks that map to letters `1` through `26`. The difficulty is that `0` cannot stand alone, so not every split is legal.
+
+This is a frequent interview question because it tests whether you can build a DP state around string prefixes and correctly handle invalid transitions.
+
 ### Approach
+The code uses `dp[i]` to represent how many ways the first `i` characters of `s` can be decoded. At each position, it checks whether the last one digit forms a valid letter and whether the last two digits form a valid letter.
 
-**Decode Ways** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
+This is much more efficient than recursive trial-and-error because many prefixes repeat. DP lets the solution reuse the answer for shorter prefixes instead of recomputing them.
 
-Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
+### Pattern Used
+This solution uses **Dynamic Programming**, specifically bottom-up DP on string prefixes.
+
+### Key Insight
+For each index `i`, the total ways come from **valid one-digit decoding ending at `i` plus valid two-digit decoding ending at `i`**.
 
 ### Code Walkthrough
+`numDecodings(String s)` first handles an impossible starting case:
 
-The solution is implemented in `numDecodings(String s)`:
+- `if (s.charAt(0) == '0') { return 0; }`
+  - No decoding can start with `0`.
 
-1. Define the state: what does dp[i] (or dp[i][j]) represent?
-2. Write the recurrence relation that builds dp[i] from previously computed states.
-3. Identify and set the base cases (dp[0], dp[1], etc.).
-4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
-5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
+Then it sets up the DP state:
+
+- `int n = s.length();`
+- `int[] dp = new int[n + 1];`
+  - `dp[i]` stores the number of ways to decode the first `i` characters.
+- `dp[0] = 1;`
+  - Empty prefix has one valid way as a base for building later states.
+- `dp[1] = 1;`
+  - The first character is guaranteed non-zero because of the earlier check.
+
+Now the main loop processes the string from left to right:
+
+- `for (int i = 2; i <= n; i++)`
+- `int oneDigit = Integer.parseInt(s.substring(i - 1, i));`
+  - last single character as a number
+- `int twoDigits = Integer.parseInt(s.substring(i - 2, i));`
+  - last two characters as a number
+
+Two transitions are possible:
+
+- `if (oneDigit >= 1 && oneDigit <= 9) { dp[i] += dp[i - 1]; }`
+  - if the last digit is valid alone, append that decoding to every way of decoding the first `i - 1` characters
+- `if (twoDigits >= 10 && twoDigits <= 26) { dp[i] += dp[i - 2]; }`
+  - if the last two digits form a valid letter, append that decoding to every way of decoding the first `i - 2` characters
+
+Finally:
+
+- `return dp[n];`
+  - the full string answer is stored in the last DP cell
+
+### Example Walkthrough
+Use **Example 2**:
+
+- `s = "226"`
+
+Initialization:
+
+- `n = 3`
+- `dp = [1,1,0,0]`
+
+For `i = 2`:
+
+- `oneDigit = 2` → valid, so `dp[2] += dp[1] = 1`
+- `twoDigits = 22` → valid, so `dp[2] += dp[0] = 1`
+- now `dp[2] = 2`
+
+For `i = 3`:
+
+- `oneDigit = 6` → valid, so `dp[3] += dp[2] = 2`
+- `twoDigits = 26` → valid, so `dp[3] += dp[1] = 1`
+- now `dp[3] = 3`
+
+Return `dp[3] = 3`, matching the decodings `BZ`, `VF`, and `BBF`.
+
+### Key Variables Explained
+- `s`: the encoded digit string.
+- `n`: the string length.
+- `dp`: DP array where `dp[i]` is the number of decodings for the prefix of length `i`.
+- `i`: current prefix length being processed.
+- `oneDigit`: numeric value of the last one-character substring.
+- `twoDigits`: numeric value of the last two-character substring.
+
+### Why This Works
+Every valid decoding of the first `i` characters must end in exactly one of two ways: a valid single-digit letter or a valid two-digit letter. The code adds `dp[i - 1]` for the first case and `dp[i - 2]` for the second case.
+
+These two cases cover all valid endings and do not overlap incorrectly because they represent different final chunk sizes. Since the base cases are correct and the loop builds prefixes in increasing order, `dp[n]` is correct.
+
+### Trick Used
+The trick is using **prefix DP with two validation checks** so invalid chunks like `0`, `06`, or numbers above `26` automatically contribute nothing.
+
+### Edge Cases Handled
+- Leading zero, such as `"06"`: rejected immediately by `if (s.charAt(0) == '0')`.
+- Single valid character: handled by `dp[1] = 1`.
+- Invalid one-digit chunk `0`: ignored because `oneDigit` must be between `1` and `9`.
+- Invalid two-digit chunk outside `10` to `26`: ignored by the second condition.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).
+- **Time Complexity:** `O(n)` because the loop runs once from `2` to `n`, and each iteration performs constant work on substrings of length `1` and `2`.
+- **Space Complexity:** `O(n)` because the algorithm stores the `dp` array of size `n + 1`.

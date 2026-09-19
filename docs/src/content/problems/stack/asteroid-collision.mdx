@@ -99,22 +99,90 @@ public class AsteroidCollision {
 
 ## Explanation
 
+### Problem Analysis
+Each asteroid moves either right or left, and collisions only matter when a right-moving asteroid appears before a left-moving asteroid. We need the final surviving sequence after all chain reactions finish.
+
+This is a strong interview question because it looks simulation-heavy at first, but the correct solution comes from modeling only the unresolved asteroids that can still collide with future ones.
+
 ### Approach
+The code uses a `Stack<Integer>` to keep the asteroids that are still alive after processing everything to their left. When a new asteroid `a` arrives, collisions are only possible if `a < 0` and the top of the stack is positive.
 
-**Asteroid Collision** asks about the relationship between each element and the next element that is greater (or smaller) than it. A brute-force nested loop is O(n²); a monotonic stack solves it in O(n) by maintaining a stack that is always in increasing (or decreasing) order.
+This is better than repeatedly scanning the array for collisions because each asteroid is pushed once and popped at most once. The stack preserves exactly the survivors that still matter for future collisions.
 
-As you scan left to right, every time a new element would break the stack's monotonic property, you pop elements off — each pop reveals that the current element is the "next greater" for the popped element. Each element is pushed and popped at most once, giving O(n) total time.
+### Pattern Used
+Stack simulation.
+
+### Key Insight
+A new asteroid can only collide with the most recent surviving right-moving asteroid, so resolving collisions against the stack top repeatedly is enough to model every chain reaction.
 
 ### Code Walkthrough
+In `asteroidCollision(int[] asteroids)`:
+- `Stack<Integer> stack = new Stack<>()` stores surviving asteroids from left to right.
+- The loop `for(int a : asteroids)` processes one asteroid at a time.
+- `destroyed = false` tracks whether the current asteroid gets eliminated before it can be pushed.
 
-The solution is implemented in `asteroidCollision(int[] asteroids)`:
+Collision loop:
+- `while(!stack.isEmpty() && a < 0 && stack.peek() > 0)` means a collision is possible only when:
+  - there is a previous survivor,
+  - the current asteroid moves left,
+  - the previous survivor on top moves right.
 
-1. Initialise an empty stack (storing indices, not values, for flexibility).
-2. For each element, while the stack is non-empty and the condition is met, pop and record the answer.
-3. Push the current index onto the stack.
-4. After the full scan, remaining stack elements have no next-greater element (answer = -1 or 0).
+Inside that loop:
+- `if(-a > stack.peek())` means the current left-moving asteroid is larger in absolute value.
+- Then `stack.pop()` removes the smaller right-moving asteroid, and `continue` checks whether `a` must collide again.
+- `if (-a == stack.peek())` handles equal sizes by popping the top asteroid.
+- In both the equal-size case and the case where the top asteroid is larger, `destroyed = true` is set and the loop breaks because the current asteroid no longer survives.
+
+After collisions:
+- `if(!destroyed) { stack.push(a); }` adds the current asteroid if it survived all relevant collisions.
+
+Building the answer:
+- `result` is created with size `stack.size()`.
+- The final `for` loop fills `result` from right to left while popping the stack so the original left-to-right order is restored.
+
+### Example Walkthrough
+Use **Example 4**: `asteroids = [3,5,-6,2,-1,4]`.
+
+Process step by step:
+- read `3` -> no collision -> stack = `[3]`
+- read `5` -> no collision -> stack = `[3, 5]`
+- read `-6` -> collision with `5`
+  - `6 > 5`, so pop `5` -> stack = `[3]`
+  - collide again with `3`
+  - `6 > 3`, so pop `3` -> stack = `[]`
+  - no more collisions, push `-6` -> stack = `[-6]`
+- read `2` -> top is `-6`, so no collision -> stack = `[-6, 2]`
+- read `-1` -> collision with `2`
+  - `1 > 2` is false
+  - `1 == 2` is false
+  - so `2` survives, `destroyed = true`, and `-1` is discarded
+  - stack stays `[-6, 2]`
+- read `4` -> no collision with top `2` because both move right -> stack = `[-6, 2, 4]`
+
+Final output:
+- `[-6,2,4]`
+
+### Key Variables Explained
+- `stack`: surviving asteroids that may still affect future collisions.
+- `a`: current asteroid being processed.
+- `destroyed`: whether `a` gets removed before being pushed.
+- `result`: final survivors converted back into an array.
+- `stack.peek()`: the most recent surviving asteroid to the left, and the only immediate candidate for collision.
+
+### Why This Works
+The stack invariant is: after processing the first `k` asteroids, `stack` contains exactly the surviving asteroids among those `k`, in their original order, with all collisions already resolved.
+
+When a new asteroid arrives, only the top positive asteroid can collide with it first. If that top asteroid explodes, the next possible collision is again at the new stack top, so the `while` loop correctly models chain reactions. Once the loop ends, either the current asteroid is destroyed or it is safe to append, which preserves the invariant for the next iteration.
+
+### Trick Used
+The important trick is using `continue` after `stack.pop()` so one large negative asteroid can keep destroying multiple smaller positive asteroids in a single pass.
+
+### Edge Cases Handled
+- No collision cases such as two asteroids moving in the same direction: the `while` condition fails and the asteroid is pushed.
+- Equal-size collision like `[8,-8]`: `if (-a == stack.peek())` pops the top and marks the current asteroid as destroyed, so both disappear.
+- Chain collisions like `[10,2,-5]`: the `while` loop keeps running after popping `2`, allowing `-5` to then face `10`.
+- Empty final answer: if everything destroys everything else, `stack.size()` becomes `0` and the code returns an empty array.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity:** `O(n)`. Each asteroid is pushed onto `stack` at most once and popped at most once, so the total number of stack operations across the whole loop is linear.
+- **Space Complexity:** `O(n)`. In the worst case, no collisions happen and the stack stores all asteroids, and the result array also has length `n`.

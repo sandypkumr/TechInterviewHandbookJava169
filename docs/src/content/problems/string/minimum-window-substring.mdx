@@ -106,25 +106,106 @@ public class MinimumWindowSubstring {
 
 ## Explanation
 
+### Problem Analysis
+We need the smallest substring of `s` that contains every character from `t`, including duplicates.
+This is a standard interview problem because it combines frequency counting with a dynamic window: you must know not only when a window becomes valid, but also when it can be tightened without losing required characters.
+
 ### Approach
+The code keeps a sliding window over `s` and two frequency arrays: one for what `t` requires and one for what the current window currently contains.
+As `right` expands the window, the algorithm tracks how many required characters are still missing using `required`. Once the window satisfies all requirements, it shrinks from the left to find the minimum valid window for that right boundary.
 
-**Minimum Window Substring** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+### Pattern Used
+Sliding Window
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Key Insight
+Instead of repeatedly checking whether the whole window covers `t`, the code keeps a single counter `required` that drops to `0` exactly when the current window contains every needed character.
 
 ### Code Walkthrough
+The method `minWindow(String s, String t)` first handles an impossible case:
+- `if (s.length() < t.length()) return "";`
 
-The solution is implemented in `minWindow(String s, String t)`:
+Then it builds `tCount`.
+- `int[] tCount = new int[128];`
+- The loop over `t.toCharArray()` increments the required frequency for each character.
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+Next, the method initializes:
+- `left = 0`, `right = 0`
+- `minLen = Integer.MAX_VALUE`, `minLeft = 0`
+- `required = t.length()`
+- `sCount = new int[128]`
 
-&gt; **Note:** This solution also uses the **HashMap for O(1) average-case lookups** technique.
+The outer `while (right < s.length())` expands the window.
+- `char cRight = s.charAt(right);`
+- `sCount[cRight]++`
+
+Then this check matters:
+- `if (sCount[cRight] <= tCount[cRight]) { required--; }`
+
+That means `required` only decreases when the newly added character fulfills a still-needed occurrence from `t`.
+
+When `required == 0`, the current window is valid.
+Inside the inner while loop:
+- If the current window is smaller than the best one so far, update `minLen` and `minLeft`
+- Remove `s.charAt(left)` from the window by decrementing `sCount[cLeft]`
+- If removing it makes the window fall below what `t` needs, increment `required`
+- Move `left++`
+
+Finally, after the expansion finishes, the code returns:
+- `""` if no valid window was ever found
+- otherwise `s.substring(minLeft, minLeft + minLen)`
+
+### Example Walkthrough
+Use Example 1: `s = "ADOBECODEBANC"`, `t = "ABC"`.
+
+Initially:
+- `tCount['A'] = 1`, `tCount['B'] = 1`, `tCount['C'] = 1`
+- `required = 3`
+
+Expand `right`:
+- Add `'A'` -> `required = 2`
+- Add `'D'`, `'O'` -> no effect on `required`
+- Add `'B'` -> `required = 1`
+- Add `'E'` -> no effect
+- Add `'C'` -> `required = 0`
+
+Now window `"ADOBEC"` is valid.
+Shrink from the left:
+- Record current best length `6`
+- Removing `'A'` would make the window invalid, so after decrementing it, `required` becomes `1`
+- Stop shrinking
+
+Continue expanding until `right` reaches the `'C'` in `"BANC"`.
+At that point the window becomes valid again, and the inner loop shrinks aggressively:
+- discard unnecessary leading characters
+- eventually reach `"BANC"`
+- update `minLen = 4` and `minLeft` to the index of `'B'`
+
+No smaller valid window exists later, so the method returns `"BANC"`.
+
+### Key Variables Explained
+- `tCount`: required frequency of each character from `t`
+- `sCount`: frequency of each character currently inside the window of `s`
+- `left`, `right`: window boundaries
+- `required`: number of character occurrences from `t` still missing from the current window
+- `minLen`: size of the best valid window found so far
+- `minLeft`: starting index of that best window
+- `cRight`, `cLeft`: characters entering and leaving the window
+
+### Why This Works
+The outer loop guarantees every possible right boundary is considered. The variable `required` precisely tracks whether the current window satisfies all counts from `t`. Once `required == 0`, the inner loop keeps moving `left` until the window is just about to become invalid, which means the smallest valid window for that specific right boundary has been found. Repeating that process across all right boundaries guarantees the globally smallest valid window is recorded in `minLen` and `minLeft`.
+
+### Trick Used
+Using a single `required` counter avoids comparing the full `sCount` and `tCount` arrays on every step.
+
+### Edge Cases Handled
+- `s.length() < t.length()`: returns `""` immediately because matching is impossible
+- Duplicate requirements in `t`: handled by frequency arrays and the `<=` / `<` checks
+- No valid window exists: `minLen` stays `Integer.MAX_VALUE`, so the method returns `""`
+- Minimum window equal to the whole string, such as `s = "a", t = "a"`: the code records it correctly
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(m + n)`
+  - One pass builds `tCount` from `t`
+  - `right` scans `s` once and `left` also advances through `s` at most once overall
+- Space Complexity: `O(1)`
+  - `tCount` and `sCount` are fixed-size arrays of length 128

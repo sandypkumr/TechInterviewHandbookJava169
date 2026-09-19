@@ -111,20 +111,92 @@ public class SetMatrixZeroes {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks us to modify the matrix in place so that every row and column containing a `0` becomes entirely `0`. The difficulty is not the transformation itself, but doing it without extra `O(m + n)` marker arrays.
 
-**Set Matrix Zeroes** is a matrix problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(m·n)` time and `O(1)` space.
+This is a common interview question because it tests whether you can use the input itself as working storage instead of reaching for additional memory.
+
+### Approach
+The brute-force idea is to scan the matrix, remember every row and column that contains a zero, and then do a second pass to clear them. That works, but it needs extra space.
+
+This solution avoids that extra memory by reusing the first row and first column as marker storage:
+- if `matrix[i][j] == 0`, mark the whole row by setting `matrix[i][0] = 0`
+- mark the whole column by setting `matrix[0][j] = 0`
+- later, use those markers to zero the interior cells
+
+Because the first row and first column are being reused as markers, the code separately remembers whether they originally contained a zero.
+
+### Pattern Used
+The solution primarily relies on **direct matrix iteration with in-place marking**.
+
+### Key Insight
+Use `matrix[i][0]` and `matrix[0][j]` as built-in marker arrays, and keep `firstRowZero` / `firstColZero` so those marker locations do not lose their original meaning.
 
 ### Code Walkthrough
+The method starts by reading dimensions into `m` and `n`, then creates two flags: `firstRowZero` and `firstColZero`.
 
-The solution is implemented in `setZeroes(int[][] matrix)`:
+The first loop checks the first column:
+- for each row `i`, if `matrix[i][0] == 0`, set `firstColZero = true`
+- break immediately because we only need to know whether at least one zero exists there
 
-1. **Initialise** the necessary data structures (`m`, `n`, `firstRowZero`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+The second loop does the same for the first row:
+- for each column `j`, if `matrix[0][j] == 0`, set `firstRowZero = true`
+
+Next, the nested loop starts from `i = 1` and `j = 1` so the first row and first column are preserved as marker space.
+- whenever `matrix[i][j] == 0`, the code sets `matrix[i][0] = 0`
+- it also sets `matrix[0][j] = 0`
+
+After all markers are written, another nested loop again visits only the interior cells.
+- if `matrix[i][0] == 0 || matrix[0][j] == 0`, that cell must become zero
+- so the code writes `matrix[i][j] = 0`
+
+Finally, the code handles the two special boundaries:
+- if `firstColZero` is true, zero out `matrix[i][0]` for all rows
+- if `firstRowZero` is true, zero out `matrix[0][j]` for all columns
+
+### Example Walkthrough
+Use Example 1: `[[1,1,1],[1,0,1],[1,1,1]]`.
+
+Initial state:
+- `m = 3`, `n = 3`
+- first column is `[1,1,1]`, so `firstColZero = false`
+- first row is `[1,1,1]`, so `firstRowZero = false`
+
+Marker pass over the interior:
+- at `i = 1`, `j = 1`, the value is `0`
+- set `matrix[1][0] = 0` and `matrix[0][1] = 0`
+- matrix becomes `[[1,0,1],[0,0,1],[1,1,1]]`
+
+Zeroing pass over the interior:
+- cell `(1,1)` stays `0` because row marker is `0`
+- cell `(1,2)` becomes `0` because `matrix[1][0] == 0`
+- cell `(2,1)` becomes `0` because `matrix[0][1] == 0`
+- cell `(2,2)` stays `1` because neither marker is zero
+
+Now the matrix is `[[1,0,1],[0,0,0],[1,0,1]]`.
+Since `firstRowZero` and `firstColZero` are both false, the first row and first column are left as they are, which matches the expected output.
+
+### Key Variables Explained
+- `m`, `n`: number of rows and columns
+- `firstRowZero`: remembers whether the original first row must be zeroed at the end
+- `firstColZero`: remembers whether the original first column must be zeroed at the end
+- `matrix[i][0]`: row marker for row `i`
+- `matrix[0][j]`: column marker for column `j`
+
+### Why This Works
+After the marking pass, every row that needs to be cleared has `matrix[i][0] == 0`, and every column that needs to be cleared has `matrix[0][j] == 0`. The second pass uses exactly those markers to update the interior cells.
+
+The only ambiguity is that the first row and first column are doing double duty: they are both real data and marker storage. The boolean flags preserve their original zero-status, so the final two loops restore the correct behavior for those boundaries as well.
+
+### Trick Used
+The key trick is **using the first row and first column as marker storage** instead of allocating separate `rows[]` and `cols[]` arrays.
+
+### Edge Cases Handled
+- Zero in the first column: captured by `firstColZero` before markers overwrite that column
+- Zero in the first row: captured by `firstRowZero` before markers overwrite that row
+- Single row or single column matrices: the interior loops simply skip when `m == 1` or `n == 1`, and the final boundary loops still work correctly
+- Multiple zeroes in different rows and columns: marker writes naturally accumulate because they all write `0`
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(m * n)` because the code scans the first column once, the first row once, then performs two full interior passes, plus up to one pass over the first row and first column
+- **Space Complexity:** `O(1)` auxiliary space because only `m`, `n`, and two boolean flags are used beyond the input matrix

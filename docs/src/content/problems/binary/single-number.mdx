@@ -63,20 +63,93 @@ public class SingleNumber {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to find the one value that appears exactly once when every other value appears exactly twice.  
+The challenge is not just correctness, but also meeting the required `O(n)` time and `O(1)` extra space bounds.  
+This is a classic interview problem because it tests whether you recognize a bit-manipulation shortcut instead of reaching for a hash map.
+
 ### Approach
 
-**Single Number** is a binary problem. The solution iterates over the input using a enhanced for-each loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(n)` time and `O(1)` space.
+The code uses XOR to cancel out duplicate numbers as it scans the array once.  
+If we XOR the same value twice, it becomes `0`, so all paired elements disappear and only the unique element remains.
+
+Why this instead of brute force?
+
+- A nested-loop approach would be `O(n^2)`.
+- A hash map would work in `O(n)` time, but it uses extra space.
+- XOR gives both linear time and constant space, which matches the problem constraints exactly.
+
+### Pattern Used
+
+Bit Manipulation, specifically the XOR cancellation pattern.
+
+### Key Insight
+
+Because `a ^ a = 0` and `0 ^ x = x`, every duplicated number removes itself, leaving only the single non-duplicated number in `result`.
 
 ### Code Walkthrough
 
-The solution is implemented in `singleNumber(int[] nums)`:
+The method starts with `int result = 0;`.
 
-1. **Initialise** the necessary data structures.
-2. **Iterate** over the input using a enhanced for-each loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+- `0` is the right neutral starting value because `0 ^ num = num`.
+
+Then the loop runs:
+
+- `for (int num : nums)` iterates through every element once.
+- Inside the loop, `result ^= num;` updates the running XOR.
+
+What happens during this accumulation:
+
+- The first time a duplicated value appears, it gets folded into `result`.
+- The second time the same value appears, it cancels itself out.
+- This keeps happening for every pair in the array.
+
+Finally:
+
+- `return result;` returns the only value that could not be canceled.
+
+### Example Walkthrough
+
+Use **Example 2**: `nums = [4,1,2,1,2]`.
+
+Start with:
+
+- `result = 0`
+
+Process each number:
+
+- Read `4`: `result = 0 ^ 4 = 4`
+- Read `1`: `result = 4 ^ 1`
+- Read `2`: `result = 4 ^ 1 ^ 2`
+- Read second `1`: `(4 ^ 1 ^ 2) ^ 1 = 4 ^ 2` because `1 ^ 1 = 0`
+- Read second `2`: `(4 ^ 2) ^ 2 = 4` because `2 ^ 2 = 0`
+
+The loop ends with `result = 4`, so the answer is `4`.
+
+### Key Variables Explained
+
+- `nums`: the input array containing pairs plus one unique value.
+- `result`: running XOR of all numbers seen so far; duplicates cancel inside this variable.
+- `num`: current element from the enhanced `for` loop.
+
+### Why This Works
+
+The algorithm maintains this invariant: after processing the first `k` elements, `result` equals the XOR of those `k` values.  
+Since XOR is associative and commutative, the order does not matter, and every duplicated value contributes `x ^ x = 0`.  
+After the full scan, all paired values have vanished, so `result` must be the single number.
+
+### Trick Used
+
+XOR cancellation: pairs remove themselves without needing any extra storage.
+
+### Edge Cases Handled
+
+- Array of length `1`: the loop runs once, and `result` becomes that only value.
+- Negative values: XOR works on integer bit patterns regardless of sign.
+- Unique value appearing at the beginning, middle, or end: order does not matter because XOR is commutative.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — the enhanced `for` loop visits each element exactly once.
+- **Space Complexity: `O(1)`** — only the integer `result` is used beyond the input array.

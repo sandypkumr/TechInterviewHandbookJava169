@@ -142,22 +142,129 @@ public class DesignInMemoryFileSystem {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to model a hierarchical file system with directories, files, path creation, appending file content, and lexicographically sorted directory listing. The challenge is that every operation is path-based, so the structure must support efficient traversal by path segment rather than by raw string scanning alone.
+
+This is a classic interview design problem because it tests whether you can map a real system concept into a clean tree-based data structure.
+
 ### Approach
 
-**Design In-Memory File System** involves many prefix-based string operations (insert, startsWith, search). A trie (prefix tree) stores characters along edges; words with common prefixes share nodes, making prefix checks O(L) where L is the word length — independent of the total number of stored words.
+The code represents the file system as a trie-like tree of path components. Each `Node` stores:
 
-Think of a trie as an autocomplete system. When you type "pre", the trie immediately navigates to the "pre" node and can enumerate all completions from there without scanning the entire dictionary.
+- whether it is a file via `isFile`,
+- its file `content`,
+- and a `children` map from name to child node.
+
+Each operation walks the tree using `path.split("/")`. That is the right fit because file-system paths are naturally hierarchical, and shared directories should be reused instead of recreated.
+
+### Pattern Used
+
+This solution uses a **Trie / tree over path segments**.
+
+### Key Insight
+
+Treat each directory or file name between slashes as one edge in a tree, so common prefixes like `/a/b` are traversed once and shared by all deeper paths.
 
 ### Code Walkthrough
 
-The solution is implemented in `ls(String path)`:
+`Node` is the building block of the file system:
 
-1. Define a TrieNode with `children[26]` (or a `HashMap<Character, TrieNode>`) and a boolean `isEnd`.
-2. `insert(word)`: traverse/create nodes character by character; mark `isEnd = true` at the last node.
-3. `search(word)`: traverse nodes; return true only if all characters matched and `isEnd` is true.
-4. `startsWith(prefix)`: same traversal but return true as soon as you've matched the full prefix.
+- `boolean isFile` distinguishes files from directories,
+- `String content` stores file data,
+- `Map<String, Node> children` stores nested directories or files by name.
+
+The constructor creates `root = new Node()`, representing `/`.
+
+In `ls(String path)`:
+
+- start from `Node node = root`,
+- create `List<String> result = new ArrayList<>()`,
+- if the path is not `"/"`, split it into `parts` and walk `node = node.children.get(parts[i])`.
+
+After traversal:
+
+- if `node.isFile` is `true`, return a list containing only `parts[parts.length - 1]`,
+- otherwise, add all child names with `result.addAll(node.children.keySet())`,
+- sort with `Collections.sort(result)`,
+- return the sorted list.
+
+In `mkdir(String path)`:
+
+- split the path into `parts`,
+- walk from the root,
+- for each segment, call `node.children.putIfAbsent(parts[i], new Node())`,
+- then move to that child.
+
+This creates all missing intermediate directories automatically.
+
+In `addContentToFile(String filePath, String content)`:
+
+- traverse or create all parent directories up to `parts.length - 2`,
+- ensure the file node exists with `putIfAbsent`,
+- move to the file node,
+- set `node.isFile = true`,
+- append using `node.content += content`.
+
+In `readContentFromFile(String filePath)`:
+
+- traverse the full path from `root`,
+- return `node.content` from the final node.
+
+### Example Walkthrough
+
+Use the given example sequence:
+
+- `ls("/")`
+  - `path.equals("/")`, so no traversal happens
+  - `root.children` is empty
+  - return `[]`
+
+- `mkdir("/a/b/c")`
+  - split into `["", "a", "b", "c"]`
+  - create nodes for `"a"`, then `"b"`, then `"c"`
+
+- `addContentToFile("/a/b/c/d", "hello")`
+  - traverse existing `"a"`, `"b"`, `"c"`
+  - create file node `"d"`
+  - mark it as a file and store `"hello"` in `content`
+
+- `ls("/")`
+  - `root.children` now contains only `"a"`
+  - sorted result is `["a"]`
+
+- `readContentFromFile("/a/b/c/d")`
+  - follow `"a" -> "b" -> "c" -> "d"`
+  - return `"hello"`
+
+### Key Variables Explained
+
+- `root`: the root directory `/`.
+- `node`: current location while traversing a path.
+- `parts`: array of path segments produced by `split("/")`.
+- `children`: map from directory/file name to the next `Node`.
+- `isFile`: tells `ls` whether to return one filename or a directory listing.
+- `content`: accumulated text stored inside a file node.
+- `result`: list built by `ls` before returning.
+
+### Why This Works
+
+Every operation follows the same invariant: after processing the first `i` path segments, `node` points to the tree node representing exactly that prefix path.
+
+Because directories and files are stored as children of their parent node, walking the tree by segments always reaches the correct object. `mkdir` and `addContentToFile` preserve the structure by creating missing nodes only where needed, and `ls` distinguishes between files and directories using `isFile`, which matches the required behavior exactly.
+
+### Trick Used
+
+Using `putIfAbsent` lets the code create missing directories or files without separate existence checks, keeping path construction concise.
+
+### Edge Cases Handled
+
+- Listing the root path `"/"`: handled by the `if (!path.equals("/"))` guard.
+- Listing a file path: returns a single-element list containing only that file name.
+- Creating nested directories when parents do not yet exist: `mkdir` creates all missing nodes.
+- Appending to an existing file: `node.content += content` preserves old content and adds new text.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(L)`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity:** `mkdir`, `addContentToFile`, and `readContentFromFile` are **`O(p)`**, where `p` is the number of path segments traversed. `ls` is **`O(p + k log k)`**, where `k` is the number of entries inside the target directory, because it traverses the path and then sorts the child names.
+- **Space Complexity:** **`O(total nodes + total file content)`** for the stored file system. Auxiliary working space per operation is `O(p)` for the `parts` array created by `split("/")`, plus `O(k)` for the `result` list in `ls`.

@@ -92,23 +92,107 @@ public class ThreeSumClosest {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the **sum** of three numbers whose total is closest to `target`, not the actual triplet. The challenge is to search efficiently while respecting distinct indices and comparing absolute differences.
+
+This is a common interview problem because it tests whether you can turn a brute-force `O(n^3)` search into a smarter sorted two-pointer scan.
+
 ### Approach
+The code first sorts `nums`, then fixes one value at index `i`. For the remaining two numbers, it uses `left` and `right` pointers to explore sums in a controlled way.
 
-**3Sum Closest** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+Brute force would try every triplet. After sorting, this solution can decide which direction gets us closer:
+- if the current sum is too small, move `left` rightward to increase it
+- if the current sum is too large, move `right` leftward to decrease it
+- if the sum equals `target`, return immediately because we cannot do better than exact
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+### Pattern Used
+Two Pointers
+
+### Key Insight
+Once the array is sorted, adjusting `left` or `right` changes the sum predictably, so each fixed `i` can be processed in linear time instead of checking every remaining pair.
 
 ### Code Walkthrough
+The method starts with:
+- `closestSum = Integer.MAX_VALUE`
+- `minDiff = Integer.MAX_VALUE`
 
-The solution is implemented in `threeSumClosest(int[] nums, int target)`:
+These variables track the best sum seen so far and its distance from `target`.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+`Arrays.sort(nums)` is essential because the pointer moves rely on the numbers being in sorted order.
+
+The outer loop runs `for (int i = 0; i < nums.length - 2; i++)`:
+- `nums[i]` is treated as the first element of the triplet
+- `left = i + 1` starts just after it
+- `right = nums.length - 1` starts at the far end
+
+Inside `while (left < right)`:
+- `currentSum = nums[i] + nums[left] + nums[right]`
+- `currentDiff = Math.abs(currentSum - target)`
+
+If `currentDiff < minDiff`, the code updates:
+- `minDiff = currentDiff`
+- `closestSum = currentSum`
+
+Then the pointers move based on how `currentSum` compares to `target`:
+- `currentSum < target` → `left++`
+- `currentSum > target` → `right--`
+- otherwise `return currentSum`
+
+That last branch is an optimization: an exact match has difference `0`, which is already optimal.
+
+### Example Walkthrough
+Use Example 1: `nums = [-1,2,1,-4]`, `target = 1`.
+
+After `Arrays.sort(nums)`, the array becomes `[-4,-1,1,2]`.
+
+Start with `i = 0`:
+- `nums[i] = -4`, `left = 1`, `right = 3`
+- `currentSum = -4 + (-1) + 2 = -3`
+- `currentDiff = |-3 - 1| = 4`
+- update `minDiff = 4`, `closestSum = -3`
+- sum is too small, so `left++`
+
+Now:
+- `left = 2`, `right = 3`
+- `currentSum = -4 + 1 + 2 = -1`
+- `currentDiff = |-1 - 1| = 2`
+- better answer found, so `minDiff = 2`, `closestSum = -1`
+- sum is still too small, so `left++`
+
+Now `left == right`, so move to `i = 1`:
+- `nums[i] = -1`, `left = 2`, `right = 3`
+- `currentSum = -1 + 1 + 2 = 2`
+- `currentDiff = |2 - 1| = 1`
+- update `minDiff = 1`, `closestSum = 2`
+- sum is greater than target, so `right--`
+
+Pointers meet, loop ends, and the method returns `2`.
+
+### Key Variables Explained
+- `closestSum`: the best triplet sum found so far
+- `minDiff`: the smallest absolute distance from `target` seen so far
+- `i`: index of the fixed first number in the triplet
+- `left`: pointer scanning upward from `i + 1`
+- `right`: pointer scanning downward from the end
+- `currentSum`: sum of the current triplet under consideration
+- `currentDiff`: how far `currentSum` is from `target`
+
+### Why This Works
+For a fixed `i`, the sorted array guarantees that:
+- moving `left` right increases the sum
+- moving `right` left decreases the sum
+
+So the code never skips a potentially better direction blindly. It always moves the pointer that can bring the sum closer to `target`. Since every pair for a fixed `i` is considered through this monotonic scan, the best triplet for that `i` is found, and taking the minimum across all `i` gives the global best answer.
+
+### Trick Used
+Early return on exact match: `return currentSum` as soon as `currentSum == target`
+
+### Edge Cases Handled
+- Arrays of length exactly `3`: the loop still evaluates the only possible triplet
+- All zeros, such as Example 2: the method computes `0` and returns it correctly
+- Negative and positive mixes: sorting plus absolute difference comparison handles both naturally
+- Exact target hit: the `else` branch exits immediately with the optimal answer
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n^2)`** — `Arrays.sort(nums)` costs `O(n log n)`, and for each `i`, the `left`/`right` scan is linear, so the nested work is `O(n^2)` overall.
+- **Space Complexity: `O(log n)` auxiliary** — the code uses only a few variables after sorting, and sorting a primitive array may use recursion stack space. If you ignore sorting stack overhead, the two-pointer portion itself is `O(1)`.

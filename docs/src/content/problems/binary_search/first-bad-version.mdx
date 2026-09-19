@@ -79,23 +79,124 @@ public class FirstBadVersion {
 
 ## Explanation
 
+### Problem Analysis
+
+Versions change from good to bad exactly once: once a version is bad, every later version is also bad.  
+So we are not searching for just any bad version; we need the first index where that transition happens while minimizing calls to `isBadVersion`.  
+This is a common interview problem because it tests whether you recognize a monotonic true/false boundary and convert it into binary search.
+
 ### Approach
 
-**First Bad Version** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+Treat `isBadVersion(version)` as a monotonic predicate:
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+- `false` for versions before the first bad one
+- `true` from the first bad version onward
+
+The code binary-searches that boundary.  
+If `mid` is bad, the first bad version is at `mid` or earlier, so it keeps the left half.  
+If `mid` is good, the first bad version must be later, so it moves `left` forward.
+
+### Pattern Used
+
+Binary Search on Answer / First True position.
+
+### Key Insight
+
+The moment `isBadVersion(version)` becomes `true`, it stays `true` forever, so the problem reduces to finding the first `true` in a sorted boolean pattern.
 
 ### Code Walkthrough
 
-The solution is implemented in `firstBadVersion(int n)`:
+The method initializes:
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+- `int left = 1;`
+- `int right = n;`
+
+These are the possible version numbers.
+
+The loop runs while:
+
+- `left < right`
+
+This means more than one candidate version is still possible.
+
+Inside the loop:
+
+- `int mid = left + (right - left) / 2;`
+
+Then the code queries:
+
+- `if (isBadVersion(mid))`
+
+If that is `true`:
+
+- `right = mid;`
+- We keep `mid` because it could itself be the first bad version.
+
+Otherwise:
+
+- `left = mid + 1;`
+- Everything up to `mid` is confirmed good, so the answer must be later.
+
+After the loop:
+
+- `return left;`
+
+At that point, `left == right`, so only one version remains and it must be the first bad one.
+
+### Example Walkthrough
+
+Use **Example 1**: `n = 5`, `bad = 4`.
+
+Initial state:
+
+- `left = 1`, `right = 5`
+
+First iteration:
+
+- `mid = 1 + (5 - 1) / 2 = 3`
+- `isBadVersion(3)` is `false`
+- Move rightward: `left = 4`
+
+Second iteration:
+
+- `left = 4`, `right = 5`
+- `mid = 4 + (5 - 4) / 2 = 4`
+- `isBadVersion(4)` is `true`
+- Keep `4` as a candidate: `right = 4`
+
+Now:
+
+- `left = 4`, `right = 4`
+
+Loop stops, and the method returns `4`.
+
+### Key Variables Explained
+
+- `n`: highest version number.
+- `left`: smallest version that could still be the first bad one.
+- `right`: largest version that could still be the first bad one.
+- `mid`: version being tested in the current iteration.
+- `isBadVersion(mid)`: monotonic API result used to decide which half to keep.
+
+### Why This Works
+
+The algorithm maintains the invariant that the first bad version is always within the closed range `[left, right]`.  
+When `isBadVersion(mid)` is `true`, the transition point cannot be after `mid`, so shrinking to `[left, mid]` is safe.  
+When it is `false`, the transition point must be after `mid`, so shrinking to `[mid + 1, right]` is safe.  
+Because the range gets smaller every iteration, the pointers eventually meet exactly at the first bad version.
+
+### Trick Used
+
+Treating the API responses as an implicit sorted boolean array and searching for the first `true`.
+
+### Edge Cases Handled
+
+- `n = 1`: `left` and `right` both start at `1`, so the method immediately returns `1`.
+- First bad version is `1`: repeated `right = mid` updates keep the answer at the far left.
+- First bad version is `n`: repeated `left = mid + 1` updates safely move to the far right.
+- Large `n` up to `2^31 - 1`: `left + (right - left) / 2` avoids overflow.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log n)`** — each iteration halves the remaining version range, so the number of API calls is logarithmic.
+- **Space Complexity: `O(1)`** — only `left`, `right`, and `mid` are maintained.

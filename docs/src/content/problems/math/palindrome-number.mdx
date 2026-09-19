@@ -73,20 +73,72 @@ public class PalindromeNumber {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks whether an integer reads the same forward and backward without converting it to a string. That makes it a digit-manipulation problem, where you have to reason about how numbers behave under repeated `% 10` and `/ 10` operations.
 
-**Palindrome Number** is a math problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(log n)` time and `O(1)` space.
+It is a common interview question because it checks comfort with integer math, loop invariants, and simple edge-case handling such as negative numbers and trailing zeroes.
+
+### Approach
+The code reverses the digits of `x` mathematically, then compares the reversed value with the original number. If both are equal, the number is a palindrome; otherwise, it is not.
+
+This is chosen over string conversion because the follow-up explicitly asks for a numeric solution. It also keeps the logic in constant extra space and stays close to how digits are represented internally.
+
+### Pattern Used
+This solution primarily relies on direct iteration over digits with mathematical reversal.
+
+### Key Insight
+A number is a palindrome exactly when reversing its digits produces the same numeric value.
 
 ### Code Walkthrough
+The method starts with `if (x < 0)`, immediately returning `false` for negative values because `-121` cannot read the same backward when the minus sign is considered.
 
-The solution is implemented in `isPalindrome(int x)`:
+Next, `int original = x;` stores the input before it gets modified. The variable `reversed` is initialized to `0` and will be built digit by digit.
 
-1. **Initialise** the necessary data structures (`original`, `reversed`, `digit`).
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+The `while (x != 0)` loop processes the number from right to left:
+- `int digit = x % 10;` extracts the last digit.
+- `reversed = reversed * 10 + digit;` shifts the current reversed number left by one decimal place and appends `digit`.
+- `x /= 10;` removes the last digit from `x`.
+
+After the loop, `x` has been fully consumed and `reversed` contains the reverse of the original digits.
+
+The final line `return original == reversed;` decides whether the input is a palindrome.
+
+### Example Walkthrough
+For **Example 1**, `x = 121`:
+- Start: `original = 121`, `reversed = 0`
+- Iteration 1: `digit = 1`, `reversed = 1`, `x = 12`
+- Iteration 2: `digit = 2`, `reversed = 12`, `x = 1`
+- Iteration 3: `digit = 1`, `reversed = 121`, `x = 0`
+- Compare: `original == reversed`, so the method returns `true`
+
+For **Example 2**, `x = -121`:
+- The condition `x < 0` is true, so the method returns `false` immediately.
+
+For **Example 3**, `x = 10`:
+- Start: `original = 10`, `reversed = 0`
+- Iteration 1: `digit = 0`, `reversed = 0`, `x = 1`
+- Iteration 2: `digit = 1`, `reversed = 1`, `x = 0`
+- Compare: `10 != 1`, so the method returns `false`
+
+### Key Variables Explained
+- `x`: the working copy of the number; it shrinks as digits are removed.
+- `original`: the untouched original input used for the final comparison.
+- `reversed`: the number formed by rebuilding the digits in reverse order.
+- `digit`: the current last digit extracted from `x` using `% 10`.
+
+### Why This Works
+At every loop iteration, the code removes exactly one last digit from `x` and appends that same digit to the end of `reversed`. Because decimal reversal is built one digit at a time in the correct order, `reversed` is the exact digit-reversal of `original` when the loop ends.
+
+Therefore, if and only if the original digit sequence is symmetric, `original == reversed` will be true.
+
+### Trick Used
+No specific trick — the solution is direct and straightforward
+
+### Edge Cases Handled
+- **Negative numbers**: `if (x < 0)` returns `false` immediately.
+- **Zero**: the loop does not run for `0`, so `original == reversed` remains `true`.
+- **Numbers ending in zero**: values like `10` reverse to `1`, so the final comparison correctly returns `false`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log10 n)`** — the `while (x != 0)` loop removes one decimal digit per iteration.
+- **Space Complexity: `O(1)`** — only `original`, `reversed`, and `digit` are used regardless of input size.

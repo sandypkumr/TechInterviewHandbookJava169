@@ -66,23 +66,86 @@ public class MajorityElement {
 
 ## Explanation
 
+### Problem Analysis
+We need to return the element that appears more than `n / 2` times in the array. The problem guarantees that such an element always exists, so the main task is finding it efficiently without extra storage.
+
+This is a well-known interview problem because the optimal solution is not based on counting frequencies in a map, but on recognizing a cancellation idea that leads to linear time and constant space.
+
 ### Approach
+A straightforward solution would count frequencies with a `HashMap`, but that uses extra space. This code uses the Boyer-Moore Voting Algorithm, which keeps a current candidate and a vote balance.
 
-**Majority Element** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+Whenever the current number matches the candidate, the balance increases. When it differs, the balance decreases. Different values effectively cancel each other out, and because the majority element appears more than half the time, it cannot be fully canceled.
 
-The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+### Pattern Used
+This solution uses the **Greedy** pattern through the **Boyer-Moore Voting Algorithm**.
+
+### Key Insight
+Pairing off different values removes one majority occurrence and one non-majority occurrence at a time, so the true majority element is the only value that can survive all cancellations.
 
 ### Code Walkthrough
+The method `majorityElement(int[] nums)` starts with:
 
-The solution is implemented in `majorityElement(int[] nums)`:
+- `int count = 0;`
+- `int candidate = 0;`
 
-1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
-2. Sort or arrange the input according to this criterion.
-3. Iterate and make the greedy decision at each step without revisiting previous choices.
-4. Update state (current end, running sum, remaining capacity) after each decision.
-5. Return the accumulated result.
+The `for (int num : nums)` loop scans the array once.
+
+At each number, the code first checks:
+
+- `if (count == 0) { candidate = num; }`
+
+This means whenever the current vote balance is exhausted, the current number becomes the new candidate.
+
+Then the code updates the balance with:
+
+- `count += (num == candidate) ? 1 : -1;`
+
+So:
+
+- matching `candidate` adds one vote,
+- a different number removes one vote.
+
+No extra verification pass is needed here because the problem guarantees that a majority element exists.
+
+After the loop finishes, the surviving `candidate` is returned.
+
+### Example Walkthrough
+Use **Example 2**:
+
+- `nums = [2,2,1,1,1,2,2]`
+
+Track `candidate` and `count`:
+
+- Start: `candidate = 0`, `count = 0`
+- Read `2`: `count == 0`, so `candidate = 2`; then `count = 1`
+- Read `2`: matches `candidate`, so `count = 2`
+- Read `1`: different, so `count = 1`
+- Read `1`: different, so `count = 0`
+- Read `1`: `count == 0`, so `candidate = 1`; then `count = 1`
+- Read `2`: different, so `count = 0`
+- Read `2`: `count == 0`, so `candidate = 2`; then `count = 1`
+
+The final `candidate` is `2`, which is the correct majority element.
+
+### Key Variables Explained
+- `count`: current vote balance for the active candidate.
+- `candidate`: value currently believed to be the majority element.
+- `num`: current array element being used to reinforce or cancel the candidate.
+
+### Why This Works
+Every time the code sees a value different from `candidate`, it cancels one previous vote for that candidate. This models removing pairs of distinct elements from consideration.
+
+Since the true majority element appears more than all other elements combined, it cannot be completely canceled by this process. Therefore, after the full scan, the remaining `candidate` must be the majority element.
+
+### Trick Used
+The trick is pairwise cancellation using the Boyer-Moore voting rule, which avoids any frequency map.
+
+### Edge Cases Handled
+- Single-element array: the first element becomes `candidate` and is returned.
+- Majority spread across the array instead of clustered together: repeated resets still work because of the cancellation logic.
+- Negative or large values: comparisons are value-based, so the algorithm works the same way.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`** — the array is scanned once, and each element causes only constant-time updates.
+- **Space Complexity: `O(1)`** — only `count` and `candidate` are used beyond the input array.
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

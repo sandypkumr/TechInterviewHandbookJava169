@@ -92,23 +92,102 @@ public class GasStation {
 
 ## Explanation
 
+### Problem Analysis
+We need to decide whether there is a station from which a full circular trip is possible, and if so return that starting index. The challenge is that a starting point can fail partway through the route, so we need a rule for discarding bad starts efficiently.
+
+This is a classic greedy interview problem because the brute-force solution checks every station, but the correct linear-time solution depends on proving when an entire prefix of candidates can be eliminated at once.
+
 ### Approach
+Trying every starting station would take `O(n^2)` in the worst case. Instead, this code makes one pass while tracking both global feasibility and the current candidate start.
 
-**Gas Station** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+The idea is:
 
-The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+- `totalGas` and `totalCost` determine whether any solution exists at all.
+- `currentGas` tracks whether the current candidate `startStation` can reach the current index.
+- If `currentGas` becomes negative at station `i`, then none of the stations from the current `startStation` through `i` can be valid starts, so the next candidate must be `i + 1`.
+
+### Pattern Used
+This solution uses the **Greedy** pattern.
+
+### Key Insight
+If starting from `startStation` leaves `currentGas < 0` at index `i`, every station between `startStation` and `i` also fails, so we can skip all of them and jump directly to `i + 1`.
 
 ### Code Walkthrough
+The method `canCompleteCircuit(int[] gas, int[] cost)` initializes four variables:
 
-The solution is implemented in `canCompleteCircuit(int[] gas, int[] cost)`:
+- `totalGas` accumulates all gas available on the route.
+- `totalCost` accumulates the total cost to travel the whole route.
+- `currentGas` tracks the tank balance for the current candidate start.
+- `startStation` stores the current candidate answer.
 
-1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
-2. Sort or arrange the input according to this criterion.
-3. Iterate and make the greedy decision at each step without revisiting previous choices.
-4. Update state (current end, running sum, remaining capacity) after each decision.
-5. Return the accumulated result.
+The `for` loop iterates from `0` to `gas.length - 1`.
+
+Inside the loop:
+
+- `totalGas += gas[i]`
+- `totalCost += cost[i]`
+- `currentGas += gas[i] - cost[i]`
+
+So each station contributes both to the global feasibility check and to the local running balance.
+
+Then the code checks:
+
+- `if (currentGas < 0)`
+
+When that happens, the current candidate cannot reach station `i + 1`.
+
+The code responds by:
+
+- setting `startStation = i + 1`
+- resetting `currentGas = 0`
+
+This means the next station becomes the new candidate starting point, and we restart the local balance from there.
+
+After the loop, the final line is:
+
+- `return totalGas < totalCost ? -1 : startStation;`
+
+If the total gas is less than the total cost, completing the circuit is impossible from any start. Otherwise, the greedy candidate `startStation` is returned.
+
+### Example Walkthrough
+Use **Example 1**:
+
+- `gas = [1,2,3,4,5]`
+- `cost = [3,4,5,1,2]`
+
+Scan step by step:
+
+- `i = 0`: `totalGas = 1`, `totalCost = 3`, `currentGas = -2` -> negative, so set `startStation = 1`, reset `currentGas = 0`.
+- `i = 1`: `totalGas = 3`, `totalCost = 7`, `currentGas = -2` -> negative, so set `startStation = 2`, reset `currentGas = 0`.
+- `i = 2`: `totalGas = 6`, `totalCost = 12`, `currentGas = -2` -> negative, so set `startStation = 3`, reset `currentGas = 0`.
+- `i = 3`: `totalGas = 10`, `totalCost = 13`, `currentGas = 3` -> keep going.
+- `i = 4`: `totalGas = 15`, `totalCost = 15`, `currentGas = 6` -> keep going.
+
+Now `totalGas` is not less than `totalCost`, so a solution exists, and the code returns `startStation = 3`.
+
+That matches the expected output.
+
+### Key Variables Explained
+- `totalGas`: total fuel available across all stations.
+- `totalCost`: total fuel required to complete the circuit.
+- `currentGas`: running tank balance from the current candidate start.
+- `startStation`: current station being considered as the answer.
+- `i`: index of the station currently being processed.
+
+### Why This Works
+The global condition `totalGas >= totalCost` is necessary and sufficient for some valid start to exist. The greedy reset rule is also safe: when the balance becomes negative at `i`, the cumulative gas from `startStation` to `i` is insufficient, so any start inside that failed segment would begin with even less leftover gas by the time it reaches `i + 1`.
+
+Because the code discards whole impossible segments at once and only keeps the next viable candidate, the final `startStation` is the unique valid answer whenever a solution exists.
+
+### Trick Used
+The trick is combining a global feasibility check (`totalGas` vs `totalCost`) with a local reset rule (`currentGas < 0`) so the answer is found in one pass.
+
+### Edge Cases Handled
+- Impossible route: if `totalGas < totalCost`, the method returns `-1`.
+- Candidate start fails early: handled by resetting `currentGas` and moving `startStation` to `i + 1`.
+- Single valid answer guaranteed by the problem: the code returns the one surviving greedy candidate.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`** — the loop processes each station once, doing only constant-time updates per index.
+- **Space Complexity: `O(1)`** — only four integer variables are used regardless of input size.
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

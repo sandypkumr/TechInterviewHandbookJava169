@@ -68,23 +68,85 @@ public class ValidAnagram {
 
 ## Explanation
 
+### Problem Analysis
+
+Two strings are anagrams if they contain exactly the same characters with exactly the same frequencies, just in a different order. Since the input is restricted to lowercase English letters, we do not need sorting or a general-purpose hash map.
+
+This is a classic interview question because it tests whether you can translate "same multiset of characters" into an efficient counting strategy.
+
 ### Approach
 
-The key insight for **Valid Anagram** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+The solution uses one frequency array `charCount` of size 26. For every position `i`, it increments the count for `s.charAt(i)` and decrements the count for `t.charAt(i)`.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+This is better than sorting because:
+
+- it finishes in linear time,
+- it avoids rearranging either string,
+- it uses the lowercase-letter constraint to keep space fixed.
+
+### Pattern Used
+
+This solution primarily relies on **counting / frequency array**.
+
+### Key Insight
+
+If two same-length strings are anagrams, then after adding counts from `s` and subtracting counts from `t`, every entry in the 26-slot array must end at zero.
 
 ### Code Walkthrough
 
-The solution is implemented in `isAnagram(String s, String t)`:
+The method first checks `if (s.length() != t.length())`. If lengths differ, the strings cannot be anagrams, so it returns `false` immediately.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+`int[] charCount = new int[26]` stores balance counts for letters `'a'` through `'z'`.
+
+The loop `for (int i = 0; i < s.length(); i++)` processes both strings together:
+
+- `charCount[s.charAt(i) - 'a']++` records one more occurrence from `s`,
+- `charCount[t.charAt(i) - 'a']--` cancels one occurrence from `t`.
+
+After that, the enhanced for-loop checks every `count` inside `charCount`. If any entry is not zero, one letter appeared a different number of times in the two strings, so the method returns `false`.
+
+If all 26 entries are zero, the method returns `true`.
+
+### Example Walkthrough
+
+Take **Example 1**, `s = "anagram"` and `t = "nagaram"`.
+
+- Lengths are both 7, so the method continues.
+- As the loop runs:
+  - `'a'` in `s` increments the `'a'` bucket, while `'n'` in `t` decrements the `'n'` bucket.
+  - next, `'n'` increments the `'n'` bucket, while `'a'` decrements the `'a'` bucket.
+  - this balancing continues for every position.
+- By the end, each letter used in one string has been canceled by the same number of appearances in the other.
+- The final scan sees only zeroes, so the method returns `true`.
+
+For **Example 2**, `"rat"` vs `"car"`, the counts for `'t'` and `'c'` cannot cancel, so one of the entries remains non-zero and the method returns `false`.
+
+### Key Variables Explained
+
+- `charCount`: a 26-element balance array where positive values mean `s` has seen more of that letter so far, and negative values mean `t` has.
+- `i`: the current index used to read both strings in lockstep.
+- `count`: the current frequency balance being checked in the final validation loop.
+
+### Why This Works
+
+The loop maintains an invariant: after processing indices `0..i`, `charCount[x]` equals:
+
+`(# of letter x seen in s so far) - (# of letter x seen in t so far)`.
+
+If the strings are anagrams, every letter count must match, so all balances become zero after the full scan. If even one balance is non-zero, then at least one character frequency differs, which is exactly why the strings are not anagrams.
+
+### Trick Used
+
+Updating counts for both strings in the same loop cuts the work into one pass instead of building two separate frequency arrays.
+
+### Edge Cases Handled
+
+- Different lengths: immediately rejected by `if (s.length() != t.length())`.
+- Repeated characters: handled naturally by incrementing and decrementing counts multiple times.
+- Strings that are already identical: all counts still cancel to zero.
+- Strings with the same letters except one mismatch: the final scan detects the non-zero bucket.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — one loop processes all `n` characters, and a second loop checks exactly 26 array entries, which is constant extra work.
+- **Space Complexity: `O(1)`** — the `charCount` array always has fixed size 26, regardless of input length.

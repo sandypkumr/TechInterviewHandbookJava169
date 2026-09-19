@@ -81,23 +81,88 @@ public class KClosestPointsToOrigin {
 
 ## Explanation
 
+### Problem Analysis
+We need the `k` points with the smallest distance from the origin.
+A full sort would work, but it does more work than necessary because we only care about the best `k`, not the complete ranking of all points.
+This is a standard interview problem for recognizing when a bounded heap is the right top-`k` tool.
+
 ### Approach
+The code keeps a max-heap of at most `k` points.
+For each point, it adds the point to the heap.
+If the heap grows beyond size `k`, it removes the farthest point currently in the heap.
+That means the heap always contains the best `k` candidates seen so far.
+At the end, polling the heap gives exactly the `k` closest points.
+This is more efficient than sorting all `n` points when `k` is much smaller than `n`.
 
-**K Closest Points to Origin** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+### Pattern Used
+Heap / Priority Queue.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Key Insight
+By making the heap a max-heap on distance, the worst point among the current `k` candidates is always on top and can be discarded immediately.
 
 ### Code Walkthrough
+The method `kClosest(int[][] points, int k)` starts by creating `int[][] result = new int[k][2]` for the answer.
 
-The solution is implemented in `kClosest(int[][] points, int k)`:
+Then it builds `PriorityQueue<int[]> maxHeap` with a comparator:
+`Integer.compare(b[0] * b[0] + b[1] * b[1], a[0] * a[0] + a[1] * a[1])`.
+Because it compares `b` before `a`, the point with the larger squared distance is treated as higher priority, so this behaves like a max-heap.
+The code uses squared distance, which is enough for comparison and avoids unnecessary square roots.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+The loop `for (int[] point : points)` processes every point.
+- `maxHeap.offer(point)` inserts the current point.
+- If `maxHeap.size() > k`, then `maxHeap.poll()` removes the farthest point among the stored candidates.
+After each iteration, the heap contains at most `k` closest points seen so far.
+
+After the scan, a second loop runs from `i = 0` to `k - 1`.
+Each iteration assigns `result[i] = maxHeap.poll()`.
+The problem allows any order, so the code does not need to sort the final `k` points.
+Finally, it returns `result`.
+
+### Example Walkthrough
+Use Example 1: `points = [[1,3],[-2,2]]`, `k = 1`.
+
+Start with an empty `maxHeap`.
+
+Process `[1,3]`:
+- Squared distance is `1^2 + 3^2 = 10`.
+- Offer it into the heap.
+- Heap size is `1`, which is not greater than `k`.
+
+Process `[-2,2]`:
+- Squared distance is `(-2)^2 + 2^2 = 8`.
+- Offer it into the heap.
+- Heap size becomes `2`, so poll once.
+- Because the heap is a max-heap by distance, `[1,3]` with distance `10` is removed.
+- Heap now keeps only `[-2,2]`.
+
+Build the result:
+- `result[0] = maxHeap.poll()` gives `[-2,2]`.
+- Return `[[-2,2]]`, which matches the example.
+
+For Example 2, the same process keeps the two points with squared distances `18` and `20`, and discards `[5,-1]` with squared distance `26`.
+
+### Key Variables Explained
+- `points`: all input points.
+- `k`: how many closest points must remain.
+- `result`: output array of size `k`.
+- `maxHeap`: bounded priority queue storing the current best `k` candidates.
+- `point`: current point being processed in the scan.
+
+### Why This Works
+The invariant is that after processing any prefix of `points`, `maxHeap` contains the `k` closest points from that prefix, or all points from that prefix if fewer than `k` have been seen.
+When a new point arrives, it is inserted tentatively.
+If that makes the heap too large, removing the farthest point is always safe because that point cannot belong to the final closest `k` once there are already `k` better or equal candidates.
+By the end of the loop, the heap therefore contains exactly the global `k` closest points.
+
+### Trick Used
+Using squared distance (`x*x + y*y`) instead of Euclidean distance, since square roots are unnecessary for comparisons.
+
+### Edge Cases Handled
+- `k == 1`: the heap reduces to tracking only the single closest point.
+- `k == points.length`: the heap never removes anything, so all points are returned.
+- Negative coordinates: squaring handles them correctly when computing distance.
+- Output order requirement: the problem allows any order, so polling directly into `result` is valid.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n log k)`** — see the analysis for full details.
-- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.
+- Time Complexity: `O(n log k)` because the first loop processes all `n = points.length` points, each heap insertion/removal costs `O(log k)`, and the final `k` polls cost `O(k log k)`; this is dominated by `O(n log k)` for the stated constraints.
+- Space Complexity: `O(k)` because `maxHeap` stores at most `k` points, while `result` is the required output.

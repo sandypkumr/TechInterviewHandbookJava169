@@ -123,25 +123,90 @@ public class PacificAtlanticWaterFlow {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks for all cells from which water can reach both oceans, with flow allowed only from higher or equal height to lower or equal height. It is a favorite interview problem because the forward simulation from every cell looks expensive, but the right graph reversal makes the solution much cleaner.
+
 ### Approach
+Instead of starting from every cell and trying to flow outward to each ocean, this code does the reverse. It starts DFS from the Pacific border and marks every cell that can be reached by moving to neighbors with height greater than or equal to the previous height; then it does the same from the Atlantic border.
 
-**Pacific Atlantic Water Flow** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+A cell belongs in the answer only if it is reachable in both reverse searches. This avoids repeating work from each interior cell and turns the problem into two boundary-to-interior traversals.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+Depth-First Search (DFS)
+
+### Key Insight
+Reverse the direction of water flow: if water can flow downhill from cell `A` to ocean `O`, then a DFS starting at `O` can reach `A` by only moving uphill or flat.
 
 ### Code Walkthrough
+In `pacificAtlantic(int[][] heights)`:
+- `result` stores the final coordinate pairs.
+- `rows` and `cols` store the matrix dimensions.
+- `pacific` and `atlantic` are boolean grids marking cells reachable from each ocean in the reversed traversal.
 
-The solution is implemented in `pacificAtlantic(int[][] heights)`:
+The first boundary loop:
+- Iterates through each column `c`.
+- Calls `dfs(heights, 0, c, pacific, heights[0][c])` for the top edge.
+- Calls `dfs(heights, rows - 1, c, atlantic, heights[rows - 1][c])` for the bottom edge.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+The second boundary loop:
+- Iterates through each row `r`.
+- Calls `dfs(heights, r, 0, pacific, heights[r][0])` for the left edge.
+- Calls `dfs(heights, r, cols - 1, atlantic, heights[r][cols - 1])` for the right edge.
 
-&gt; **Note:** This solution also uses the **BFS to explore nodes level by level** technique.
+After both ocean traversals:
+- The nested loops check every cell.
+- If `pacific[r][c] && atlantic[r][c]`, that cell can reach both oceans.
+- `result.add(Arrays.asList(r, c))` appends the coordinate pair.
+
+In `dfs(int[][] heights, int r, int c, boolean[][] visited, int prevHeight)`:
+- `rows` and `cols` are read from `heights`.
+- The base case returns when the coordinates are out of bounds, the cell was already visited, or `heights[r][c] < prevHeight`.
+- That last condition enforces the reverse-flow rule: from an ocean-side search, we may only move to equal or higher cells.
+- If valid, `visited[r][c] = true` marks the cell.
+- DFS then explores down, up, right, and left, passing `heights[r][c]` as the new `prevHeight`.
+
+### Example Walkthrough
+Use Example 1:
+- `heights = [[1,2,2,3,5],[3,2,3,4,4],[2,4,5,3,1],[6,7,1,4,5],[5,1,1,2,4]]`
+
+Pacific DFS starts from the top row and left column:
+- Cells like `(0,0)`, `(0,1)`, `(1,0)`, `(3,0)`, and `(4,0)` are immediately marked in `pacific` because they touch the Pacific.
+- From those borders, DFS keeps moving only into cells whose height is not smaller than the previous one.
+
+Atlantic DFS starts from the bottom row and right column:
+- Cells like `(0,4)`, `(1,4)`, `(3,4)`, `(4,4)`, and `(4,0)` become candidates in `atlantic` through the same reverse rule.
+
+Now check intersections:
+- `(0,4)` is marked by both traversals, so it is added.
+- `(1,3)` can be reached from the Pacific side through increasing heights and from the Atlantic side through the right edge, so it is added.
+- `(1,4)`, `(2,2)`, `(3,0)`, `(3,1)`, and `(4,0)` are also true in both matrices.
+
+The final `result` is:
+- `[[0,4],[1,3],[1,4],[2,2],[3,0],[3,1],[4,0]]`
+
+### Key Variables Explained
+- `result`: list of coordinates that can reach both oceans.
+- `rows`, `cols`: grid dimensions.
+- `pacific`: marks cells reachable from the Pacific border in reverse traversal.
+- `atlantic`: marks cells reachable from the Atlantic border in reverse traversal.
+- `visited`: whichever one of those two boolean grids the current DFS is filling.
+- `prevHeight`: the previous cell height used to enforce nondecreasing movement in reverse.
+- `r`, `c`: current row and column.
+
+### Why This Works
+For any cell, water can flow to an ocean by moving to equal or lower neighboring heights. Reversing that idea means an ocean-origin DFS can move from a cell to neighbors of equal or greater height and exactly capture all cells that could have drained into that ocean.
+
+Because the code computes this reachability separately for the Pacific and Atlantic, the intersection `pacific[r][c] && atlantic[r][c]` is precisely the set of cells that can reach both oceans.
+
+### Trick Used
+Running the search backward from the ocean borders instead of forward from every cell.
+
+### Edge Cases Handled
+- Single-cell grid: the lone cell is reached from both ocean borders and is returned.
+- Border cells: they are naturally included by the initial DFS calls from ocean edges.
+- Repeated visits from multiple border starts: `visited[r][c]` prevents duplicate recursion.
+- Downhill-only restriction: `heights[r][c] < prevHeight` blocks invalid reverse moves.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(m·n)`** — every cell of the m × n grid is visited at most once.
-- **Space Complexity: `O(m·n)`** — a visited/DP matrix of the same dimensions as the input grid is maintained.
+- Time Complexity: `O(m * n)` because each cell can be marked at most once in `pacific` and at most once in `atlantic`, and the final intersection scan is another full grid pass.
+- Space Complexity: `O(m * n)` for the two boolean matrices, plus recursion stack space up to `O(m * n)` in the worst case.

@@ -93,25 +93,96 @@ public class TopKFrequentWords {
 
 ## Explanation
 
+### Problem Analysis
+We need the `k` most frequent words, ordered first by descending frequency and then by ascending lexicographical order for ties. The challenge is keeping the best `k` candidates efficiently without sorting every unique word at the end.
+
+This is a standard interview problem because it combines counting, custom ordering, and a bounded heap for top-`k` selection.
+
 ### Approach
+The code first counts each word with a hash map. Then it uses a min-heap of size at most `k` to keep only the current top `k` words.
 
-**Top K Frequent Words** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+The heap is designed so that the "least desirable" candidate sits at the top: lower frequency is worse, and for equal frequency, lexicographically larger is worse. That way, when the heap grows beyond `k`, polling removes exactly the word we no longer want.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Pattern Used
+Heap / Priority Queue with Hash Map counting.
+
+### Key Insight
+If the heap always ejects the worst candidate among the current top words, then after processing all unique words, the heap contains exactly the desired `k` answers.
 
 ### Code Walkthrough
+`topKFrequent(String[] words, int k)` begins with frequency counting:
 
-The solution is implemented in `topKFrequent(String[] words, int k)`:
+- `Map<String, Integer> freqMap = new HashMap<>();`
+- For each `word`, the code runs `freqMap.put(word, freqMap.getOrDefault(word, 0) + 1);`.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+Then it creates the heap:
 
-&gt; **Note:** This solution also uses the **HashMap for O(1) average-case lookups** technique.
+- `PriorityQueue<String> heap = new PriorityQueue<>(...)`
+- The comparator uses `freqMap.get(w1) - freqMap.get(w2)` so lower frequency has higher removal priority.
+- If frequencies tie, it returns `w2.compareTo(w1)`.
+- That reversed lexicographical comparison makes lexicographically larger words come out first, which is exactly what we want to discard in a tie.
+
+Next, the code iterates over all unique words:
+
+- `heap.offer(word)` inserts the current word.
+- If `heap.size() > k`, `heap.poll()` removes the weakest candidate.
+- Because of the comparator, the heap never holds more than the best `k` words seen so far.
+
+Finally, the result is built:
+
+- `List<String> result = new ArrayList<>();`
+- While the heap is not empty, `result.add(heap.poll())` collects words from worst-to-best among the retained set.
+- `Collections.reverse(result)` flips that order so the final list is best-to-worst, matching the problem requirement.
+- The method returns `result`.
+
+### Example Walkthrough
+Use Example 1: `words = ["i","love","leetcode","i","love","coding"]`, `k = 2`.
+
+Frequency map after counting:
+
+- `i -> 2`
+- `love -> 2`
+- `leetcode -> 1`
+- `coding -> 1`
+
+Process unique words through the heap:
+
+- Insert `i` -> heap contains `[i]`.
+- Insert `love` -> heap contains `i` and `love`.
+  - Since both have frequency `2`, the comparator treats the lexicographically larger word as worse.
+- Insert `leetcode` -> heap size becomes `3`, so poll removes `leetcode` because frequency `1` is smallest.
+- Insert `coding` -> heap size becomes `3` again, so poll removes `coding`.
+
+Now the heap contains `i` and `love`.
+
+Building the answer:
+
+- Polling gives the weaker of the two retained words first according to heap order.
+- `result` is collected in reverse priority order, then `Collections.reverse(result)` turns it into `["i", "love"]`.
+
+### Key Variables Explained
+- `freqMap`: maps each word to its occurrence count.
+- `heap`: a min-heap that stores at most `k` candidate words.
+- Heap comparator: defines which word is considered worse and should be removed first.
+- `word`: the current unique word being evaluated for top-`k` membership.
+- `result`: final output list built from the heap contents.
+
+### Why This Works
+After counting, every word's priority is fully determined by `(frequency descending, lexicographical ascending)`. The heap comparator intentionally stores the opposite notion at the root: the lowest frequency, or on ties the lexicographically largest word, is easiest to remove.
+
+That means after each insertion, if the heap exceeds size `k`, removing the root preserves the best `k` candidates seen so far. By induction over all unique words, the heap at the end contains exactly the correct top `k` words.
+
+### Trick Used
+The important trick is the reversed tie-breaker `w2.compareTo(w1)` inside the min-heap comparator, so lexicographically larger tied words get evicted before smaller ones.
+
+### Edge Cases Handled
+- `k = 1`: the heap still works and keeps only the single best word.
+- Multiple words with the same frequency: the custom comparator enforces lexicographical ordering.
+- All words unique: the heap retains the lexicographically smallest words among equal-frequency candidates only when frequency rules allow it.
+- Repeated words many times: `freqMap.getOrDefault(word, 0) + 1` counts them correctly.
 
 ### Complexity Analysis
+Let `n` be `words.length` and `m` be the number of unique words.
 
-- **Time Complexity: `O(n log k)`** — see the analysis for full details.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity:** `O(n + m log k + k)` because counting all words is `O(n)`, each of the `m` unique words may be inserted and possibly removed from the heap in `O(log k)`, and the final extraction/reverse step costs `O(k)`.
+- **Space Complexity:** `O(m + k)`. `freqMap` stores all unique words, and the heap stores at most `k` of them. Since `m <= n`, this is commonly summarized as `O(n)`.

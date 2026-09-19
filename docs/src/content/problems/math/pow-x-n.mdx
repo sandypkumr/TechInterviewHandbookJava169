@@ -72,22 +72,78 @@ public class PowOfXAndN {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks you to compute `x^n` efficiently, including when `n` is negative. A brute-force solution would multiply `x` by itself `|n|` times, but that becomes too slow for very large exponents.
+
+It is a classic interview problem because it tests whether you recognize exponentiation by squaring and whether you can safely handle tricky cases like `n = Integer.MIN_VALUE`.
+
 ### Approach
+The code uses iterative exponentiation by squaring. Instead of multiplying by `x` on every step, it repeatedly squares the base and consumes the exponent bit by bit.
 
-**Pow(x, n)** follows the classic divide-and-conquer pattern: split the problem into smaller independent sub-problems, solve each recursively, then combine the results. This typically yields O(n log n) time because each level of recursion does O(n) work and there are O(log n) levels.
+If the current exponent is odd, the current base contributes to the answer, so it is multiplied into `result`. If the exponent is even, the code just squares `x` and halves the exponent. This reduces the work from linear to logarithmic time.
 
-Merge Sort is the canonical example: split the array in half, sort each half independently, then merge the two sorted halves in linear time. The "combine" step is where the real work happens.
+### Pattern Used
+Divide and Conquer via binary exponentiation.
+
+### Key Insight
+The key observation is that `x^n` can be built from the binary representation of `n`, so we only need to multiply in the powers of `x` corresponding to set bits.
 
 ### Code Walkthrough
+The method begins with `long N = n;` instead of working directly with `int n`. This is important because negating `Integer.MIN_VALUE` would overflow an `int`, but it fits in a `long`.
 
-The solution is implemented in `myPow(double x, int n)`:
+If `N < 0`, the code converts the problem from a negative exponent to a positive one:
+- `x = 1 / x;`
+- `N = -N;`
 
-1. Define the base case (array of size 0 or 1 is already solved).
-2. Split the input roughly in half (or by another natural partition).
-3. Recursively solve each half.
-4. Merge or combine the two results to produce the answer for the full input.
+Then it initializes `double result = 1.0;`, which is the multiplicative identity.
+
+The `while (N > 0)` loop processes the exponent:
+- `if ((N % 2) == 1)` checks whether the current exponent is odd. If yes, `result *= x;` includes the current power in the answer.
+- `x *= x;` squares the base so it represents the next power block.
+- `N /= 2;` shifts the exponent right by one binary position.
+
+Once `N` becomes `0`, every relevant power has been accounted for, and the method returns `result`.
+
+### Example Walkthrough
+For **Example 1**, `x = 2.00000`, `n = 10`:
+- Start: `N = 10`, `result = 1.0`, `x = 2.0`
+- `N = 10` is even: skip multiply, square `x` to `4.0`, set `N = 5`
+- `N = 5` is odd: `result = 4.0`, square `x` to `16.0`, set `N = 2`
+- `N = 2` is even: skip multiply, square `x` to `256.0`, set `N = 1`
+- `N = 1` is odd: `result = 1024.0`, square `x` again, set `N = 0`
+- Return `1024.0`
+
+For **Example 2**, `x = 2.10000`, `n = 3`:
+- Start: `N = 3`, `result = 1.0`
+- Odd: `result = 2.1`, square `x` to `4.41`, `N = 1`
+- Odd again: `result = 2.1 * 4.41 = 9.261`, `N = 0`
+- Return `9.26100`
+
+For **Example 3**, `x = 2.00000`, `n = -2`:
+- Negative exponent: set `x = 0.5`, `N = 2`
+- `N = 2` even: square `x` to `0.25`, `N = 1`
+- `N = 1` odd: `result = 0.25`, `N = 0`
+- Return `0.25000`
+
+### Key Variables Explained
+- `x`: the current base value; it keeps getting squared.
+- `n`: the original exponent passed into the method.
+- `N`: a `long` copy of `n` used so negation is safe.
+- `result`: the accumulated answer built from the odd-exponent steps.
+
+### Why This Works
+At any point in the loop, `result * x^N` represents the same overall value as the original problem. When `N` is odd, one copy of the current `x` must be separated into `result`, leaving an even exponent behind. When `N` is halved after squaring `x`, the value represented stays unchanged.
+
+Because the loop preserves that invariant until `N` becomes `0`, the remaining answer must be exactly `result`.
+
+### Trick Used
+Using `long N = n` avoids overflow when `n` is `Integer.MIN_VALUE`, and squaring `x` each round compresses many multiplications into one step.
+
+### Edge Cases Handled
+- **Negative exponents**: converted by taking the reciprocal with `x = 1 / x`.
+- **`n = Integer.MIN_VALUE`**: handled safely because `N` is a `long`.
+- **`n = 0`**: the loop never runs, so `result` stays `1.0`, which is correct for any nonzero base.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(log n)`** — the recursion call stack grows to O(log n) depth.
+- **Time Complexity: `O(log |n|)`** — `N` is halved on every iteration of `while (N > 0)`.
+- **Space Complexity: `O(1)`** — the solution is iterative and uses only a fixed number of variables.

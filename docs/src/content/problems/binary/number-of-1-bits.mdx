@@ -72,20 +72,91 @@ public class NumberOf1Bits {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+The problem asks for the Hamming weight of `n`, meaning the number of `1` bits in its binary representation. The job is not to transform the number into a string, but to inspect its bits directly.
 
-**Number of 1 Bits** is a binary problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(1)` time and `O(1)` space.
+This is a standard interview question because it checks bit manipulation basics: masking, shifting, and understanding how to process a number one bit at a time.
+
+### Approach
+The code repeatedly looks at the least significant bit of `n` using `n & 1`. If that bit is `1`, it contributes to the answer, and then the number is shifted right so the next bit moves into position.
+
+This avoids extra conversions and keeps the implementation small and direct. Under the given integer constraints, the loop finishes after all bits have been shifted out.
+
+### Pattern Used
+This solution primarily relies on direct iteration with bit manipulation.
+
+### Key Insight
+Checking `n & 1` tells us whether the current least significant bit is set, and `n >>= 1` moves the next bit into place for the next iteration.
 
 ### Code Walkthrough
+The method starts with `int count = 0;`.
+- `count` will store how many set bits have been seen so far.
 
-The solution is implemented in `hammingWeight(int n)`:
+Then it loops while `n != 0`.
+- As long as there are still non-zero bits left in `n`, there is more work to do.
 
-1. **Initialise** the necessary data structures (`count`).
-2. **Iterate** over the input using a iterative loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+Inside the loop:
+- `count += n & 1;`
+- If the last bit is `1`, `n & 1` evaluates to `1` and increments `count`.
+- If the last bit is `0`, `n & 1` evaluates to `0` and `count` stays the same.
+
+Next:
+- `n >>= 1;`
+- This removes the least significant bit that was just processed and shifts the rest right by one position.
+
+When `n` becomes `0`, all relevant bits have been checked, and `return count;` gives the total.
+
+### Example Walkthrough
+Using Example 1: `n = 11`
+
+Binary form:
+- `11` is `1011`
+
+Iteration 1:
+- `n = 11`
+- `n & 1 = 1`
+- `count = 1`
+- `n >>= 1` makes `n = 5`
+
+Iteration 2:
+- `n = 5` (`101`)
+- `n & 1 = 1`
+- `count = 2`
+- `n >>= 1` makes `n = 2`
+
+Iteration 3:
+- `n = 2` (`10`)
+- `n & 1 = 0`
+- `count = 2`
+- `n >>= 1` makes `n = 1`
+
+Iteration 4:
+- `n = 1`
+- `n & 1 = 1`
+- `count = 3`
+- `n >>= 1` makes `n = 0`
+
+The loop stops, and the method returns `3`, which matches the expected output.
+
+### Key Variables Explained
+- `count`: running total of how many `1` bits have been found
+- `n`: the current value whose least significant bit is being inspected; it shrinks after every shift
+- `n & 1`: extracts only the rightmost bit of `n`
+
+### Why This Works
+Every iteration examines exactly one bit: the current least significant bit. After that, the right shift discards that bit, so no bit is counted twice and no bit is skipped.
+
+Because the loop continues until `n` becomes `0`, it processes all significant bits in the input. The sum accumulated in `count` is therefore the exact Hamming weight.
+
+### Trick Used
+Use `n & 1` to read the last bit directly instead of converting the number to another representation.
+
+### Edge Cases Handled
+- Powers of two such as `128`: only one iteration contributes `1`, so the result is `1`.
+- Numbers with many set bits such as `2147483645`: the loop keeps accumulating each `1` correctly.
+- Lowest valid input `1`: one loop iteration runs and returns `1`.
+- Bits equal to `0`: `n & 1` adds `0`, so unset bits are naturally ignored.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(log n)` because each `n >>= 1` removes one binary digit; under the given 32-bit constraints, this is at most 31 iterations, so it is effectively constant in practice.
+- Space Complexity: `O(1)` because only `count` is used in addition to the input value.

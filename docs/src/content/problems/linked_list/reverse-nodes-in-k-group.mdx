@@ -97,20 +97,116 @@ public class ReverseNodesInKGroup {
 
 ## Explanation
 
-### Approach
+### Problem Analysis
+This problem asks us to reverse the list in chunks of exactly `k` nodes. Any leftover nodes at the end that do not form a full group must remain in their original order.
 
-**Reverse Nodes in k-Group** is a linked list problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(?)` time and `O(?)` space.
+It is a strong interview problem because it tests whether you can do controlled pointer rewiring on a linked list while preserving group boundaries and reconnecting segments correctly.
+
+### Approach
+The code processes the list group by group. For each position, it first checks whether there are at least `k` nodes available. If not, it stops and leaves the remainder unchanged. If a full group exists, it reverses exactly those `k` nodes and reconnects the reversed block back into the list.
+
+This is preferable to converting the list into an array because it honors the follow-up spirit of using constant extra space.
+
+### Pattern Used
+Dummy Node + Iterative Pointer Reversal.
+
+### Key Insight
+Treat each block of `k` nodes as an isolated mini linked list: verify the block exists, reverse it, then stitch it back using the node before the block and the node after the block.
 
 ### Code Walkthrough
+The method `reverseKGroup(ListNode head, int k)` begins with:
+- `if (head == null || k <= 1) return head;`
+If the list is empty or reversing one node at a time, no change is needed.
 
-The solution is implemented in `reverseKGroup(ListNode head, int k)`:
+Next, the code creates a sentinel node:
+- `ListNode dummy = new ListNode(0);`
+- `dummy.next = head;`
+- `ListNode prevGroupEnd = dummy;`
 
-1. **Initialise** the necessary data structures (`i`).
-2. **Iterate** over the input using a indexed for-loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+`prevGroupEnd` always points to the node just before the group currently being considered.
+
+Inside `while (true)`:
+- `groupStart = prevGroupEnd.next` marks the first node of the current group.
+- `groupEnd = prevGroupEnd` is advanced using the `for` loop.
+
+The check loop:
+- `for (int i = 0; i < k && groupEnd != null; i++) { groupEnd = groupEnd.next; }`
+tries to move `groupEnd` forward `k` times.
+- If `groupEnd == null`, there are fewer than `k` nodes left, so the code `break`s and preserves the tail as-is.
+
+If a full group exists, the reversal starts:
+- `prev = null`
+- `curr = groupStart`
+- For `k` iterations, save `nextTemp`, reverse `curr.next`, then advance `prev` and `curr`.
+
+After this loop:
+- `prev` is the head of the reversed group.
+- `groupStart` has become the tail of the reversed group.
+- `curr` is the first node after the group.
+
+Reconnect the list:
+- `prevGroupEnd.next = prev;`
+- `groupStart.next = curr;`
+
+Then move `prevGroupEnd = groupStart;` so the next iteration starts after the newly reversed block.
+
+Finally, return `dummy.next`.
+
+### Example Walkthrough
+Use Example 1: `head = [1,2,3,4,5]`, `k = 2`.
+
+Initial structure:
+- `dummy -> 1 -> 2 -> 3 -> 4 -> 5`
+- `prevGroupEnd = dummy`
+
+First group:
+- `groupStart = 1`
+- advance `groupEnd` two times to node `2`
+- reverse nodes `1` and `2` to get `2 -> 1`
+- connect: `dummy.next = 2`, `groupStart.next = 3`
+- list becomes `2 -> 1 -> 3 -> 4 -> 5`
+- move `prevGroupEnd` to `1`
+
+Second group:
+- `groupStart = 3`
+- advance `groupEnd` two times to node `4`
+- reverse to get `4 -> 3`
+- connect after `1`
+- list becomes `2 -> 1 -> 4 -> 3 -> 5`
+- move `prevGroupEnd` to `3`
+
+Third group:
+- `groupStart = 5`
+- cannot advance `groupEnd` two full steps
+- `groupEnd == null`, so stop
+
+Output: `[2,1,4,3,5]`.
+
+### Key Variables Explained
+- `dummy`: sentinel node that simplifies reconnecting the head after the first reversal.
+- `prevGroupEnd`: node immediately before the current group.
+- `groupStart`: first node of the group being reversed.
+- `groupEnd`: used to verify that the current group contains `k` nodes.
+- `prev`: head of the reversed portion within the current group.
+- `curr`: current node being reversed.
+- `nextTemp`: saved pointer to continue traversal safely after reversing a link.
+
+### Why This Works
+Before each outer-loop iteration, all nodes before `prevGroupEnd` are already in final form. The code either:
+- proves there are fewer than `k` nodes left and stops, or
+- reverses exactly the next `k` nodes and reconnects them without disturbing the already-processed prefix.
+
+Because each full group is reversed independently and attached back in the correct place, the final list matches the required k-group reversal behavior.
+
+### Trick Used
+Using a `dummy` node avoids special-case logic when the very first group reversal changes the head of the list.
+
+### Edge Cases Handled
+- Empty list: returned immediately.
+- `k <= 1`: returned immediately because reversing groups of size `1` changes nothing.
+- Tail shorter than `k`: detected by the `groupEnd == null` check and left unchanged.
+- First group includes the original head: handled cleanly by `dummy.next`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n)`** — each node participates in a constant amount of work across the group-size check, reversal, and reconnection steps.
+- **Space Complexity: `O(1)`** — only a fixed set of node references is used; no recursion or auxiliary collection is created.

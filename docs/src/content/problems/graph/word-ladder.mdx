@@ -96,23 +96,144 @@ public class WordLadder {
 
 ## Explanation
 
+### Problem Analysis
+
+We need the length of the shortest transformation sequence from `beginWord` to `endWord`, where each step changes exactly one character and every intermediate word must exist in `wordList`. If no such sequence exists, the answer is `0`.
+
+This is a classic interview problem because the words form an implicit graph: each word is a node, and an edge exists when two words differ by one letter. Recognizing that structure is the real challenge.
+
 ### Approach
 
-**Word Ladder** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+The code runs BFS starting from `beginWord`. Instead of prebuilding all graph edges, it generates neighbors on the fly by changing each character position to every letter from `'a'` to `'z'`.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+This avoids an expensive explicit graph construction and still preserves shortest-path correctness. The `wordSet` gives constant-time membership checks, and removing words as soon as they are enqueued prevents duplicate work.
+
+### Pattern Used
+
+**BFS on an implicit graph**
+
+### Key Insight
+
+If BFS explores candidate words level by level and a dictionary word is removed the first time it is discovered, that first discovery is guaranteed to be through the shortest transformation sequence.
 
 ### Code Walkthrough
 
-The solution is implemented in `ladderLength(String beginWord, String endWord, List<String> wordList)`:
+The method first creates `Set<String> wordSet = new HashSet<>(wordList);`.
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+- This gives fast lookup for whether a generated word is allowed.
+- `if (!wordSet.contains(endWord)) return 0;` is an important early exit because the target must be in the dictionary.
+
+Next, the code initializes:
+
+- `Queue<String> queue = new LinkedList<>();`
+- `queue.offer(beginWord);`
+- `int steps = 1;`
+
+`steps` starts at `1` because the sequence length counts `beginWord` itself.
+
+The outer `while (!queue.isEmpty())` is the BFS loop. For each layer:
+
+- `int size = queue.size();` locks the number of words at the current distance
+- The inner loop processes exactly those words
+
+For each `word`:
+
+- `if (word.equals(endWord)) return steps;`
+
+Then the code turns the word into `char[] arr = word.toCharArray();` so each position can be edited.
+
+For every index `j`:
+
+- Save `char original = arr[j];`
+- Try every character `c` from `'a'` to `'z'`
+- Skip the no-op case with `if (c == original) continue;`
+- Build `String newWord = new String(arr);`
+
+If `wordSet.contains(newWord)`:
+
+- enqueue it with `queue.offer(newWord);`
+- remove it immediately using `wordSet.remove(newWord);`
+
+After all one-letter mutations are explored for this BFS layer, `steps++` moves to the next sequence length.
+
+If the queue empties, no transformation exists, so the method returns `0`.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+- `beginWord = "hit"`
+- `endWord = "cog"`
+- `wordList = ["hot","dot","dog","lot","log","cog"]`
+
+Initial state:
+
+- `wordSet = {hot, dot, dog, lot, log, cog}`
+- `queue = ["hit"]`
+- `steps = 1`
+
+Layer 1:
+
+- Poll `"hit"`
+- Changing the second character creates `"hot"`
+- `"hot"` is in `wordSet`, so enqueue it and remove it
+- End of layer, `steps = 2`
+
+Layer 2:
+
+- Poll `"hot"`
+- Valid one-letter transformations found in `wordSet` are `"dot"` and `"lot"`
+- Enqueue both and remove them
+- End of layer, `steps = 3`
+
+Layer 3:
+
+- Poll `"dot"` and `"lot"`
+- `"dot"` generates `"dog"`
+- `"lot"` generates `"log"`
+- Enqueue/remove them
+- End of layer, `steps = 4`
+
+Layer 4:
+
+- Poll `"dog"` and `"log"`
+- `"dog"` generates `"cog"`
+- Enqueue/remove it
+- End of layer, `steps = 5`
+
+Layer 5:
+
+- Poll `"cog"`
+- It equals `endWord`, so return `5`
+
+### Key Variables Explained
+
+- `wordSet`: remaining unused dictionary words; also acts as the visited structure
+- `queue`: BFS frontier of words at the current transformation distance
+- `steps`: current sequence length
+- `word`: the dequeued word being expanded
+- `arr`: mutable character array version of `word`
+- `original`: the original character at position `j`, restored after trying replacements
+- `newWord`: a one-letter mutation candidate
+
+### Why This Works
+
+BFS guarantees shortest path length in an unweighted graph, and every valid one-letter transformation is exactly one edge in this graph. Because the algorithm explores all words at distance `k` before any at distance `k + 1`, the first time `endWord` is dequeued, its sequence length is minimal.
+
+Removing `newWord` from `wordSet` the moment it is enqueued is also correct. Any later discovery of that same word would come from an equal or longer path, so it cannot improve the answer.
+
+### Trick Used
+
+Using `wordSet.remove(newWord)` immediately after enqueueing turns the dictionary into an efficient visited set and prevents the same word from entering the queue multiple times.
+
+### Edge Cases Handled
+
+- **`endWord` not in the dictionary:** immediate `return 0`
+- **No valid transformation path:** BFS ends and returns `0`
+- **Replacing a character with itself:** skipped by `if (c == original) continue;`
+- **Duplicate revisits:** prevented by removing discovered words from `wordSet`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(M²·N)`** — see the analysis for full details.
-- **Space Complexity: `O(M²·N)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(N * M^2)`** — for each discovered word (up to `N` dictionary words plus `beginWord`), the code tries `M` positions and `26` letters, and each `new String(arr)` costs `O(M)`. The constant `26` is fixed, so this simplifies to `O(N * M^2)`.
+- **Space Complexity: `O(N * M)`** — `wordSet` and `queue` store up to `N` words of length `M`, while `arr` uses `O(M)` extra space per processed word.

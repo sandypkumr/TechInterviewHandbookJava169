@@ -88,25 +88,108 @@ public class MaximumWidthOfBinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the widest level of the tree, where width includes the null gaps between the leftmost and rightmost non-null nodes. That detail is important because simple node counting per level is not enough.
+
+It is a common interview question because it tests whether you can preserve a node's conceptual position in a complete binary tree, even when some children are missing.
+
 ### Approach
+The code uses DFS, not BFS, and tracks a virtual index for each node. Nodes on the same depth are treated as if they were placed in a complete binary tree, so the width of a level becomes:
 
-**Maximum Width of Binary Tree** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+- current node position `-`
+- first position seen at that depth `+ 1`
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+This avoids building level arrays or storing null placeholders explicitly. A brute-force level-order construction with explicit gaps would waste space and be harder to manage.
+
+### Pattern Used
+DFS with positional indexing.
+
+### Key Insight
+If you assign each node a position that preserves horizontal gaps, then the width of a level is just `rightmostIndex - leftmostIndex + 1`.
 
 ### Code Walkthrough
+The class keeps two fields:
 
-The solution is implemented in `widthOfBinaryTree(TreeNode root)`:
+- `private int maxWidth = 1;`
+- `private final List<Integer> left = new ArrayList<>();`
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+`maxWidth` stores the best answer found so far. `left` stores the first index seen at each depth.
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+In `widthOfBinaryTree(TreeNode root)`:
+
+- The traversal starts with `dfs(root, 0, 1)`.
+  - `0` is the root depth.
+  - `1` is the root index.
+- After DFS finishes, the method returns `maxWidth`.
+
+In `dfs(TreeNode node, int depth, int index)`:
+
+- `if (node == null) { return; }`
+  - Null children do not contribute width directly, so recursion stops.
+
+- `if (depth == left.size()) { left.add(index); }`
+  - This means we are visiting this depth for the first time.
+  - The current `index` becomes the leftmost position for that level.
+
+- `else { maxWidth = Math.max(maxWidth, index - left.get(depth) + 1); }`
+  - For later nodes on the same level, width is computed from the first index stored in `left`.
+  - `maxWidth` is updated if this span is larger.
+
+- `dfs(node.left, depth + 1, index * 2 - 1);`
+- `dfs(node.right, depth + 1, index * 2);`
+  - These position formulas preserve the relative spacing between nodes across a level.
+  - The exact values do not matter as much as preserving consistent gaps.
+
+### Example Walkthrough
+Use Example 1: `root = [1,3,2,5,3,null,9]`.
+
+- Start with node `1` at `depth = 0`, `index = 1`.
+  - `left[0] = 1`
+
+- Go left to node `3` at `depth = 1`, `index = 1`.
+  - first node at this depth, so `left[1] = 1`
+
+- Go left again to node `5` at `depth = 2`, `index = 1`.
+  - first node at this depth, so `left[2] = 1`
+
+- Backtrack and visit node `3` at `depth = 2`, `index = 2`.
+  - width on this level = `2 - 1 + 1 = 2`
+  - `maxWidth` becomes `2`
+
+- Backtrack to root and go right to node `2` at `depth = 1`, `index = 2`.
+  - width on level 1 = `2 - 1 + 1 = 2`
+
+- Visit node `9` at `depth = 2`, `index = 4`.
+  - width on level 2 = `4 - 1 + 1 = 4`
+  - `maxWidth` becomes `4`
+
+So the answer is `4`, matching the example.
+
+### Key Variables Explained
+- `maxWidth`: global best width found across all levels.
+- `left`: `left.get(depth)` stores the first index encountered at that depth.
+- `depth`: current level in the tree.
+- `index`: virtual complete-tree position of the current node.
+- `node`: current tree node being processed.
+
+### Why This Works
+DFS guarantees that every real node is visited exactly once. The first node reached at a depth becomes the left boundary for that level because the traversal always records the earliest encountered position for that depth.
+
+After that, any later node at the same depth can compute a valid width span using `index - left.get(depth) + 1`. Since every node on that level is checked, the largest such span is the true width of that level, and `maxWidth` captures the best among all levels.
+
+### Trick Used
+Using virtual complete-tree indices so null gaps are counted without explicitly storing null nodes.
+
+### Edge Cases Handled
+- Single-node tree: `dfs(root, 0, 1)` never expands width beyond `1`, so the answer stays `1`.
+- Missing children inside a level: the index arithmetic still preserves the gap width.
+- Deep recursion with uneven structure: `left` only stores one value per depth, so the logic still works.
+- Null child pointers: `if (node == null)` stops safely.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`**
+  - `dfs` visits each node exactly once.
 
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Space Complexity: `O(h)`**
+  - The recursion stack uses up to `O(h)` space.
+  - The `left` list stores one index per depth, also `O(h)`.

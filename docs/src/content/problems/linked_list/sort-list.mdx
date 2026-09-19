@@ -111,22 +111,104 @@ public class SortList {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to sort a singly linked list in ascending order. Because random access is poor in linked lists, algorithms like quick index-based partitioning are less natural here than split-and-merge strategies.
+
+It is a standard interview problem because it tests whether you recognize merge sort as the linked-list-friendly sorting technique and whether you can split and merge lists safely.
+
 ### Approach
+The code uses merge sort on the linked list. It repeatedly splits the list into two halves, recursively sorts both halves, and merges the two sorted lists back together.
 
-**Sort List** follows the classic divide-and-conquer pattern: split the problem into smaller independent sub-problems, solve each recursively, then combine the results. This typically yields O(n log n) time because each level of recursion does O(n) work and there are O(log n) levels.
+This approach is chosen because merge sort works well with linked lists: splitting only needs pointer traversal, and merging can be done by relinking nodes rather than moving array elements.
 
-Merge Sort is the canonical example: split the array in half, sort each half independently, then merge the two sorted halves in linear time. The "combine" step is where the real work happens.
+### Pattern Used
+Divide and Conquer with Fast/Slow Pointers.
+
+### Key Insight
+If you can cut the list into two smaller lists, sort each recursively, and merge them in sorted order, the full list becomes sorted without needing random indexing.
 
 ### Code Walkthrough
+The main method is `sortList(ListNode head)`.
 
-The solution is implemented in `sortList(ListNode head)`:
+It starts with the base case:
+- `if (head == null || head.next == null) return head;`
+A list with `0` or `1` node is already sorted.
 
-1. Define the base case (array of size 0 or 1 is already solved).
-2. Split the input roughly in half (or by another natural partition).
-3. Recursively solve each half.
-4. Merge or combine the two results to produce the answer for the full input.
+Then it splits the list:
+- `ListNode mid = getMiddle(head);`
+The helper both finds the midpoint and cuts the original list into two separate halves.
+
+Next, it sorts each half recursively:
+- `ListNode left = sortList(head);`
+- `ListNode right = sortList(mid);`
+
+Finally, it combines them:
+- `return merge(left, right);`
+
+In `getMiddle(ListNode head)`:
+- `slow = head`
+- `fast = head.next`
+- while `fast != null && fast.next != null`, move `slow` by one and `fast` by two
+
+When that loop ends, `slow` is positioned just before the split point.
+Then:
+- `ListNode mid = slow.next;`
+- `slow.next = null;`
+This physically breaks the list into two parts.
+
+In `merge(ListNode left, ListNode right)`:
+- if `left == null`, return `right`
+- if `right == null`, return `left`
+
+Otherwise compare node values:
+- if `left.val < right.val`, keep `left` first and recursively merge `left.next` with `right`
+- else keep `right` first and recursively merge `left` with `right.next`
+
+Each merge call returns the head of one sorted combined list.
+
+### Example Walkthrough
+Use Example 1: `head = [4,2,1,3]`.
+
+First split:
+- `getMiddle(head)` separates the list into `[4,2]` and `[1,3]`
+
+Sort left half `[4,2]`:
+- split into `[4]` and `[2]`
+- merge compares `4` and `2`, returns `[2,4]`
+
+Sort right half `[1,3]`:
+- split into `[1]` and `[3]`
+- merge returns `[1,3]`
+
+Final merge of `[2,4]` and `[1,3]`:
+- compare `2` and `1`, choose `1`
+- compare `2` and `3`, choose `2`
+- compare `4` and `3`, choose `3`
+- append remaining `4`
+
+Result: `[1,2,3,4]`.
+
+### Key Variables Explained
+- `head`: head of the current sublist being sorted.
+- `mid`: head of the right half after the split.
+- `left`, `right`: recursively sorted halves that will be merged.
+- `slow`, `fast`: pointers used by `getMiddle` to find the split point.
+- `left.val`, `right.val`: the values compared to decide which node comes next during merging.
+
+### Why This Works
+The recursion ensures every sublist eventually shrinks to length `0` or `1`, which is already sorted. `getMiddle` guarantees the original list is split into two smaller independent lists, so recursive calls progress toward the base case. `merge` preserves sorted order because it always places the smaller front node first and recursively merges the rest.
+
+By induction on sublist size, each call to `sortList` returns a sorted version of its input, so the top-level call also returns a fully sorted list.
+
+### Trick Used
+The key trick is that `getMiddle` not only finds the midpoint but also severs the list with `slow.next = null`, which is necessary so the recursive calls operate on separate halves.
+
+### Edge Cases Handled
+- Empty list: immediately returned.
+- Single-node list: immediately returned.
+- Uneven split sizes: handled naturally by `getMiddle` and recursive calls.
+- One half becoming empty during merge: handled by the early `left == null` or `right == null` returns.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n log n)`** — there are O(log n) levels of recursion and O(n) work at each level (Master Theorem: T(n) = 2T(n/2) + O(n)).
-- **Space Complexity: `O(log n)`** — the recursion call stack grows to O(log n) depth.
+- **Time Complexity: `O(n log n)`** — each level of recursion processes all nodes across the splits/merges, and there are `O(log n)` split levels.
+- **Space Complexity: `O(n)`** — although the split recursion is `O(log n)`, the `merge` method is also recursive and can build up to `O(n)` call-stack depth during a large merge, so the true auxiliary space is linear for this exact implementation.

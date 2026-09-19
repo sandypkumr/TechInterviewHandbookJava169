@@ -107,25 +107,128 @@ public class CourseSchedule {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks whether all courses can be completed, not for the exact order. That means the real question is whether the prerequisite graph contains a cycle: if it does, some courses depend on each other forever and cannot all be finished.
+
+It is a very common interview problem because it checks whether you can turn dependency rules into cycle detection on a directed graph.
+
 ### Approach
 
-**Course Schedule** models dependencies as a Directed Acyclic Graph (DAG) and asks for a valid ordering — exactly what topological sort provides. Kahn's algorithm uses in-degree counts: start with all nodes that have no prerequisites (in-degree 0), process them, and decrement the in-degree of their successors.
+The solution again uses Kahn's algorithm for topological sorting, but instead of storing the full order, it only counts how many courses were successfully processed.
 
-Think of it as a task scheduler: you can only start a task once all tasks it depends on are finished. Kahn's BFS-based approach naturally detects cycles (if the processed count is less than the total node count, a cycle exists).
+The idea is simple:
+- Build edges from each prerequisite course to the courses that depend on it.
+- Count prerequisites with `indegree`.
+- Start BFS from every course that currently has `indegree == 0`.
+- Each time a course is processed, reduce the indegree of its dependent courses.
+
+This is more efficient than trying all possible schedules, and it detects cycles naturally.
+
+### Pattern Used
+
+BFS Topological Sort (Kahn's Algorithm).
+
+### Key Insight
+
+If the graph has no cycle, repeatedly removing zero-indegree courses will eventually process all `numCourses`; otherwise some courses remain stuck with positive indegree forever.
 
 ### Code Walkthrough
 
-The solution is implemented in `canFinish(int numCourses, int[][] prerequisites)`:
+The method creates `graph` as an adjacency list and `indegree` as a prerequisite counter array.
 
-1. Build an adjacency list and compute in-degree for every node.
-2. Enqueue all nodes with in-degree 0.
-3. Poll a node, add it to the result, and decrement the in-degree of its neighbours.
-4. Enqueue any neighbour whose in-degree drops to 0.
-5. If the result size equals the total node count, the ordering is valid; otherwise a cycle exists.
+The first loop adds `numCourses` empty lists to `graph` so every course has a bucket for outgoing edges.
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+The loop over `prerequisites` fills the graph.
+- `course = pre[0]` is the course to be taken later.
+- `dependency = pre[1]` is the prerequisite course.
+- `graph.get(dependency).add(course)` means finishing `dependency` unlocks `course`.
+- `indegree[course]++` records one more required prerequisite.
+
+Then the code creates `Queue<Integer> queue = new LinkedList<>();`.
+- Every course with `indegree[i] == 0` is inserted because it is available immediately.
+
+`finishedCourses` starts at `0`.
+
+In the `while (!queue.isEmpty())` loop:
+- `current = queue.poll()` removes one course that can now be taken.
+- `finishedCourses++` counts it as completed.
+
+For every `neighbor` in `graph.get(current)`:
+- `indegree[neighbor]--` removes one prerequisite requirement.
+- If that count becomes `0`, the course is now unlocked and added to `queue`.
+
+At the end, `return finishedCourses == numCourses;`.
+- If all courses were processed, the schedule is possible.
+- If not, at least one cycle blocked progress.
+
+### Example Walkthrough
+
+Use Example 2:
+- `numCourses = 2`
+- `prerequisites = [[1,0],[0,1]]`
+
+Build the graph:
+- `0 -> [1]`
+- `1 -> [0]`
+
+Initial `indegree`:
+- `indegree[0] = 1`
+- `indegree[1] = 1`
+
+Queue initialization:
+- No course has indegree `0`
+- So `queue` starts empty
+
+BFS loop:
+- The loop never runs because `queue.isEmpty()` is already true.
+- `finishedCourses` stays `0`.
+
+Final check:
+- `finishedCourses == numCourses` becomes `0 == 2`, which is `false`
+
+That matches the example: the two courses depend on each other, so neither can be taken first.
+
+For contrast, Example 1 has `prerequisites = [[1,0]]`.
+- Queue starts with `[0]`
+- Processing `0` unlocks `1`
+- Both courses get counted, so the method returns `true`
+
+### Key Variables Explained
+
+- `graph`: adjacency list of dependency edges.
+- `indegree`: number of prerequisites still required for each course.
+- `queue`: courses currently ready to take.
+- `finishedCourses`: how many courses have been successfully removed from the dependency graph.
+- `current`: the course being processed right now.
+- `neighbor`: a course that depends on `current`.
+
+### Why This Works
+
+Every time the code removes a zero-indegree course, it simulates taking a course whose prerequisites are already satisfied.
+
+That is correct because:
+- A course only enters `queue` when `indegree` drops to `0`.
+- Each outgoing edge from `current` is removed exactly once by decrementing the corresponding dependent course.
+- If a directed cycle exists, none of its nodes can ever become zero-indegree unless one is processed first, which is impossible.
+
+So the algorithm finishes all courses exactly when the prerequisite graph is acyclic.
+
+### Trick Used
+
+The useful trick is that the code detects cycles indirectly with `finishedCourses == numCourses`, so it does not need an explicit recursion stack or visited-state coloring.
+
+### Edge Cases Handled
+
+- No prerequisites: all courses start in `queue`, so the method returns `true`.
+- Mutual or longer cycles: some nodes never reach indegree `0`, so `finishedCourses` stays too small.
+- Disconnected course groups: all zero-indegree starting points across components are added, so independent groups are handled naturally.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(V+E)`** — each vertex and each edge is processed at most once in the graph traversal.
-- **Space Complexity: `O(V+E)`** — the adjacency list and visited array together use space proportional to vertices + edges.
+- Time Complexity: `O(numCourses + prerequisites.length)`.
+  - Building the adjacency list takes `O(numCourses)` for initialization plus `O(prerequisites.length)` for edges.
+  - During BFS, each course is processed once and each prerequisite edge is relaxed once.
+- Space Complexity: `O(numCourses + prerequisites.length)`.
+  - `graph` stores all edges.
+  - `indegree` and the worst-case `queue` size are both bounded by `numCourses`.

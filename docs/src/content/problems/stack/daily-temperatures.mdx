@@ -70,22 +70,125 @@ public class DailyTemperatures {
 
 ## Explanation
 
+### Problem Analysis
+
+For every day, we need the distance to the next future day with a higher temperature. A brute-force solution would scan forward from each position and can degrade to `O(n^2)`.
+
+This is a standard interview problem because it is a direct application of the "next greater element" idea and tests whether you recognize a monotonic stack pattern.
+
 ### Approach
 
-**Daily Temperatures** asks about the relationship between each element and the next element that is greater (or smaller) than it. A brute-force nested loop is O(n²); a monotonic stack solves it in O(n) by maintaining a stack that is always in increasing (or decreasing) order.
+The code processes the days from left to right and keeps unresolved day indices in a stack.
 
-As you scan left to right, every time a new element would break the stack's monotonic property, you pop elements off — each pop reveals that the current element is the "next greater" for the popped element. Each element is pushed and popped at most once, giving O(n) total time.
+The stack is maintained so that temperatures at those indices are in **decreasing order** from bottom to top. When a warmer day arrives, it immediately resolves one or more previous days:
+
+- pop the colder day index
+- compute the wait as `i - index`
+- store that value in `result[index]`
+
+This avoids repeated rescans of the array.
+
+### Pattern Used
+
+This solution uses a **Monotonic Stack**.
+
+### Key Insight
+
+If the current temperature is warmer than the day on the top of the stack, then it is the first warmer future day for that stacked index.
 
 ### Code Walkthrough
 
-The solution is implemented in `dailyTemperatures(int[] temperatures)`:
+The method begins with:
 
-1. Initialise an empty stack (storing indices, not values, for flexibility).
-2. For each element, while the stack is non-empty and the condition is met, pop and record the answer.
-3. Push the current index onto the stack.
-4. After the full scan, remaining stack elements have no next-greater element (answer = -1 or 0).
+- `int n = temperatures.length;`
+- `int[] result = new int[n];`
+- `Stack<Integer> stack = new Stack<>();`
+
+`result` starts filled with `0`, which is already the correct answer for days that never find a warmer future day.
+
+The main loop is:
+
+```java
+for (int i = 0; i < n; i++)
+```
+
+For each index `i`, the code checks:
+
+```java
+while (!stack.isEmpty() && temperatures[i] > temperatures[stack.peek()])
+```
+
+This means the current day is warmer than the unresolved day on top of the stack. Then:
+
+- `int index = stack.pop();`
+- `result[index] = i - index;`
+
+After all possible colder days are resolved, the current index is still unresolved for future days, so:
+
+- `stack.push(i);`
+
+At the end, the method returns `result`.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+```text
+temperatures = [73,74,75,71,69,72,76,73]
+```
+
+Step by step:
+
+- `i = 0`, temp `73` -> stack = `[0]`
+- `i = 1`, temp `74` > `73` -> pop `0`, set `result[0] = 1`; push `1`
+- `i = 2`, temp `75` > `74` -> pop `1`, set `result[1] = 1`; push `2`
+- `i = 3`, temp `71` is not warmer than `75` -> push `3`
+- `i = 4`, temp `69` is not warmer than `71` -> push `4`
+- `i = 5`, temp `72` > `69` -> pop `4`, set `result[4] = 1`
+- still `72` > `71` -> pop `3`, set `result[3] = 2`
+- `72` is not warmer than `75` -> push `5`
+- `i = 6`, temp `76` > `72` -> pop `5`, set `result[5] = 1`
+- `76` > `75` -> pop `2`, set `result[2] = 4`
+- push `6`
+- `i = 7`, temp `73` is not warmer than `76` -> push `7`
+
+Indices `6` and `7` never find a warmer day, so their answers stay `0`.
+
+Final result:
+
+```text
+[1,1,4,2,1,1,0,0]
+```
+
+### Key Variables Explained
+
+- `n` — length of the input array
+- `result` — answer array storing how many days each index must wait
+- `stack` — stores indices of days still waiting for a warmer temperature
+- `i` — current day being processed
+- `index` — a previously unresolved day that has just found its next warmer day
+
+### Why This Works
+
+The stack always contains indices whose answers are still unknown, and their temperatures are arranged in decreasing order. That invariant matters because:
+
+- if the current temperature is not warmer than the top, it cannot resolve any earlier larger temperature either
+- if it is warmer than the top, it is the first warmer day for that index, since any day between them failed to pop it earlier
+
+So each assignment `result[index] = i - index` is correct, and every day is resolved exactly once or left as `0` if no warmer day exists.
+
+### Trick Used
+
+The trick is **storing indices instead of temperatures**, which lets the code compute the waiting distance directly as `i - index`.
+
+### Edge Cases Handled
+
+- **Days with no warmer future day** — remain `0` because `result` is initialized with zeros
+- **Strictly decreasing temperatures** — all indices stay in the stack and correctly return `0`
+- **Immediately warmer next day** — popped right away and assigned `1`
+- **Multiple colder days resolved by one warm day** — handled by the `while` loop
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — each index is pushed once and popped at most once
+- **Space Complexity: `O(n)`** — the stack can hold up to all indices in a decreasing sequence

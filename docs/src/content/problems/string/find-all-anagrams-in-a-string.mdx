@@ -91,25 +91,83 @@ public class FindAllAnagramsInAString {
 
 ## Explanation
 
+### Problem Analysis
+We need all starting indices where a substring of `s` is an anagram of `p`.
+Because anagrams depend on character counts and the substring length must equal `p.length()`, this is a classic fixed-size window problem.
+It is commonly asked in interviews because it combines sliding window logic with efficient frequency tracking.
+
 ### Approach
+The code keeps a window of length `pLength` over `s`.
+It stores character frequencies for `p` in `pCount` and for the current window in `sCount`.
+If those two frequency arrays are equal, the current window is an anagram.
+This avoids sorting every substring or recomputing counts from scratch for each starting position.
 
-**Find All Anagrams in a String** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+### Pattern Used
+Sliding Window.
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Key Insight
+Two strings are anagrams exactly when their character frequency counts match, so each window only needs to maintain 26 lowercase-letter counts.
 
 ### Code Walkthrough
+The method begins with `List<Integer> result = new ArrayList<>()` and stores the string lengths in `sLength` and `pLength`.
+If `sLength < pLength`, it immediately returns `result` because no valid window can exist.
 
-The solution is implemented in `findAnagrams(String s, String p)`:
+Next, it creates two arrays:
+- `int[] pCount = new int[26]` for the target pattern.
+- `int[] sCount = new int[26]` for the current window in `s`.
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+The first `for (int i = 0; i < pLength; i++)` fills both arrays:
+- `pCount[p.charAt(i) - 'a']++`
+- `sCount[s.charAt(i) - 'a']++`
+This initializes the first window of size `pLength`.
 
-&gt; **Note:** This solution also uses the **HashMap for O(1) average-case lookups** technique.
+Then `if (Arrays.equals(pCount, sCount))` checks whether the very first window is already an anagram.
+If yes, `result.add(0)` stores index `0`.
+
+The second loop, `for (int i = pLength; i < sLength; i++)`, slides the window one character at a time.
+For each new `i`:
+- `sCount[s.charAt(i) - 'a']++` adds the new rightmost character.
+- `sCount[s.charAt(i - pLength) - 'a']--` removes the old leftmost character.
+
+After updating the counts, `Arrays.equals(pCount, sCount)` checks the new window.
+If they match, the window start is `i - pLength + 1`, and that index is added to `result`.
+
+### Example Walkthrough
+Use Example 1: `s = "cbaebabacd"`, `p = "abc"`.
+- `pLength = 3`, so the first window in `s` is `"cba"`.
+- After initialization, `pCount` and `sCount` both represent one `a`, one `b`, and one `c`.
+- `Arrays.equals(pCount, sCount)` is true, so add index `0`.
+
+Slide the window:
+- Move from `"cba"` to `"bae"`: add `'e'`, remove `'c'`; counts no longer match.
+- Move to `"aeb"`: add `'b'`, remove `'b'`; still not a match.
+- Move to `"eba"`: add `'a'`, remove `'a'`; still not a match.
+- Continue until the window becomes `"bac"`.
+- For `"bac"`, the counts again match one `a`, one `b`, and one `c`, so add index `6`.
+The final answer is `[0, 6]`.
+
+### Key Variables Explained
+- `result`: stores all starting indices of anagram windows.
+- `sLength`, `pLength`: avoid repeated `length()` calls and define the valid window size.
+- `pCount`: frequency count of characters in `p`.
+- `sCount`: frequency count of characters in the current window of `s`.
+- `i`: right boundary of the sliding window in the second loop.
+
+### Why This Works
+The window always has exactly `pLength` characters.
+At every step, `sCount` matches the frequencies of the current window because one character is added and one is removed.
+Therefore, when `Arrays.equals(pCount, sCount)` is true, that window contains exactly the same multiset of letters as `p`, which means it is an anagram.
+Because every length-`pLength` window is checked once, no valid starting index is missed.
+
+### Trick Used
+Using fixed-size `int[26]` arrays turns frequency comparison into a constant-size operation instead of using hash maps.
+
+### Edge Cases Handled
+- `sLength < pLength`: returns an empty result immediately.
+- Match at index `0`: checked right after the initial frequency build.
+- Overlapping anagrams, such as in `"abab"`: the window slides one position at a time, so overlaps are naturally included.
+- Repeated characters in `p`: frequency arrays track exact counts, not just presence.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(sLength + pLength)`** — building the initial counts takes `O(pLength)`, and each of the remaining `sLength - pLength` window shifts does `O(1)` updates plus `Arrays.equals` on two arrays of fixed size `26`, which is still `O(1)`.
+- **Space Complexity: `O(1)`** — `pCount` and `sCount` are fixed-size arrays, and the extra working space does not grow with the input size.

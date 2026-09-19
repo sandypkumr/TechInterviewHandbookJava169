@@ -102,25 +102,102 @@ public class ReorderList {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks us to reorder a singly linked list so nodes alternate from the front and back: `L0, Ln, L1, Ln-1...`. The values cannot be changed, so the answer must come from rearranging links only.
+
+It is a common interview question because it combines multiple linked-list skills in one flow: finding the middle, reversing part of a list, and merging two pointer chains safely.
+
 ### Approach
+The code solves the problem in three phases. First, it finds the middle with slow/fast pointers. Next, it reverses the second half in place so the farthest nodes become easy to access one-by-one. Finally, it merges the first half and the reversed second half in alternating order.
 
-**Reorder List** uses two pointers moving at different speeds — slow advances one step at a time, fast advances two. If a cycle exists, the fast pointer eventually laps the slow pointer and they meet inside the cycle. If no cycle exists, fast reaches the end first.
+This is much better than repeatedly searching for the tail, which would make the solution quadratic.
 
-Think of two runners on a circular track: the faster runner will always eventually overtake (lap) the slower one. If the track has no loop (i.e., it ends), the faster runner simply reaches the finish line first.
+### Pattern Used
+Fast/Slow Pointers combined with In-Place Reversal and Two-Pointer Merging.
+
+### Key Insight
+If the second half is reversed first, the required reorder pattern becomes a simple alternating merge between `head` side nodes and tail side nodes.
 
 ### Code Walkthrough
+The method `reorderList(ListNode head)` starts with a guard:
+- `if (head == null || head.next == null) return;`
+This avoids unnecessary work for lists of size `0` or `1`.
 
-The solution is implemented in `reorderList(ListNode head)`:
+To find the middle:
+- `slow = head`
+- `fast = head`
+- while `fast != null && fast.next != null`, move `slow` by one and `fast` by two.
 
-1. Initialise slow = head and fast = head.
-2. Advance slow by one step and fast by two steps each iteration.
-3. If fast or fast.next is null, there is no cycle.
-4. If slow == fast, a cycle is detected (meeting point is inside the cycle).
-5. To find the cycle entry point, reset one pointer to head and advance both one step at a time.
+When that loop ends, `slow` is at the middle node for odd length or near the start of the second half for even length.
 
-&gt; **Note:** This solution also uses the **two pointers moving toward each other** technique.
+To reverse the second half:
+- `prev = null`
+- `curr = slow`
+- while `curr != null`, save `nextTemp`, point `curr.next` to `prev`, then advance both pointers.
+
+After that loop, `prev` is the head of the reversed second half.
+
+To merge:
+- `first = head`
+- `second = prev`
+
+Inside `while (second != null)`:
+- `temp1 = first.next` stores the next node from the first half.
+- `temp2 = second.next` stores the next node from the reversed second half.
+- `first.next = second` places one node from the back after one node from the front.
+- `if (second != temp1) { second.next = temp1; }` prevents creating a self-loop when both pointers meet at the same middle node in odd-length lists.
+- Advance `first = temp1` and `second = temp2`.
+
+The method is `void`, so the list is reordered in place.
+
+### Example Walkthrough
+Use Example 2: `head = [1,2,3,4,5]`.
+
+Middle search:
+- Start: `slow = 1`, `fast = 1`
+- Move once: `slow = 2`, `fast = 3`
+- Move again: `slow = 3`, `fast = 5`
+- Stop because `fast.next == null`
+
+Reverse from `slow`:
+- Reverse `3` -> `null`
+- Reverse `4` -> `3`
+- Reverse `5` -> `4 -> 3`
+- Now `prev` points to `5 -> 4 -> 3`
+
+Merge phase:
+- `first = 1`, `second = 5`
+- Link to get `1 -> 5 -> 2`
+- Move to `first = 2`, `second = 4`
+- Link to get `1 -> 5 -> 2 -> 4 -> 3`
+- Move to `first = 3`, `second = 3`
+- `first.next = second` keeps `3` in place, and `second != temp1` is false, so no self-link is created
+
+Final list: `[1,5,2,4,3]`.
+
+### Key Variables Explained
+- `slow`: finds the middle of the list.
+- `fast`: moves twice as fast as `slow` to locate the midpoint efficiently.
+- `prev`: head of the reversed second half.
+- `curr`: current node while reversing the second half.
+- `first`: current node in the front half during merge.
+- `second`: current node in the reversed back half during merge.
+- `temp1`, `temp2`: saved next pointers so links can be rewired safely.
+
+### Why This Works
+The first loop ensures `slow` reaches the split point. Reversing from `slow` changes the back half into the exact order needed for alternating attachment from the tail inward. During merging, one node from `first` and one node from `second` are connected on each step, so the output sequence becomes `L0, Ln, L1, Ln-1...`.
+
+The `if (second != temp1)` condition is important for odd-length lists because the middle node belongs to both conceptual halves at the meeting point, and the code avoids linking that node to itself.
+
+### Trick Used
+The small trick is `if (second != temp1)`, which prevents a self-loop when the merge reaches the middle node of an odd-length list.
+
+### Edge Cases Handled
+- Empty list: returned immediately.
+- Single-node list: returned immediately.
+- Even-length list: merges cleanly because the halves are balanced.
+- Odd-length list: the middle node is handled safely by the `second != temp1` check.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — one pass finds the middle, one pass reverses the second half, and one pass merges; together they stay linear.
+- **Space Complexity: `O(1)`** — the code only uses a fixed number of node references.

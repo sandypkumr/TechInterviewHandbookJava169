@@ -79,23 +79,95 @@ public class ContainerWithMostWater {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the maximum area formed by two vertical lines and the x-axis. The area depends on both the distance between the lines and the shorter of their two heights.
+
+It is a classic interview problem because the obvious `O(n^2)` pair check looks simple, but the real test is recognizing why a two-pointer scan is safe.
+
 ### Approach
+The code starts with the widest possible container by placing `left` at the beginning and `right` at the end. On each step, it computes the current area and then moves only the pointer at the shorter line.
 
-**Container With Most Water** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+Why this beats brute force:
+- brute force checks every pair of lines
+- this solution discards whole groups of impossible better answers in one move
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+If one side is shorter, that shorter height is the bottleneck. Keeping it and shrinking the width cannot help unless we find a taller line on that side, so that is the side worth moving.
+
+### Pattern Used
+Two Pointers
+
+### Key Insight
+When the current container is limited by the shorter line, moving the taller line cannot improve the area because the width shrinks while the limiting height does not increase.
 
 ### Code Walkthrough
+The method initializes:
+- `int maxArea = 0;`
+- `int left = 0;`
+- `int right = height.length - 1;`
 
-The solution is implemented in `maxArea(int[] height)`:
+The loop `while (left < right)` examines one candidate container per iteration.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+Inside the loop:
+- `width = right - left`
+- `minHeight = Math.min(height[left], height[right])`
+- `maxArea = Math.max(maxArea, width * minHeight)`
+
+This computes the area formed by the two boundary lines.
+
+Then the code decides which pointer to move:
+- if `height[left] < height[right]`, it does `left++`
+- otherwise, it does `right--`
+
+So the shorter side is always moved, exactly as the comment says.
+
+After all candidate widths have been processed, `return maxArea;` gives the best area found.
+
+### Example Walkthrough
+Use Example 1: `height = [1,8,6,2,5,4,8,3,7]`.
+
+Start:
+- `left = 0`, `right = 8`
+- `width = 8`, `minHeight = min(1,7) = 1`
+- area = `8 * 1 = 8`, so `maxArea = 8`
+- left line is shorter, so `left++`
+
+Now:
+- `left = 1`, `right = 8`
+- `width = 7`, `minHeight = min(8,7) = 7`
+- area = `7 * 7 = 49`, so `maxArea = 49`
+- right line is shorter, so `right--`
+
+Continue scanning:
+- `left = 1`, `right = 7` → area = `6 * min(8,3) = 18`
+- `left = 1`, `right = 6` → area = `5 * min(8,8) = 40`
+- later areas are also below `49`
+
+No later pair beats `49`, so the answer remains `49`.
+
+### Key Variables Explained
+- `maxArea`: best container area found so far
+- `left`: left boundary of the current container
+- `right`: right boundary of the current container
+- `width`: horizontal distance between the two chosen lines
+- `minHeight`: limiting wall height of the current container
+
+### Why This Works
+At every step, the current area is determined by:
+- the width `right - left`
+- the shorter wall `Math.min(height[left], height[right])`
+
+If the shorter wall stays the same and width shrinks, area cannot improve. Therefore, moving the taller wall is never helpful in that moment. By always moving the shorter side, the code keeps only the moves that could potentially raise the limiting height enough to beat the current best.
+
+This argument ensures no optimal answer is skipped.
+
+### Trick Used
+Move only the pointer at the shorter line, because the shorter line is the bottleneck for the current area
+
+### Edge Cases Handled
+- Two-element array, like Example 2: the loop evaluates the only possible container once
+- Equal heights on both ends: the `else` branch moves `right`, and correctness is unchanged
+- Zero heights: `minHeight` becomes `0`, so the area is computed correctly
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — each iteration moves either `left` or `right`, and each pointer crosses the array at most once.
+- **Space Complexity: `O(1)`** — only a fixed set of integer variables is used.

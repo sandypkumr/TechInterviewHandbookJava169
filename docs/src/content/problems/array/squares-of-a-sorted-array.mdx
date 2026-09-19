@@ -72,23 +72,100 @@ public class SquaresOfASortedArray {
 
 ## Explanation
 
+### Problem Analysis
+The input array is already sorted, but it may contain negative values. After squaring, the original order can break because a large negative number can produce a larger square than a positive number near the end.
+
+This is a frequent interview problem because it looks like a sorting task, but the better solution uses the structure of the input to avoid an extra `O(n log n)` sort.
+
 ### Approach
+A brute-force method would square every value and then sort the result. This code does better by observing that the largest square must come from one of the two ends of the sorted array.
 
-**Squares of a Sorted Array** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+So the solution uses two pointers:
+- `left` starts at the beginning,
+- `right` starts at the end,
+- `index` fills `result` from right to left.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+At each step, the code compares `Math.abs(nums[left])` and `Math.abs(nums[right])`, places the larger square into `result[index]`, and moves the corresponding pointer inward.
+
+### Pattern Used
+Two Pointers.
+
+### Key Insight
+In a sorted array, the largest absolute value is always at one of the ends, so the next largest square can be chosen without sorting all squared values again.
 
 ### Code Walkthrough
+Inside `sortedSquares(int[] nums)`:
 
-The solution is implemented in `sortedSquares(int[] nums)`:
+- `int[] result = new int[nums.length];` creates the output array.
+- `int left = 0;` starts at the smallest value.
+- `int right = nums.length - 1;` starts at the largest value.
+- `int index = nums.length - 1;` points to the last open slot in `result`.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+The loop `while (left <= right)` continues until every number has been squared and placed.
+
+Inside the loop:
+- `if (Math.abs(nums[left]) > Math.abs(nums[right]))` checks which end has the larger magnitude.
+- If the left magnitude is larger:
+  - `result[index--] = nums[left] * nums[left];`
+  - `left++;`
+- Otherwise:
+  - `result[index--] = nums[right] * nums[right];`
+  - `right--;`
+
+Because the larger square is always written at `result[index]`, and `index` moves backward, the final `result` ends up sorted in non-decreasing order.
+
+### Example Walkthrough
+Use Example 1: `nums = [-4,-1,0,3,10]`.
+
+Initial state:
+- `left = 0` -> `-4`
+- `right = 4` -> `10`
+- `index = 4`
+
+Step by step:
+- Compare `abs(-4) = 4` and `abs(10) = 10`
+  - larger is right
+  - `result[4] = 100`
+  - `right = 3`, `index = 3`
+- Compare `abs(-4) = 4` and `abs(3) = 3`
+  - larger is left
+  - `result[3] = 16`
+  - `left = 1`, `index = 2`
+- Compare `abs(-1) = 1` and `abs(3) = 3`
+  - larger is right
+  - `result[2] = 9`
+  - `right = 2`, `index = 1`
+- Compare `abs(-1) = 1` and `abs(0) = 0`
+  - larger is left
+  - `result[1] = 1`
+  - `left = 2`, `index = 0`
+- Compare `abs(0) = 0` and `abs(0) = 0`
+  - go to the `else` branch
+  - `result[0] = 0`
+
+Final `result = [0,1,9,16,100]`.
+
+### Key Variables Explained
+- `result`: output array storing squared values in sorted order.
+- `left`: scans from the beginning toward the center.
+- `right`: scans from the end toward the center.
+- `index`: next position to fill in `result`, moving from right to left.
+- `Math.abs(...)`: used to compare magnitudes before squaring.
+
+### Why This Works
+At every iteration, the largest unplaced square must come from either `nums[left]` or `nums[right]`, because the input is already sorted. By placing that square at the current back position `index`, the algorithm preserves sorted order in `result` from right to left.
+
+After each placement, the corresponding pointer moves inward, leaving a smaller remaining search space with the same property. When the pointers cross, every square has been placed exactly once.
+
+### Trick Used
+Fill the output array from the back while comparing absolute values at both ends.
+
+### Edge Cases Handled
+- All negative numbers: the left side often wins, and the logic still produces sorted squares.
+- All non-negative numbers: the right side is consumed first, still giving correct order.
+- Zeros and duplicates: equal absolute values are handled by the `else` branch without any special case.
+- Single-element array: the loop runs once and returns the one squared value.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — the `while (left <= right)` loop processes each position once, and each iteration moves either `left` or `right`.
+- **Space Complexity: `O(n)`** — the method allocates the `result` array of length `nums.length`; aside from that, it uses constant extra variables.

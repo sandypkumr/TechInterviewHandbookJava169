@@ -71,25 +71,93 @@ public class SubarraySumEqualsK {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the number of contiguous subarrays whose sum is exactly `k`. Because subarrays are contiguous, we need a way to reason about running totals instead of checking every possible start and end pair.
+
+It is a common interview problem because the optimal solution requires turning a range-sum question into a prefix-sum lookup and handling negative numbers, which rules out a standard sliding window.
+
 ### Approach
+A brute-force approach would try every subarray and compute its sum, which costs `O(n^2)` or worse. This solution scans the array once while maintaining a running prefix sum in `sum`.
 
-The key insight for **Subarray Sum Equals K** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+For each position:
+- `sum` represents the total from index `0` to the current index.
+- If some earlier prefix sum was `sum - k`, then the subarray between that earlier point and the current index has total `k`.
+- A `HashMap<Integer, Integer>` stores how many times each prefix sum has appeared so far.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+That lets the code count valid subarrays in constant time per element.
+
+### Pattern Used
+Prefix Sum with HashMap.
+
+### Key Insight
+If the current prefix sum is `sum`, then any earlier prefix sum equal to `sum - k` proves that a subarray ending here sums to `k`.
 
 ### Code Walkthrough
+Inside `subarraySum(int[] nums, int k)`:
 
-The solution is implemented in `subarraySum(int[] nums, int k)`:
+- `int count = 0;` stores the number of valid subarrays found.
+- `int sum = 0;` stores the running prefix sum.
+- `HashMap<Integer, Integer> map = new HashMap<>();` maps each prefix sum to its frequency.
+- `map.put(0, 1);` seeds the map so a prefix sum equal to `k` can be counted as a valid subarray starting at index `0`.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+Then the loop `for (int num : nums)` processes each element:
+- `sum += num;` updates the current prefix sum.
+- `if (map.containsKey(sum - k))` checks whether there are earlier prefixes that make the current subarray sum to `k`.
+- `count += map.get(sum - k);` adds all such occurrences, not just one.
+- `map.put(sum, map.getOrDefault(sum, 0) + 1);` records the current prefix sum for future elements.
 
-&gt; **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
+Finally, `return count;` returns the total number of matching subarrays.
+
+### Example Walkthrough
+Use Example 1: `nums = [1,1,1]`, `k = 2`.
+
+Initial state:
+- `count = 0`
+- `sum = 0`
+- `map = {0=1}`
+
+Process first `1`:
+- `sum = 1`
+- look for `sum - k = -1`, not found
+- store `1` -> `map = {0=1, 1=1}`
+
+Process second `1`:
+- `sum = 2`
+- look for `sum - k = 0`, found once
+- `count = 1`
+- store `2` -> `map = {0=1, 1=1, 2=1}`
+
+Process third `1`:
+- `sum = 3`
+- look for `sum - k = 1`, found once
+- `count = 2`
+- store `3` -> `map = {0=1, 1=1, 2=1, 3=1}`
+
+Return `2`, matching the two subarrays `[1,1]` at indices `(0,1)` and `(1,2)`.
+
+For Example 2, `nums = [1,2,3]`, `k = 3`, the counted subarrays are `[1,2]` and `[3]`, so the answer is also `2`.
+
+### Key Variables Explained
+- `count`: total number of valid subarrays found so far.
+- `sum`: current prefix sum from the start of the array to the current element.
+- `map`: frequency table of prefix sums seen earlier.
+- `num`: current element from the enhanced for-loop.
+- `sum - k`: prefix sum value needed to prove a valid subarray ending at the current position.
+
+### Why This Works
+For any current position, suppose the running total is `sum`. If an earlier prefix total was `p`, then the subarray between those two points has sum `sum - p`. We want that difference to equal `k`, so we need `p = sum - k`.
+
+The map stores exactly how many such earlier prefixes exist. Adding that frequency to `count` is correct because each earlier occurrence corresponds to a different valid starting index. Since every prefix is inserted after being used, the algorithm counts each qualifying subarray exactly once.
+
+### Trick Used
+Two key optimizations: seed the map with `0 -> 1`, and store frequencies of prefix sums rather than only whether a sum exists.
+
+### Edge Cases Handled
+- Subarray starting at index `0`: handled by `map.put(0, 1)`.
+- Negative numbers in `nums`: supported because prefix sums work even when sliding window logic would fail.
+- Repeated prefix sums: handled correctly by storing counts with `getOrDefault(sum, 0) + 1`.
+- Multiple valid subarrays ending at the same index: counted by adding the full frequency `map.get(sum - k)`.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity: `O(n)`** — the loop visits each element once, and each `HashMap` lookup/update is `O(1)` amortized.
+- **Space Complexity: `O(n)`** — in the worst case, `map` stores a different prefix sum for each position.

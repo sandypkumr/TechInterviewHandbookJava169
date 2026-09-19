@@ -77,23 +77,71 @@ public class GroupAnagrams {
 
 ## Explanation
 
+### Problem Analysis
+We need to group together strings that are anagrams, meaning they contain the same letters with the same frequencies in a different order.
+The challenge is to identify a canonical representation so equivalent strings land in the same group efficiently.
+This is a standard interview problem because it tests hashing, normalization, and trade-offs between sorting and frequency counting.
+
 ### Approach
+The code converts each word into a normalized key by sorting its characters.
+All anagrams produce the same sorted form, so the sorted string can be used as a hash map key.
+The map stores one list per signature, and each original string is appended to the correct list.
+This is far better than comparing every pair of strings directly.
 
-The key insight for **Group Anagrams** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+### Pattern Used
+Hash Map.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Key Insight
+If two strings are anagrams, sorting both character arrays produces the exact same string key.
 
 ### Code Walkthrough
+The method starts with `Map<String, List<String>> map = new HashMap<>()`.
+This map groups original strings by their sorted-character signature.
 
-The solution is implemented in `groupAnagrams(String[] strs)`:
+The loop `for (String str : strs)` processes each input word.
+For each `str`:
+- `char[] charArray = str.toCharArray()` copies its characters.
+- `Arrays.sort(charArray)` rearranges them into sorted order.
+- `String sortedStr = new String(charArray)` builds the canonical key.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+Then the line `map.computeIfAbsent(sortedStr, k -> new ArrayList<>()).add(str)` does two things:
+- creates a new group list if `sortedStr` has not appeared before,
+- adds the original `str` to that group.
+
+After every string is processed, `return new ArrayList<>(map.values())` collects all grouped lists into the final answer.
+
+### Example Walkthrough
+Use Example 1: `strs = ["eat","tea","tan","ate","nat","bat"]`.
+- `"eat"` sorts to `"aet"`, so `map["aet"] = ["eat"]`.
+- `"tea"` also sorts to `"aet"`, so that group becomes `["eat", "tea"]`.
+- `"tan"` sorts to `"ant"`, so `map["ant"] = ["tan"]`.
+- `"ate"` sorts to `"aet"`, so `["eat", "tea", "ate"]`.
+- `"nat"` sorts to `"ant"`, so `["tan", "nat"]`.
+- `"bat"` sorts to `"abt"`, so `map["abt"] = ["bat"]`.
+
+The map values therefore form groups equivalent to `[["bat"], ["tan", "nat"], ["eat", "tea", "ate"]]`.
+The order may vary, which the problem allows.
+
+### Key Variables Explained
+- `map`: groups strings by their sorted signature.
+- `str`: current word being processed.
+- `charArray`: mutable array version of `str`, so it can be sorted.
+- `sortedStr`: canonical key shared by all anagrams of the same word pattern.
+
+### Why This Works
+Sorting removes the effect of character order.
+That means every string with the same letters maps to the same `sortedStr`, while strings with different letter counts or different letters map to different keys.
+Because every input string is inserted exactly once into the bucket for its signature, the final groups are exactly the anagram groups.
+
+### Trick Used
+The trick is using the sorted version of each string as a canonical hash key.
+
+### Edge Cases Handled
+- Empty string `""`: its sorted form is still `""`, so it groups correctly.
+- Single-character strings: sorting changes nothing, so they still map correctly.
+- Multiple identical strings: `computeIfAbsent(...).add(str)` keeps all copies in the same list.
+- Output order differences: returning `new ArrayList<>(map.values())` may produce any order, which is valid for this problem.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n·k log k)`** — see the analysis for full details.
-- **Space Complexity: `O(n·k)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n · k log k)`** — the loop runs once for each of the `n` strings, and sorting each string of length `k` costs `O(k log k)`.
+- **Space Complexity: `O(n · k)`** — the map stores all original strings grouped into lists, and the total stored character content is proportional to the total input size.

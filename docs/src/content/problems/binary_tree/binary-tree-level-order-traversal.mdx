@@ -86,23 +86,112 @@ public class BinaryTreeLevelOrderTraversal {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for nodes grouped by depth, from top to bottom and left to right within each level. That ordering matters because we do not just need to visit every node—we need to preserve level boundaries in the output.
+
+This is a classic interview question because it is the direct application of breadth-first traversal on a tree.
+
 ### Approach
+The code uses a queue to process the tree one level at a time.
 
-**Binary Tree Level Order Traversal** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+- Start by placing `root` in the queue.
+- For each iteration, record `queue.size()` as the number of nodes in the current level.
+- Remove exactly that many nodes, collect their values into one list, and enqueue their children.
+- Append the collected list to `result`.
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+This is better than a brute-force depth-by-depth scan because each node is visited once in natural level order.
+
+### Pattern Used
+This solution uses **Breadth-First Search (BFS)**.
+
+### Key Insight
+If you snapshot the queue size before processing a round, those nodes belong to exactly one tree level.
 
 ### Code Walkthrough
+The method is `levelOrder(TreeNode root)`.
 
-The solution is implemented in `levelOrder(TreeNode root)`:
+- `List<List<Integer>> result = new ArrayList<>();`
+  - Stores the final answer level by level.
+- `if (root == null) { return result; }`
+  - Empty tree means there are no levels to return.
+- `Queue<TreeNode> queue = new LinkedList<>();`
+- `queue.offer(root);`
+  - Initializes BFS with the root node.
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+Inside the main loop:
+
+- `while (!queue.isEmpty())`
+  - Continue until all reachable nodes are processed.
+- `int levelSize = queue.size();`
+  - Captures how many nodes belong to the current level.
+- `List<Integer> level = new ArrayList<>();`
+  - Stores values for just this one level.
+- `for (int i = 0; i < levelSize; i++)`
+  - Processes only nodes that were already in the queue at the start of the level.
+- `TreeNode node = queue.poll();`
+  - Removes the next node in FIFO order.
+- `level.add(node.val);`
+  - Records its value.
+- `if (node.left != null) { queue.offer(node.left); }`
+- `if (node.right != null) { queue.offer(node.right); }`
+  - Children are added for the next level, not the current one.
+- After the loop, `result.add(level);`
+  - Saves the completed level.
+
+Finally, `return result;` returns all collected levels.
+
+### Example Walkthrough
+Use **Example 1**: `root = [3,9,20,null,null,15,7]`.
+
+Initial state:
+- `queue = [3]`
+- `result = []`
+
+First outer loop:
+- `levelSize = 1`
+- Poll `3`, so `level = [3]`
+- Enqueue `9` and `20`
+- Add `level` to `result`
+- Now `result = [[3]]`, `queue = [9,20]`
+
+Second outer loop:
+- `levelSize = 2`
+- Poll `9` → `level = [9]`
+- Poll `20` → `level = [9,20]`
+- Enqueue `15` and `7`
+- Add this level to `result`
+- Now `result = [[3],[9,20]]`, `queue = [15,7]`
+
+Third outer loop:
+- `levelSize = 2`
+- Poll `15`, then `7`
+- `level = [15,7]`
+- No more children are added
+- Final result becomes `[[3],[9,20],[15,7]]`
+
+### Key Variables Explained
+- `result`: list of all levels in output order.
+- `queue`: BFS data structure holding nodes waiting to be processed.
+- `levelSize`: number of nodes in the current tree level.
+- `level`: temporary list collecting values for one level.
+- `node`: the current node removed from the queue.
+
+### Why This Works
+BFS processes nodes in increasing distance from the root. By capturing `levelSize` before processing a round, the code separates nodes already at the current depth from children that belong to the next depth.
+
+That invariant guarantees that every `level` list contains exactly one tree layer in left-to-right order, because children are enqueued only after their parent is removed.
+
+### Trick Used
+The trick is **using `queue.size()` as a level boundary snapshot**.
+
+### Edge Cases Handled
+- Empty tree: returns an empty `result` immediately.
+- Single-node tree: the queue contains only `root`, producing `[[root.val]]`.
+- Missing children: `null` checks ensure only real nodes are enqueued.
+- Uneven trees: level grouping still works because BFS processes by queue layers, not by perfect-tree assumptions.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — the BFS queue can hold up to O(n) nodes at the widest level.
+- **Time Complexity: `O(n)`**
+  - Every node is enqueued and dequeued exactly once.
+- **Space Complexity: `O(n)`**
+  - The queue can hold up to the width of the tree, and `result` stores all node values.

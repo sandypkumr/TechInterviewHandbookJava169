@@ -102,23 +102,73 @@ public class ValidParentheses {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks whether every closing bracket in `s` matches the most recent unmatched opening bracket, and whether the nesting order is correct.
+That makes it a classic interview question because it tests stack thinking, ordering constraints, and careful handling of invalid states such as extra closing brackets.
+
 ### Approach
+The code scans the string once from left to right and simulates a stack of opening brackets.
+Whenever it sees `'('`, `'{'`, or `'['`, it pushes that character onto the stack.
+Whenever it sees a closing bracket, it checks whether the top of the stack contains the matching opening bracket.
+This is much better than brute force because we only need to remember the unmatched opening brackets, not repeatedly search backward.
 
-The key insight for **Valid Parentheses** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+### Pattern Used
+Stack.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Key Insight
+A valid closing bracket must match the most recently seen unmatched opening bracket, so LIFO order is exactly what the algorithm needs.
 
 ### Code Walkthrough
+The method starts with `if (s == null || s.isEmpty())`, returning `true` for a null or empty string because there is nothing invalid to match.
+It then creates `char[] stack = new char[s.length()]`, using the input length as the maximum possible stack size.
+`int top = -1` marks an empty stack.
 
-The solution is implemented in `isValid(String s)`:
+The loop `for (char c : s.toCharArray())` processes each bracket.
+- If `c` is an opening bracket, `stack[++top] = c` pushes it.
+- Otherwise, `c` is a closing bracket.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+Before popping, the code checks `if (top < 0)`.
+- That means a closing bracket appeared before any matching opening bracket.
+- In that case the string is immediately invalid, so it returns `false`.
+
+If the stack is not empty, `char last = stack[top--]` pops the latest opening bracket.
+Then `if (!isMatchingPair(last, c))` verifies that the types line up.
+The helper `isMatchingPair(char open, char close)` explicitly checks `()`, `{}`, and `[]`.
+If the pair is wrong, the method returns `false`.
+
+After the loop, `return top == -1` ensures there are no unmatched opening brackets left behind.
+
+### Example Walkthrough
+Use Example 4: `s = "([])"`.
+- Start with `stack = []`, `top = -1`.
+- Read `'('`: push it, so `stack = ['(']`, `top = 0`.
+- Read `'['`: push it, so `stack = ['(', '[']`, `top = 1`.
+- Read `']'`: pop `'['`, so `last = '['`; `isMatchingPair('[', ']')` is `true`.
+- Read `')'`: pop `'('`, so `last = '('`; `isMatchingPair('(', ')')` is `true`.
+- The loop ends with `top = -1`, so every opening bracket was matched in the correct order.
+The method returns `true`.
+
+### Key Variables Explained
+- `stack`: array-based stack storing unmatched opening brackets.
+- `top`: index of the current top element in `stack`; `-1` means empty.
+- `c`: the current character being processed from `s`.
+- `last`: the opening bracket popped from the stack to compare with the current closing bracket.
+
+### Why This Works
+The algorithm maintains this invariant: `stack[0..top]` always contains exactly the unmatched opening brackets seen so far, in order.
+When a closing bracket appears, the only valid match is the most recent unmatched opening bracket, which is exactly what the top of the stack stores.
+If a mismatch happens, or the stack is empty too early, the string cannot be valid.
+If the scan finishes with an empty stack, every opening bracket found a correct closing partner.
+
+### Trick Used
+Using a fixed-size `char[] stack` with `top` avoids the overhead of `java.util.Stack` while keeping the same stack behavior.
+
+### Edge Cases Handled
+- `s == null || s.isEmpty()`: returns `true` immediately.
+- A closing bracket appears first, such as `")"`: `top < 0` catches it.
+- Wrong nesting, such as `"([)]"`: `isMatchingPair(last, c)` fails.
+- Extra opening brackets left at the end, such as `"(("`: `top == -1` will be false.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — the loop visits each character of `s` once, and each push, pop, and match check is `O(1)`.
+- **Space Complexity: `O(n)`** — in the worst case, every character is an opening bracket, so `stack` stores up to `s.length()` characters.

@@ -91,20 +91,130 @@ public class DecodeString {
 
 ## Explanation
 
+### Problem Analysis
+
+The input is an encoded string where segments like `k[encoded_string]` must be expanded exactly `k` times. The main difficulty is that brackets can be nested, so inner decoded pieces must be finished before outer ones.
+
+This is a popular interview question because it tests stack-based parsing, nested state management, and handling multi-digit repeat counts.
+
 ### Approach
 
-**Decode String** is a stack problem. The solution iterates over the input using a enhanced for-each loop, applying the appropriate data structure (Stack, StringBuilder, Character utilities) to achieve the target complexities of `O(n)` time and `O(n)` space.
+The code keeps track of two kinds of state:
+
+- how many times the current bracketed substring should repeat
+- what string had already been built before entering that bracket
+
+Whenever `[` appears, the current repeat count and current partial string are saved onto stacks. Whenever `]` appears, the code decodes the current bracketed content and appends it back to the previous saved string.
+
+This is much cleaner than trying to recursively slice substrings by index.
+
+### Pattern Used
+
+This solution uses the **stack-based parsing** pattern.
+
+### Key Insight
+
+Every `[` starts a brand-new local decoding context, so saving the old `current` string and repeat count is enough to rebuild the correct outer string when `]` is reached.
 
 ### Code Walkthrough
 
-The solution is implemented in `decodeString(String s)`:
+The method initializes:
 
-1. **Initialise** the necessary data structures (`current`, `k`, `decodedString`).
-2. **Iterate** over the input using a enhanced for-each loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+- `Stack<Integer> countStack = new Stack<>();`
+- `Stack<StringBuilder> stringStack = new Stack<>();`
+- `StringBuilder current = new StringBuilder();`
+- `int k = 0;`
+
+Then it scans each character with:
+
+```java
+for (char c : s.toCharArray())
+```
+
+Case 1: digit
+
+- `k = k * 10 + (c - '0')`
+
+This allows counts like `12[...]`, not just single-digit counts.
+
+Case 2: opening bracket `'['`
+
+- `countStack.push(k);`
+- `stringStack.push(current);`
+- `current = new StringBuilder();`
+- `k = 0;`
+
+This stores the outer context and starts a fresh inner substring.
+
+Case 3: closing bracket `']'`
+
+- `StringBuilder decodedString = stringStack.pop();`
+- `int repeatCount = countStack.pop();`
+- `decodedString.append(String.valueOf(current).repeat(repeatCount));`
+- `current = decodedString;`
+
+So the just-decoded inner content is repeated and attached to the saved outer string.
+
+Case 4: regular letter
+
+- `current.append(c);`
+
+After the loop, `current.toString()` is the final decoded string.
+
+### Example Walkthrough
+
+Use **Example 2**:
+
+```text
+s = "3[a2[c]]"
+```
+
+Step by step:
+
+- read `'3'` -> `k = 3`
+- read `'['` -> push `3` to `countStack`, push current `""` to `stringStack`, reset `current = ""`
+- read `'a'` -> `current = "a"`
+- read `'2'` -> `k = 2`
+- read `'['` -> push `2`, push current `"a"`, reset `current = ""`
+- read `'c'` -> `current = "c"`
+- read `']'` -> pop repeat count `2`, pop previous string `"a"`, build `"a" + "c".repeat(2)` = `"acc"`, so `current = "acc"`
+- read final `']'` -> pop repeat count `3`, pop previous string `""`, build `"" + "acc".repeat(3)` = `"accaccacc"`
+
+Return:
+
+```text
+"accaccacc"
+```
+
+### Key Variables Explained
+
+- `countStack` — stores repeat counts for unfinished bracket levels
+- `stringStack` — stores the string built before each `[` appears
+- `current` — the substring currently being decoded at the active nesting level
+- `k` — the repeat count currently being built from digits
+- `decodedString` — the restored outer string used when a `]` is processed
+
+### Why This Works
+
+At any moment, `current` represents the decoded content of the current bracket level only. The stacks store everything needed to return to the previous level:
+
+- `countStack` remembers how many times to repeat the inner result
+- `stringStack` remembers what had already been built outside the brackets
+
+When `]` appears, the current inner result is complete, so repeating it and appending it to the saved outer prefix is exactly what the encoding rule requires.
+
+### Trick Used
+
+The trick is **using two synchronized stacks: one for repeat counts and one for the partial strings that existed before each `[`**.
+
+### Edge Cases Handled
+
+- **Nested encodings** like `"3[a2[c]]"` — each level gets its own saved context
+- **Multi-digit repeat counts** — handled by `k = k * 10 + (c - '0')`
+- **Plain letters outside brackets** — appended directly to `current`
+- **Suffix text after encoded blocks** like `"2[abc]3[cd]ef"` — final letters continue appending normally
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n + m)`** — the input of length `n` is scanned once, and producing the decoded output of length `m` requires materializing those characters
+- **Space Complexity: `O(n + m)`** — the stacks hold nested state, and the decoded `StringBuilder` content can grow to the full output size

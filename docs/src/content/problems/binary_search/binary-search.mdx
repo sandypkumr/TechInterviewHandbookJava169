@@ -76,23 +76,112 @@ public class BinarySearch {
 
 ## Explanation
 
+### Problem Analysis
+
+The input array `nums` is already sorted in ascending order, and we must return the index of `target` or `-1` if it is absent.  
+Because the array is sorted, comparing `target` with a middle element tells us which half can be discarded.  
+This is one of the most common interview problems because it checks whether you can exploit sorted order to beat linear search.
+
 ### Approach
 
-**Binary Search** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The method keeps a search window between `left` and `right`.  
+On each iteration, it computes `mid`, compares `nums[mid]` with `target`, and throws away the half that cannot contain the answer.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+Why this approach?
+
+- A linear scan would be simple but takes `O(n)` time.
+- The sorted property lets us shrink the candidate range by half every step.
+- That gives the required `O(log n)` runtime.
+
+### Pattern Used
+
+Binary Search.
+
+### Key Insight
+
+Once `nums[mid]` is known, the sorted order guarantees that either the entire left half or the entire right half is impossible and can be discarded immediately.
 
 ### Code Walkthrough
 
-The solution is implemented in `search(int[] nums, int target)`:
+The method begins with:
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+- `int left = 0;`
+- `int right = nums.length - 1;`
+
+These pointers represent the current inclusive search range.
+
+The main loop is:
+
+- `while (left <= right)`
+
+As long as the range is valid, we keep searching.
+
+Inside the loop:
+
+- `int mid = left + (right - left) / 2;`
+- This avoids overflow and picks the middle index of the current range.
+
+Then the code checks three cases:
+
+- If `nums[mid] == target`, it immediately returns `mid`.
+- If `nums[mid] < target`, the target can only be to the right, so `left = mid + 1`.
+- Otherwise, the target must be to the left, so `right = mid - 1`.
+
+If the loop finishes without returning:
+
+- `return -1;`
+- That means the search range became empty and `target` was never found.
+
+### Example Walkthrough
+
+Use **Example 1**: `nums = [-1,0,3,5,9,12]`, `target = 9`.
+
+Initial state:
+
+- `left = 0`, `right = 5`
+
+First iteration:
+
+- `mid = 0 + (5 - 0) / 2 = 2`
+- `nums[mid] = 3`
+- Since `3 < 9`, move rightward: `left = 3`
+
+Second iteration:
+
+- `left = 3`, `right = 5`
+- `mid = 3 + (5 - 3) / 2 = 4`
+- `nums[mid] = 9`
+- Match found, so return `4`
+
+That matches the expected output.
+
+### Key Variables Explained
+
+- `nums`: the sorted input array.
+- `target`: value we are searching for.
+- `left`: left boundary of the current search interval.
+- `right`: right boundary of the current search interval.
+- `mid`: middle index used to decide which half to keep.
+
+### Why This Works
+
+The loop maintains the invariant that if `target` exists, it must lie within the inclusive range `[left, right]`.  
+Each comparison removes only values that are provably too small or too large because `nums` is sorted.  
+When `nums[mid] < target`, everything at or left of `mid` is too small; when `nums[mid] > target`, everything at or right of `mid` is too large.  
+So the algorithm never discards the true answer, and if the range becomes empty, the target is not present.
+
+### Trick Used
+
+Overflow-safe midpoint calculation: `left + (right - left) / 2`.
+
+### Edge Cases Handled
+
+- Single-element array: the loop still checks index `0` correctly.
+- Target smaller than all values: repeated `right = mid - 1` eventually empties the range.
+- Target larger than all values: repeated `left = mid + 1` eventually empties the range.
+- Target absent between existing values: the loop ends naturally and returns `-1`.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log n)`** — each loop iteration cuts the remaining search interval roughly in half.
+- **Space Complexity: `O(1)`** — only `left`, `right`, and `mid` are used in addition to the input.

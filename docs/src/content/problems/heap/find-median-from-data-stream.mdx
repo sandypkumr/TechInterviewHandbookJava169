@@ -109,23 +109,107 @@ public class FindMedianFromDataStream {
 
 ## Explanation
 
+### Problem Analysis
+We need a data structure that supports two operations repeatedly: insert a new number and report the current median.
+Re-sorting after every insertion would be too slow, especially with up to `5 * 10^4` operations.
+This is a classic interview design question because it checks whether you can maintain order information incrementally instead of recomputing it from scratch.
+
 ### Approach
+The solution splits the numbers into two heaps:
+- `leftMaxQueue` stores the smaller half, with the largest of that half on top.
+- `rightMinQueue` stores the larger half, with the smallest of that half on top.
 
-**Find Median from Data Stream** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+That way, the median is always near the heap tops.
+If one heap has more elements, its top is the median.
+If both heaps have the same size, the median is the average of the two tops.
+After every insertion, `balance()` restores the rule that the heap sizes can differ by at most `1`.
+This is far better than storing everything unsorted and sorting on demand.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Pattern Used
+Heap / Priority Queue.
+
+### Key Insight
+If the lower half and upper half are kept in two balanced heaps, the median is always available from one or two top elements.
 
 ### Code Walkthrough
+`leftMaxQueue` is declared as a max-heap using the comparator `(a,b) -> -(a.compareTo(b))`.
+So `leftMaxQueue.peek()` gives the largest value in the lower half.
+`rightMinQueue` uses the default min-heap behavior, so `rightMinQueue.peek()` gives the smallest value in the upper half.
 
-The solution is implemented in `addNum(int num)`:
+The constructor `FindMedianFromDataStream()` does not need extra setup because the heaps are already initialized at field declaration.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+In `addNum(int num)`, the code decides where the new value belongs.
+If `leftMaxQueue.size() > 0 && num >= leftMaxQueue.peek()`, then `num` belongs in the upper half, so it goes into `rightMinQueue`.
+Otherwise, it goes into `leftMaxQueue`.
+After the insertion, `balance()` is called.
+
+The helper `balance()` enforces the size rule.
+If `leftMaxQueue` is larger than `rightMinQueue` by more than `1`, it removes the top from `leftMaxQueue` and adds it to `rightMinQueue`.
+If `rightMinQueue` is larger than `leftMaxQueue` by more than `1`, it moves the smallest upper-half element back into `leftMaxQueue`.
+
+In `findMedian()`, there are three cases:
+- If `leftMaxQueue` has more elements, return `leftMaxQueue.peek()`.
+- If `rightMinQueue` has more elements, return `rightMinQueue.peek()`.
+- Otherwise, return `(leftMaxQueue.peek() + rightMinQueue.peek()) / 2.0`.
+The division by `2.0` ensures a `double` result for even-sized input.
+
+### Example Walkthrough
+Use the example sequence:
+`addNum(1)`, `addNum(2)`, `findMedian()`, `addNum(3)`, `findMedian()`.
+
+Start with both heaps empty.
+
+After `addNum(1)`:
+- `leftMaxQueue` is empty, so `1` goes into `leftMaxQueue`.
+- Heaps: `leftMaxQueue = [1]`, `rightMinQueue = []`.
+- No rebalancing is needed.
+
+After `addNum(2)`:
+- `leftMaxQueue.peek()` is `1`.
+- Since `2 >= 1`, add `2` to `rightMinQueue`.
+- Heaps: lower half has `1`, upper half has `2`.
+- Sizes are balanced.
+
+Now `findMedian()`:
+- Heap sizes are equal.
+- Return `(1 + 2) / 2.0 = 1.5`.
+
+After `addNum(3)`:
+- `leftMaxQueue.peek()` is still `1`.
+- Since `3 >= 1`, add `3` to `rightMinQueue`.
+- Heaps temporarily have sizes `1` and `2`.
+- `balance()` keeps this because the size difference is only `1`.
+- Conceptually, the lower half is `[1]` and the upper half is `[2, 3]`, so the middle value is `2`.
+
+Now `findMedian()`:
+- `rightMinQueue` has more elements.
+- Return `rightMinQueue.peek()`, which is `2.0`.
+
+### Key Variables Explained
+- `leftMaxQueue`: max-heap holding the smaller half of the numbers.
+- `rightMinQueue`: min-heap holding the larger half of the numbers.
+- `num`: current number being inserted from the stream.
+- `balance()`: helper that restores the allowed heap-size difference.
+
+### Why This Works
+The structure maintains two invariants:
+- Every value in `leftMaxQueue` belongs to the lower half, and every value in `rightMinQueue` belongs to the upper half.
+- Their sizes differ by at most `1`.
+
+Because of those invariants, the combined ordered sequence is split exactly around the median.
+If one heap has one extra element, its top is the middle element.
+If the heaps are equal in size, the two tops are the two middle elements.
+Since `addNum()` inserts into the appropriate side and `balance()` restores size symmetry, `findMedian()` is always correct.
+
+### Trick Used
+Maintaining two complementary heaps so the median can be read directly from their top elements.
+
+### Edge Cases Handled
+- First insertion: the `leftMaxQueue.size() > 0` check avoids peeking into an empty heap.
+- Odd number of total elements: one heap is allowed to have exactly one extra element, and its top becomes the median.
+- Even number of total elements: the code averages the two heap tops.
+- Values arriving in any order: `addNum()` and `balance()` reorganize them incrementally without sorting the full stream.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- Time Complexity: `addNum()` is `O(log n)` because it inserts into a heap and may move one element during `balance()`, and `findMedian()` is `O(1)` because it only checks sizes and peeks at heap tops.
+- Space Complexity: `O(n)` because all inserted numbers are stored across `leftMaxQueue` and `rightMinQueue`.

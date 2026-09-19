@@ -87,25 +87,115 @@ public class PalindromeLinkedList {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks whether the sequence of values in a singly linked list reads the same forward and backward. The follow-up is the real challenge: do it in linear time and constant extra space.
+
+This is a classic interview problem because it combines three linked-list skills in one solution: finding the middle, reversing in place, and comparing two traversals.
+
 ### Approach
+A brute-force solution could copy all values into an array and then check whether the array is a palindrome. That is simple, but it uses O(n) extra space.
 
-**Palindrome Linked List** uses two pointers moving at different speeds — slow advances one step at a time, fast advances two. If a cycle exists, the fast pointer eventually laps the slow pointer and they meet inside the cycle. If no cycle exists, fast reaches the end first.
+This solution stays in O(1) extra space by doing three steps:
+- find the middle using `slow` and `fast`
+- reverse the second half starting from `slow`
+- compare nodes from the front half and the reversed back half
 
-Think of two runners on a circular track: the faster runner will always eventually overtake (lap) the slower one. If the track has no loop (i.e., it ends), the faster runner simply reaches the finish line first.
+### Pattern Used
+This solution uses **Fast/Slow Pointers** plus **in-place reversal** and a final **Two Pointers** comparison.
+
+### Key Insight
+Once the second half of the list is reversed, palindrome checking becomes a simple front-versus-back comparison using only pointers.
 
 ### Code Walkthrough
+The method `isPalindrome(ListNode head)` starts by finding the midpoint.
 
-The solution is implemented in `isPalindrome(ListNode head)`:
+It initializes:
+- `ListNode slow = head;`
+- `ListNode fast = head;`
 
-1. Initialise slow = head and fast = head.
-2. Advance slow by one step and fast by two steps each iteration.
-3. If fast or fast.next is null, there is no cycle.
-4. If slow == fast, a cycle is detected (meeting point is inside the cycle).
-5. To find the cycle entry point, reset one pointer to head and advance both one step at a time.
+Then this loop runs:
+- `while (fast != null && fast.next != null)`
+- `slow = slow.next;`
+- `fast = fast.next.next;`
 
-&gt; **Note:** This solution also uses the **two pointers moving toward each other** technique.
+When the loop ends, `slow` is at the middle for odd-length lists, or at the start of the second half for even-length lists.
+
+Next, the code reverses the list starting from `slow`.
+It creates:
+- `ListNode prev = null;`
+- `ListNode current = slow;`
+
+Inside the reversal loop:
+- `ListNode nextTemp = current.next;` stores the remaining list
+- `current.next = prev;` reverses the pointer
+- `prev = current;` advances the reversed-list head
+- `current = nextTemp;` moves forward
+
+After this loop, `prev` points to the head of the reversed second half.
+
+Then the code compares both halves:
+- `ListNode left = head;`
+- `ListNode right = prev;`
+
+The loop
+- `while (right != null)`
+compares mirrored positions. If `left.val != right.val`, it immediately returns `false`. Otherwise both pointers advance one step.
+
+If the comparison loop finishes, every checked pair matched, so the method returns `true`.
+
+### Example Walkthrough
+Use Example 1:
+- `head = [1,2,2,1]`
+
+Find the middle:
+- start: `slow = 1`, `fast = 1`
+- iteration 1: `slow = 2` (second node), `fast = 2` (third node)
+- iteration 2: `slow = 2` (third node), `fast = null`
+
+So reversal begins from the third node.
+
+Reverse second half `[2,1]`:
+- after reversing, `prev` points to `1 -> 2`
+
+Compare:
+- `left = 1`, `right = 1` -> match
+- move both
+- `left = 2`, `right = 2` -> match
+- `right` becomes `null`
+
+The loop ends, so the method returns `true`.
+
+Use Example 2:
+- `head = [1,2]`
+- middle search puts `slow` on `2`
+- reversed second half is just `[2]`
+- compare `left.val = 1` with `right.val = 2`
+- mismatch found immediately, so return `false`
+
+### Key Variables Explained
+- `slow`: walks one step at a time to locate the midpoint.
+- `fast`: walks two steps at a time to determine when the midpoint is reached.
+- `prev`: head of the reversed second half being built.
+- `current`: current node being reversed.
+- `nextTemp`: temporary storage so the rest of the list is not lost during reversal.
+- `left`: pointer scanning from the original head.
+- `right`: pointer scanning from the reversed second half.
+
+### Why This Works
+The midpoint loop guarantees that the sublist starting at `slow` covers the second half of the list, and for odd lengths it includes the middle node. Reversing that half makes its traversal order equal to the original list's backward order.
+
+The comparison loop then checks exactly the mirrored positions that matter. For odd lengths, the middle node compares with itself, which is harmless. If every compared pair matches, the list must be a palindrome; if any pair differs, it cannot be one.
+
+### Trick Used
+The main trick is **reversing the second half in place** so backward comparison becomes possible without extra memory.
+
+### Edge Cases Handled
+- Single-node list: reversal and comparison both work, so the method returns `true`.
+- Even-length list: `slow` lands at the start of the second half, so comparison is aligned correctly.
+- Odd-length list: the reversed half includes the middle node, and comparing while `right != null` still works.
+- Early mismatch: the method returns `false` as soon as a pair differs.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(n)`, because the code makes one pass to find the middle, one pass to reverse roughly half the list, and one pass to compare roughly half the list.
+- **Space Complexity:** `O(1)`, because it uses only pointer variables and reverses the list in place.
 
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

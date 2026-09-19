@@ -81,25 +81,135 @@ public class PathSum3 {
 
 ## Explanation
 
+### Problem Analysis
+This problem asks for the number of downward paths whose values sum to `targetSum`. A path can start anywhere and end anywhere, as long as it moves from parent to child.
+
+That makes it harder than root-to-leaf variants because each node could be the ending point of many valid starting points above it. It is a popular interview question because it tests whether you can avoid recomputing every possible path sum naively.
+
 ### Approach
+The code combines DFS with a prefix-sum frequency map. As we move from the root to the current node, we maintain `curSum`, the sum of values along that path.
 
-**Path Sum III** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+If an earlier prefix sum was `curSum - targetSum`, then the nodes after that earlier point up to the current node form a valid path with sum `targetSum`. This turns the problem into fast counting using a `HashMap` instead of restarting a sum from every node.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+DFS + Prefix Sum.
+
+### Key Insight
+A downward path ending at the current node sums to `targetSum` exactly when some earlier prefix sum equals `curSum - targetSum`.
 
 ### Code Walkthrough
+In `pathSum(TreeNode root, int targetSum)`:
 
-The solution is implemented in `pathSum(TreeNode root, int targetSum)`:
+- `Map<Long, Integer> prefixSumMap = new HashMap<>();`
+  - This stores how many times each prefix sum has appeared on the current root-to-node path.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+- `prefixSumMap.put(0L, 1);`
+  - This seeds the map so a path starting at the root can be counted correctly.
 
-&gt; **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
+- The traversal starts with `dfs(root, 0L, targetSum, prefixSumMap);`
+  - `0L` is the sum before visiting any node.
+
+Inside `dfs(TreeNode node, long curSum, int targetSum, Map<Long, Integer> prefixSumMap)`:
+
+- `if (node == null) { return 0; }`
+  - No node means no new paths.
+
+- `curSum += node.val;`
+  - The running prefix sum now includes the current node.
+
+- `int count = prefixSumMap.getOrDefault(curSum - targetSum, 0);`
+  - This counts all earlier prefixes that make a valid target-sum path ending here.
+
+- `prefixSumMap.put(curSum, prefixSumMap.getOrDefault(curSum, 0) + 1);`
+  - The current prefix sum is added before exploring children.
+
+- `count += dfs(node.left, curSum, targetSum, prefixSumMap);`
+- `count += dfs(node.right, curSum, targetSum, prefixSumMap);`
+  - Both subtrees continue using the updated running sum and shared frequency map.
+
+- `prefixSumMap.put(curSum, prefixSumMap.get(curSum) - 1);`
+  - This is the backtracking step.
+  - After finishing this node's subtree, its prefix sum must be removed from the active path state.
+
+- `return count;`
+  - The method returns the number of valid paths found in this subtree.
+
+### Example Walkthrough
+Use Example 1: `root = [10,5,-3,3,2,null,11,3,-2,null,1]`, `targetSum = 8`.
+
+Start with:
+
+- `prefixSumMap = {0:1}`
+- `curSum = 0`
+
+Visit `10`:
+
+- `curSum = 10`
+- need `10 - 8 = 2`
+- `2` is not in the map, so `count = 0`
+- add `10` to the map
+
+Visit `5`:
+
+- `curSum = 15`
+- need `15 - 8 = 7`
+- not present
+- add `15`
+
+Visit `3`:
+
+- `curSum = 18`
+- need `18 - 8 = 10`
+- `10` is present once, so one path is found: `5 -> 3`
+
+Visit the left child `3`:
+
+- `curSum = 21`
+- need `13`
+- none found
+
+Backtrack and visit `-2`:
+
+- `curSum = 16`
+- need `8`
+- none found
+
+Then visit node `2` under `5`, and later node `1`:
+
+- at node `1`, the running sum makes one earlier prefix fit, counting path `5 -> 2 -> 1`
+
+On the right subtree, visit `-3` then `11`:
+
+- at node `11`, the running sum again finds one matching earlier prefix
+- this counts path `-3 -> 11`
+
+Total paths found = `3`.
+
+### Key Variables Explained
+- `prefixSumMap`: maps a prefix sum to how many times it appears on the current recursion path.
+- `curSum`: running sum from the root down to the current `node`.
+- `targetSum`: required path total.
+- `count`: number of valid paths ending at the current node plus valid paths from its subtrees.
+- `node`: current tree node being processed.
+
+### Why This Works
+At any node, every downward path ending there can be described by subtracting two prefix sums: the sum up to the current node minus the sum before the path started. Therefore, checking how many times `curSum - targetSum` has appeared tells us exactly how many valid starting points exist for paths ending at this node.
+
+The map always reflects only the current root-to-node path because the code increments before descending and decrements while backtracking. That invariant prevents prefix sums from one branch from incorrectly affecting counts in another branch.
+
+### Trick Used
+Using a prefix-sum frequency map with backtracking so each node can count valid ending paths in `O(1)` average time.
+
+### Edge Cases Handled
+- Empty tree: `dfs` immediately returns `0`.
+- Negative values: the prefix-sum method works even when values are negative, so no monotonic assumption is needed.
+- Path starting at the root: `prefixSumMap.put(0L, 1)` makes this count correctly.
+- Large cumulative sums: `long curSum` avoids overflow better than `int`.
 
 ### Complexity Analysis
+- **Time Complexity: `O(n)`**
+  - Each node is visited once, and each visit does constant-average-time `HashMap` work.
 
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Space Complexity: `O(h)` on the recursion path, up to `O(n)` worst case**
+  - The recursion stack uses `O(h)`.
+  - `prefixSumMap` stores prefix sums for the current root-to-node path, which is at most the tree height, and becomes `O(n)` in the worst-case skewed tree.

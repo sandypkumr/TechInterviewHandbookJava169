@@ -93,23 +93,114 @@ public class FindMinimumInRotatedSortedArray {
 
 ## Explanation
 
+### Problem Analysis
+
+The array was originally sorted, then rotated, so it now contains two sorted segments with the minimum element at the rotation point.  
+We need to return that minimum in `O(log n)` time, which rules out a simple linear scan.  
+This is a standard interview variation of binary search because the array is not fully sorted, but it still has enough structure to discard half the search space each step.
+
 ### Approach
 
-**Find Minimum in Rotated Sorted Array** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The code compares `nums[mid]` with `nums[right]` to determine which side contains the minimum.  
+If `nums[mid] < nums[right]`, then the right half is sorted and the minimum is at `mid` or to its left.  
+Otherwise, the rotation point must be to the right of `mid`, so we move `left` forward.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+Why this approach?
+
+- A linear scan would find the minimum in `O(n)`.
+- The rotated sorted structure lets us identify the unsorted side, which is where the minimum lives.
+- That preserves the required `O(log n)` runtime.
+
+### Pattern Used
+
+Binary Search.
+
+### Key Insight
+
+In a rotated sorted array of unique values, the minimum always lies in the half that breaks sorted order, and `nums[mid]` versus `nums[right]` tells us which half that is.
 
 ### Code Walkthrough
 
-The solution is implemented in `findMin(int[] nums)`:
+The method starts with:
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+- `int left = 0;`
+- `int right = nums.length - 1;`
+
+These pointers bound the current search interval for the minimum.
+
+The loop condition is:
+
+- `while (left < right)`
+
+We stop when both pointers converge on the minimum index.
+
+Inside the loop:
+
+- `int mid = left + (right - left) / 2;`
+
+Then the code checks:
+
+- If `nums[mid] < nums[right]`, the segment from `mid` to `right` is sorted, so the minimum cannot be to the right of `mid`. The code sets `right = mid`.
+- Otherwise, `nums[mid]` is in the left rotated portion, so the minimum must be strictly after `mid`. The code sets `left = mid + 1`.
+
+At the end:
+
+- `return nums[left];`
+
+Since `left == right`, that index is the minimum element.
+
+### Example Walkthrough
+
+Use **Example 1**: `nums = [3,4,5,1,2]`.
+
+Initial state:
+
+- `left = 0`, `right = 4`
+
+First iteration:
+
+- `mid = 0 + (4 - 0) / 2 = 2`
+- `nums[mid] = 5`, `nums[right] = 2`
+- `5 < 2` is false, so set `left = mid + 1 = 3`
+
+Second iteration:
+
+- `left = 3`, `right = 4`
+- `mid = 3 + (4 - 3) / 2 = 3`
+- `nums[mid] = 1`, `nums[right] = 2`
+- `1 < 2` is true, so set `right = mid = 3`
+
+Now:
+
+- `left = 3`, `right = 3`
+
+Loop stops, and `nums[left] = nums[3] = 1`, which is the answer.
+
+### Key Variables Explained
+
+- `nums`: rotated sorted input array.
+- `left`: left boundary of the current candidate range for the minimum.
+- `right`: right boundary of the current candidate range.
+- `mid`: middle index used to inspect which side is properly sorted.
+
+### Why This Works
+
+The algorithm maintains the invariant that the minimum element always lies within `[left, right]`.  
+When `nums[mid] < nums[right]`, the right side is sorted in increasing order, so its smallest element is `nums[mid]`; the true minimum cannot be beyond `mid`, so keeping `[left, mid]` is safe.  
+When that condition is false, the rotation point lies to the right of `mid`, so the minimum must be in `[mid + 1, right]`.  
+Each update keeps the minimum inside the search range until only one index remains.
+
+### Trick Used
+
+Using `nums[right]` as the comparison anchor to detect whether `mid` is in the sorted right portion or the rotated left portion.
+
+### Edge Cases Handled
+
+- Already sorted array like `[11,13,15,17]`: the `nums[mid] < nums[right]` branch keeps shrinking toward index `0`.
+- Array of length `1`: `left` and `right` start equal, so the loop never runs and the only element is returned.
+- Rotation near the ends: the pointer updates still converge correctly because the minimum stays inside `[left, right]`.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log n)`** — each iteration halves the candidate interval by moving either `left` or `right`.
+- **Space Complexity: `O(1)`** — only a few integer pointers are used.

@@ -95,25 +95,95 @@ public class TaskScheduler {
 
 ## Explanation
 
+### Problem Analysis
+We need the minimum number of time slots needed to execute all tasks when identical tasks must be separated by at least `n` intervals. The hard part is accounting for forced idle slots without explicitly simulating every schedule.
+
+This is a common interview problem because it looks like scheduling, but the real solution comes from counting frequencies and reasoning about the most constrained tasks.
+
 ### Approach
+The code uses a greedy counting formula. It finds the task frequency that appears the most times, treats those occurrences as the backbone of the schedule, and then calculates how many gaps must exist between them.
 
-**Task Scheduler** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
+Instead of building a full timeline, the algorithm computes how many of those gaps can be filled by other tasks and how many must remain idle. That is much simpler and more efficient than simulating with a heap.
 
-A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
+### Pattern Used
+Greedy with Frequency Counting.
+
+### Key Insight
+The tasks with the maximum frequency determine the minimum possible schedule length, because every other task must fit into the gaps created around them.
 
 ### Code Walkthrough
+`leastInterval(char[] tasks, int n)` starts by counting frequencies:
 
-The solution is implemented in `leastInterval(char[] tasks, int n)`:
+- `int[] taskCounts = new int[26];` stores counts for `'A'` through `'Z'`.
+- The loop `for (char task : tasks)` increments `taskCounts[task - 'A']`.
 
-1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
-2. Insert elements as you process them.
-3. Poll the top element when you need the current minimum/maximum.
-4. For "top-K" problems, keep the heap size bounded at K to save memory.
-5. After processing, the remaining heap elements or the polled sequence is your answer.
+Next, the code finds the highest frequency and how many tasks share it:
 
-&gt; **Note:** This solution also uses the **greedy — make the locally optimal choice at each step** technique.
+- `maxCount` stores the largest frequency seen so far.
+- `maxCountTasks` stores how many distinct task labels occur exactly `maxCount` times.
+- If a new larger `count` is found, `maxCount` is replaced and `maxCountTasks` resets to `1`.
+- If `count == maxCount`, another task joins that top-frequency group, so `maxCountTasks++`.
+
+The formula section computes the required structure:
+
+- `partCount = maxCount - 1` is the number of full gaps between the most frequent occurrences.
+- `partLength = n - (maxCountTasks - 1)` is how many idle-capable positions remain in each gap after placing other max-frequency tasks alongside them.
+- `emptySlots = partCount * partLength` is the total number of open positions that still need filling.
+- `availableTasks = tasks.length - (maxCount * maxCountTasks)` counts all tasks not belonging to the top-frequency group.
+- `idles = Math.max(0, emptySlots - availableTasks)` is the number of gaps that other tasks cannot fill.
+
+Finally:
+
+- `return tasks.length + idles;`
+- Every task consumes one interval, and only unavoidable idle slots are added.
+
+### Example Walkthrough
+Use Example 1: `tasks = ["A","A","A","B","B","B"]`, `n = 2`.
+
+Frequency counts:
+
+- `A -> 3`
+- `B -> 3`
+- So `maxCount = 3` and `maxCountTasks = 2`.
+
+Apply the formula:
+
+- `partCount = 3 - 1 = 2`
+- `partLength = 2 - (2 - 1) = 1`
+- `emptySlots = 2 * 1 = 2`
+- `availableTasks = 6 - (3 * 2) = 0`
+- `idles = max(0, 2 - 0) = 2`
+
+Answer:
+
+- `tasks.length + idles = 6 + 2 = 8`
+
+That matches a valid schedule such as `A, B, idle, A, B, idle, A, B`.
+
+### Key Variables Explained
+- `taskCounts`: frequency table for all 26 uppercase task types.
+- `maxCount`: the highest frequency among all tasks.
+- `maxCountTasks`: how many task types are tied at that highest frequency.
+- `partCount`: number of separators between repeated occurrences of the most frequent tasks.
+- `partLength`: remaining capacity in each separator block after accounting for ties at the top.
+- `emptySlots`: total positions that still need other tasks or idle intervals.
+- `availableTasks`: tasks that can be used to fill those positions.
+- `idles`: unavoidable idle intervals left after filling as much as possible.
+
+### Why This Works
+Any task with frequency `maxCount` must appear `maxCount` times, creating `maxCount - 1` cooling gaps between consecutive copies. Those gaps are the bottleneck of the schedule. If multiple tasks share the same maximum frequency, they occupy part of each gap structure together, which is why `partLength` subtracts `maxCountTasks - 1`.
+
+Once that backbone is fixed, every remaining task can only reduce empty space. If there are not enough remaining tasks to fill all empty slots, the difference must be idle time. Otherwise, no idle intervals are needed, and the answer is just the number of tasks.
+
+### Trick Used
+The main trick is converting the scheduling problem into a gap-counting formula based on `maxCount` and `maxCountTasks`, avoiding explicit timeline simulation.
+
+### Edge Cases Handled
+- `n = 0`: then `partLength` becomes `0` or less, `idles` becomes `0`, and the answer is simply `tasks.length`.
+- Multiple tasks tied for highest frequency: handled by `maxCountTasks`.
+- Enough other tasks to fill every gap: `Math.max(0, emptySlots - availableTasks)` prevents negative idle counts.
+- Only one task type repeated many times: the formula correctly adds the required idle slots.
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity:** `O(tasks.length + 26)` because the code makes one pass to count tasks and one fixed-size pass over the 26 counters. This simplifies to `O(n)` where `n = tasks.length`.
+- **Space Complexity:** `O(26)`, which is `O(1)`, because `taskCounts` has constant size and the remaining variables are scalars.

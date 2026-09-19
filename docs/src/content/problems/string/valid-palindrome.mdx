@@ -90,23 +90,89 @@ public class ValidPalindrome {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to decide whether a string reads the same forward and backward after ignoring punctuation, spaces, and case differences. So the real task is not comparing the raw string, but comparing only its alphanumeric characters in normalized lowercase form.
+
+This is a very common interview problem because it checks whether you can use pointers carefully while filtering input on the fly instead of building unnecessary extra strings.
+
 ### Approach
 
-**Valid Palindrome** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+The solution uses two pointers, `left` and `right`, starting from both ends of the string. Before comparing characters, it skips over any character that is not alphanumeric by calling `isValidChar`.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+This is better than constructing a cleaned string first because:
+
+- it keeps extra space constant,
+- it processes the string in one pass,
+- it compares only the characters that actually matter.
+
+### Pattern Used
+
+This solution uses the **Two Pointers** pattern.
+
+### Key Insight
+
+If the string is a palindrome after filtering, then the next valid character from the left must always match the next valid character from the right, case-insensitively.
 
 ### Code Walkthrough
 
-The solution is implemented in `isPalindrome(String s)`:
+The method initializes `left = 0` and `right = s.length() - 1`.
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+The outer loop `while (left < right)` keeps shrinking the window being checked.
+
+Inside that loop:
+
+- `while (left < right && !isValidChar(s.charAt(left)))` moves `left` forward until it points at a letter or digit.
+- `while (left < right && !isValidChar(s.charAt(right)))` moves `right` backward for the same reason.
+
+Once both pointers are on valid characters, the code compares:
+
+- `Character.toLowerCase(s.charAt(left))`
+- `Character.toLowerCase(s.charAt(right))`
+
+If they differ, the method immediately returns `false`.
+
+If they match, both pointers move inward with `left++` and `right--`, and the process repeats.
+
+`isValidChar(char c)` simply delegates to `Character.isLetterOrDigit(c)`, which is exactly the filtering rule required by the problem.
+
+### Example Walkthrough
+
+Take **Example 1**, `s = "A man, a plan, a canal: Panama"`.
+
+- `left` starts at `'A'`, `right` starts at `'a'`. Lowercased, both are `'a'`, so they match.
+- `left` advances over the space after `A`; `right` skips backward over punctuation and spaces near the end.
+- The next meaningful pair becomes `'m'` and `'m'`, then `'a'` and `'a'`, then `'n'` and `'n'`.
+- This continues as the pointers keep skipping commas, spaces, and the colon.
+- Eventually the pointers cross without finding a mismatch, so the method returns `true`.
+
+That matches the cleaned string `"amanaplanacanalpanama"`.
+
+### Key Variables Explained
+
+- `left`: scans from the beginning toward the center.
+- `right`: scans from the end toward the center.
+- `s`: original input string, read directly without creating a filtered copy.
+- `isValidChar(...)`: helper that decides whether a character should participate in palindrome comparison.
+
+### Why This Works
+
+At every iteration, the code preserves this invariant: all valid characters outside the current `[left, right]` window have already been matched successfully with their mirrored partner.
+
+Skipping invalid characters is safe because the problem explicitly says they should be ignored. Comparing lowercase versions is safe because case should not matter. Therefore, the first mismatch proves the string is not a palindrome, and if no mismatch appears before the pointers cross, every mirrored pair matches and the string is a palindrome.
+
+### Trick Used
+
+Filtering characters lazily with the inner `while` loops avoids building a separate normalized string.
+
+### Edge Cases Handled
+
+- String containing only spaces or punctuation, such as **Example 3**: the pointers skip invalid characters and the method returns `true`.
+- Mixed uppercase and lowercase letters: handled by `Character.toLowerCase(...)`.
+- Digits inside the string: allowed because `isValidChar` accepts letters and digits.
+- Early mismatch, such as `"race a car"`: the first unequal valid pair triggers `false`.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — each character is visited at most a constant number of times as `left` and `right` only move inward.
+- **Space Complexity: `O(1)`** — only the two pointers and a helper method are used.

@@ -93,20 +93,129 @@ public class BasicCalculator2 {
 
 ## Explanation
 
+### Problem Analysis
+
+The expression contains non-negative integers, spaces, and the four operators `+`, `-`, `*`, and `/`. The main difficulty is honoring operator precedence without using an expression evaluator.
+
+This is a classic interview question because it checks whether you can parse a string in one pass while correctly handling precedence and multi-digit numbers.
+
 ### Approach
 
-**Basic Calculator II** is a stack problem. The solution iterates over the input using a queue/stack loop, applying the appropriate data structure (Stack, Character utilities) to achieve the target complexities of `O(n)` time and `O(n)` space.
+The code scans the string once, builds the current number in `num`, and uses a `Stack<Integer>` to store terms that should later be added together.
+
+The idea is:
+
+- `+` and `-` start a new term, so the code pushes `num` or `-num`
+- `*` and `/` have higher precedence, so the code immediately combines `num` with the previous stack value
+
+That is much better than brute-force parsing or building a full expression tree because precedence is handled on the fly.
+
+### Pattern Used
+
+This solution uses the **stack-based expression evaluation** pattern with a **single left-to-right scan**.
+
+### Key Insight
+
+If addition and subtraction are stored as signed values in the stack, then multiplication and division only need to update the most recent term immediately.
 
 ### Code Walkthrough
 
-The solution is implemented in `calculate(String s)`:
+The method starts with:
 
-1. **Initialise** the necessary data structures (`sign`, `num`, `i`).
-2. **Iterate** over the input using a queue/stack loop.
-3. **Process** each element: apply the core logic and update state.
-4. **Return** the accumulated result after the loop.
+- `Stack<Integer> stack = new Stack<>();`
+- `char sign = '+';`
+- `int num = 0;`
+
+`sign` represents the operator that should be applied to the current `num` once the next operator or the end of the string is reached.
+
+Inside the loop:
+
+- `char c = s.charAt(i);`
+- if `Character.isDigit(c)`, update `num = num * 10 + (c - '0')`
+
+That allows multi-digit values like `42` or `300`.
+
+The important condition is:
+
+```java
+if (!Character.isDigit(c) && c != ' ' || i == s.length() - 1)
+```
+
+This means:
+
+- process the current `num` when an operator appears
+- or process it at the very last character so the final number is not missed
+
+The `switch (sign)` applies the previous operator:
+
+- `case '+' -> stack.push(num);`
+- `case '-' -> stack.push(-num);`
+- `case '*' -> stack.push(stack.pop() * num);`
+- `case '/' -> stack.push(stack.pop() / num);`
+
+After that:
+
+- `sign = c;`
+- `num = 0;`
+
+At the end, the remaining stack values are all additive terms, so the code pops and sums them into `result`.
+
+### Example Walkthrough
+
+Use **Example 1**:
+
+```text
+s = "3+2*2"
+```
+
+Step by step:
+
+- read `'3'` -> `num = 3`
+- read `'+'` -> previous `sign` is `'+'`, so push `3`; stack = `[3]`; set `sign = '+'`; reset `num = 0`
+- read `'2'` -> `num = 2`
+- read `'*'` -> previous `sign` is `'+'`, so push `2`; stack = `[3, 2]`; set `sign = '*'`; reset `num = 0`
+- read last `'2'` -> `num = 2`, and because this is the last character, process it immediately
+- previous `sign` is `'*'`, so pop `2`, compute `2 * 2 = 4`, push `4`; stack = `[3, 4]`
+
+Now sum the stack:
+
+- `3 + 4 = 7`
+
+So the method returns `7`.
+
+### Key Variables Explained
+
+- `stack` — stores the terms that will eventually be added together
+- `sign` — remembers which operator should be applied to the current `num`
+- `num` — builds the current multi-digit integer
+- `result` — accumulates the final sum after the scan finishes
+- `c` — current character from the input string
+
+### Why This Works
+
+The stack always represents the expression seen so far after fully resolving every multiplication and division.
+
+More precisely:
+
+- additions are stored as positive terms
+- subtractions are stored as negative terms
+- multiplication and division modify only the most recent term, which is exactly what precedence requires
+
+So once the scan ends, simply adding the stack contents produces the correct final value.
+
+### Trick Used
+
+The trick is **storing subtraction as a negative number and resolving `*` / `/` immediately against `stack.pop()`**.
+
+### Edge Cases Handled
+
+- **Spaces in the input** — ignored because the processing condition skips `' '`
+- **Multi-digit numbers** — built through `num = num * 10 + (c - '0')`
+- **Last number in the string** — handled by `i == s.length() - 1`
+- **Integer division truncation** — Java integer division already truncates toward zero
+- **Expressions with only `+` and `-`** — stack simply stores signed terms and sums them later
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — the loop scans the string once, and each stack entry is pushed and popped at most once
+- **Space Complexity: `O(n)`** — in the worst case, the stack can hold many additive terms such as in `"1+2+3+4+..."`

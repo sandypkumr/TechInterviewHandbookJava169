@@ -66,23 +66,106 @@ public class MiddleOfTheLinkedList {
 
 ## Explanation
 
+### Problem Analysis
+The problem asks us to return the middle node of a singly linked list, and for even-length lists it specifically wants the second middle node. That detail matters because it determines exactly how the pointer movement should stop.
+
+This is a classic interview problem because it tests whether you can avoid a two-pass length count by using pointer speed cleverly.
+
 ### Approach
+A straightforward solution would count the nodes first, compute the middle index, and then walk the list again. That works, but it needs two passes.
 
-**Middle of the Linked List** uses two pointers moving at different speeds — slow advances one step at a time, fast advances two. If a cycle exists, the fast pointer eventually laps the slow pointer and they meet inside the cycle. If no cycle exists, fast reaches the end first.
+This solution is cleaner: use `slow` and `fast` starting at the same node. On each loop, `slow` moves one step while `fast` moves two. By the time `fast` reaches the end, `slow` must be at the middle.
 
-Think of two runners on a circular track: the faster runner will always eventually overtake (lap) the slower one. If the track has no loop (i.e., it ends), the faster runner simply reaches the finish line first.
+### Pattern Used
+This solution uses the **Fast/Slow Pointers** pattern.
+
+### Key Insight
+If one pointer moves twice as fast as the other, then when the faster pointer finishes the list, the slower pointer has covered exactly half the distance.
 
 ### Code Walkthrough
+The method `middleNode(ListNode head)` begins with:
+- `ListNode slow = head;`
+- `ListNode fast = head;`
 
-The solution is implemented in `middleNode(ListNode head)`:
+Both pointers start from the same node.
 
-1. Initialise slow = head and fast = head.
-2. Advance slow by one step and fast by two steps each iteration.
-3. If fast or fast.next is null, there is no cycle.
-4. If slow == fast, a cycle is detected (meeting point is inside the cycle).
-5. To find the cycle entry point, reset one pointer to head and advance both one step at a time.
+The loop condition is:
+- `while (fast != null && fast.next != null)`
+
+That condition ensures `fast` can safely move two steps. Inside the loop:
+- `slow = slow.next;`
+- `fast = fast.next.next;`
+
+So each iteration advances `slow` by one node and `fast` by two nodes.
+
+When the loop ends, one of two things has happened:
+- `fast == null`, which means the list length is even
+- `fast.next == null`, which means the list length is odd
+
+In both cases, `slow` is exactly where we want it, so the method returns `slow`.
+
+Because `slow` is moved only when `fast` can move two steps, an even-length list naturally leaves `slow` on the second middle node.
+
+### Example Walkthrough
+Use Example 1:
+- `head = [1,2,3,4,5]`
+
+Start:
+- `slow = 1`
+- `fast = 1`
+
+Iteration 1:
+- `slow` moves to `2`
+- `fast` moves to `3`
+
+Iteration 2:
+- `slow` moves to `3`
+- `fast` moves to `5`
+
+Now `fast.next == null`, so the loop stops.
+- return `slow`
+- output is `[3,4,5]`
+
+Use Example 2:
+- `head = [1,2,3,4,5,6]`
+
+Start:
+- `slow = 1`
+- `fast = 1`
+
+Iteration 1:
+- `slow = 2`
+- `fast = 3`
+
+Iteration 2:
+- `slow = 3`
+- `fast = 5`
+
+Iteration 3:
+- `slow = 4`
+- `fast = null`
+
+The loop stops, and `slow` is on node `4`, which is the required second middle.
+
+### Key Variables Explained
+- `head`: start of the linked list.
+- `slow`: advances one step at a time and eventually lands on the middle node.
+- `fast`: advances two steps at a time and determines when half the list has been crossed.
+
+### Why This Works
+After every loop iteration, `fast` has moved exactly twice as many nodes as `slow`. That means when `fast` has traversed the full list, `slow` has traversed half of it.
+
+For odd lengths, `slow` lands on the unique middle node. For even lengths, the loop allows one more move for `slow` right before `fast` becomes `null`, which places `slow` on the second middle node exactly as required.
+
+### Trick Used
+Using **different pointer speeds** avoids computing the list length first.
+
+### Edge Cases Handled
+- Single-node list: the loop never runs, so `slow` is returned immediately.
+- Odd-length list: the loop stops when `fast.next == null`, leaving `slow` on the true middle.
+- Even-length list: the loop stops when `fast == null`, leaving `slow` on the second middle.
 
 ### Complexity Analysis
+- **Time Complexity:** `O(n)`, because the loop advances through the list once, with `fast` skipping two nodes per iteration.
+- **Space Complexity:** `O(1)`, because only `slow` and `fast` are used in addition to the input list.
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

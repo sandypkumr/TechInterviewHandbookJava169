@@ -73,23 +73,89 @@ public class LongestPalindrome {
 
 ## Explanation
 
+### Problem Analysis
+The problem does not ask us to find a palindromic substring inside `s`. Instead, it asks for the maximum palindrome length we can build by rearranging the available letters.
+A palindrome is symmetric, so characters are useful in pairs, with at most one extra character allowed in the middle. This is a common interview question because it tests whether you can convert a string property into a counting problem.
+
 ### Approach
+The code counts how many times every character appears, then uses as many pairs as possible from each count.
+That is much better than trying to construct the palindrome explicitly. We only need the length, so the greedy choice is simple: take every even contribution, and from an odd count take `count - 1` for the two symmetric halves. If any odd count exists, one leftover character can sit in the center.
 
-The key insight for **Longest Palindrome** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+### Pattern Used
+primarily relies on frequency counting
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+### Key Insight
+Every character can contribute its largest even amount to the palindrome, and only one character with an odd frequency can contribute one extra center position.
 
 ### Code Walkthrough
+The method `longestPalindrome(String s)` starts by creating `int[] charCount = new int[128]`.
+- This uses ASCII indexing, so uppercase and lowercase letters are naturally treated as different characters.
 
-The solution is implemented in `longestPalindrome(String s)`:
+The loop `for (char c : s.toCharArray())` increments `charCount[c]`.
+- After this pass, each slot stores how many times that character appears in `s`.
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+Next, the code initializes:
+- `int length = 0;`
+- `boolean hasOddCount = false;`
+
+Then it iterates through every `count` in `charCount`.
+- If `count % 2 == 0`, the entire count can be mirrored, so `length += count`.
+- Otherwise, the code adds `count - 1`, which is the largest even amount from that character.
+- It also sets `hasOddCount = true`, because any odd frequency means one leftover character exists.
+
+Finally, the return statement is:
+- `return length + (hasOddCount ? 1 : 0);`
+
+That last `+ 1` accounts for the one optional center character in a palindrome.
+
+### Example Walkthrough
+Use Example 1: `s = "abccccdd"`.
+
+Character frequencies become:
+- `'a' = 1`
+- `'b' = 1`
+- `'c' = 4`
+- `'d' = 2`
+
+Now process them the same way as the code:
+- For `'a'`, count is odd, so add `0` and set `hasOddCount = true`
+- For `'b'`, count is odd, so add `0`
+- For `'c'`, count is even, so add `4`
+- For `'d'`, count is even, so add `2`
+
+At this point:
+- `length = 6`
+- `hasOddCount = true`
+
+The method returns `6 + 1 = 7`.
+That matches the answer, because one longest possible palindrome uses all paired letters plus one center letter.
+
+### Key Variables Explained
+- `charCount`: frequency table for all ASCII characters in `s`
+- `length`: total number of characters that can definitely be placed symmetrically
+- `hasOddCount`: remembers whether some character has a leftover odd occurrence that can fill the center
+- `count`: the current frequency being evaluated from `charCount`
+
+### Why This Works
+A palindrome needs matching characters on both sides, so characters are only fully useful in pairs.
+For any frequency `count`, the maximum pair-based contribution is:
+- `count` itself when `count` is even
+- `count - 1` when `count` is odd
+
+The code sums exactly those safe contributions into `length`. If at least one odd count exists, one leftover character can be placed in the middle without breaking symmetry, which is why adding exactly one more character is correct.
+
+### Trick Used
+Using `count - 1` for odd frequencies lets the code capture the largest usable even portion immediately, without separately computing pairs.
+
+### Edge Cases Handled
+- Single-character input like `"a"`: all counts are processed, `hasOddCount` becomes `true`, and the method returns `1`
+- Mixed uppercase and lowercase letters: `charCount[c]` treats `'A'` and `'a'` as different indices, matching the problem statement
+- All even frequencies: `hasOddCount` stays `false`, so no unnecessary center character is added
+- Multiple odd frequencies: the code still adds only one extra center character, which is the maximum allowed in any palindrome
 
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- Time Complexity: `O(n)`
+  - One pass counts characters in `s`
+  - One pass scans the fixed `charCount` array of size 128
+- Space Complexity: `O(1)`
+  - `charCount` always has length 128, so extra space does not grow with input size
