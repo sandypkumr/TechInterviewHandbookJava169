@@ -63,7 +63,7 @@ Explanation: The original array was [11,13,15,17] and it was rotated 4 times.
 
 - `nums` is sorted and rotated between `1` and `n` times.
 
-**Patterns:** `binary-search`
+**Patterns:** `sliding-window`
 
 ## Java Solution
 
@@ -93,136 +93,23 @@ public class FindMinimumInRotatedSortedArray {
 
 ## Explanation
 
-### Problem Analysis
-
-The array was originally sorted in ascending order, then rotated.
-
-That means most of the array still looks sorted, but the smallest element marks the point where the order wraps around. In `[4,5,6,7,0,1,2]`, the minimum is `0` because it is where the increasing sequence restarts.
-
-The problem also requires `O(log n)` time, so a linear scan is not enough. We need to use the rotated sorted structure to eliminate half the search space at a time.
-
 ### Approach
 
-The solution uses binary search on the current index range.
+**Find Minimum in Rotated Sorted Array** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
 
-On each iteration, it compares `nums[mid]` with `nums[right]`:
-
-- if `nums[mid] < nums[right]`, the right side from `mid` to `right` is sorted, so the minimum must be at `mid` or somewhere to its left
-- otherwise, the rotation point and minimum must be strictly to the right of `mid`
-
-This keeps shrinking the search interval until only one index remains.
-
-### Pattern Used
-
-This solution uses **binary search on a rotated sorted array**.
-
-More specifically, it is a boundary-search style binary search. We are not searching for a target value. We are searching for the boundary where the sorted order restarts.
-
-### Key Insight
-
-Because all values are **unique**, the comparison between `nums[mid]` and `nums[right]` is enough to tell which half is definitely sorted.
-
-- If `nums[mid] < nums[right]`, then the segment from `mid` to `right` is increasing, so the minimum cannot be somewhere after `mid`. It must be in `[left, mid]`.
-- If `nums[mid] > nums[right]`, then the rotation point lies to the right of `mid`, so the minimum must be in `[mid + 1, right]`.
-
-That single comparison gives the direction of the next search step.
+Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
 
 ### Code Walkthrough
 
-```java
-public int findMin(int[] nums) {
-    int left = 0;
-    int right = nums.length - 1;
+The solution is implemented in `findMin(int[] nums)`:
 
-    while (left < right) {
-        int mid = left + (right - left) / 2;
-
-        // Decide which half to continue searching
-        if (nums[mid] < nums[right]) {
-            right = mid;
-        } else {
-            left = mid + 1;
-        }
-    }
-
-    return nums[left]; // The minimum element
-}
-```
-
-How the method works:
-
-1. `left` starts at index `0` and `right` starts at the last index, so the whole array is the initial search range.
-2. The loop continues while `left < right`, meaning there is still more than one possible answer.
-3. `mid` is computed as `left + (right - left) / 2`, which is the standard overflow-safe binary search formula.
-4. If `nums[mid] < nums[right]`, the minimum is in the left part including `mid`, so the code sets `right = mid`.
-   - `mid` stays in the range because it could itself be the minimum.
-5. Otherwise, the minimum must be to the right of `mid`, so the code sets `left = mid + 1`.
-   - In this branch, `mid` cannot be the minimum, so it is excluded.
-6. When the loop ends, `left == right`, so one index remains. The code returns `nums[left]`.
-
-### Example Walkthrough
-
-For `nums = [4,5,6,7,0,1,2]`:
-
-| `left` | `right` | `mid` | `nums[mid]` | `nums[right]` | Decision |
-|-------:|--------:|------:|------------:|--------------:|----------|
-| 0 | 6 | 3 | 7 | 2 | `7 < 2` is false, so the minimum must be right of `mid` → `left = 4` |
-| 4 | 6 | 5 | 1 | 2 | `1 < 2` is true, so the minimum is in `[4, 5]` → `right = 5` |
-| 4 | 5 | 4 | 0 | 1 | `0 < 1` is true, so the minimum is in `[4, 4]` → `right = 4` |
-
-Now `left == right == 4`, so the answer is `nums[4] = 0`.
-
-### Key Variables Explained
-
-- **`left`**: the left boundary of the current search interval.
-- **`right`**: the right boundary of the current search interval.
-- **`mid`**: the middle index used to decide which half still contains the minimum.
-- **`nums[right]`**: the reference value used to determine whether the right side is sorted.
-
-### Why This Works
-
-The algorithm maintains one important invariant throughout the loop:
-
-> the minimum element is always inside the current range `[left, right]`
-
-Each update preserves that invariant:
-
-- When `nums[mid] < nums[right]`, the right side is sorted, so the minimum cannot be in `(mid, right]`. Keeping `[left, mid]` is correct.
-- When `nums[mid] > nums[right]`, the rotation point lies to the right of `mid`, so keeping `[mid + 1, right]` is correct.
-
-Because the range gets smaller every iteration, it eventually collapses to one index, and that remaining index must be the minimum.
-
-### Trick Used
-
-The main trick is comparing against the **right boundary** instead of trying to explicitly detect the pivot first.
-
-That keeps the logic simple:
-
-- keep `mid` when it could still be the minimum
-- skip `mid` when the minimum must be further right
-
-There is no extra hidden trick beyond that; this is a direct binary search with careful boundary updates.
-
-### Edge Cases Handled
-
-1. **Already sorted / effectively full rotation** like `[11,13,15,17]`
-   - each comparison moves `right` leftward
-   - the search converges to index `0`
-
-2. **Single element** like `[5]`
-   - `left` and `right` both start at `0`
-   - the loop does not run
-   - the method returns `5`
-
-3. **Minimum in the middle after rotation** like `[3,4,5,1,2]`
-   - the search quickly moves into the rotated half
-   - the answer is still found in logarithmic time
-
-4. **Two elements** like `[2,1]`
-   - the same comparisons still work on a very small search range
-   - the method returns `1`
+1. Define left and right boundaries covering all possible answers.
+2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
+3. Evaluate the predicate at mid to decide which half to discard.
+4. Narrow the range: move left = mid + 1 or right = mid - 1.
+5. Repeat until left &gt; right; the answer is typically left (or right + 1).
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — each iteration cuts the search interval roughly in half.
-- **Space Complexity: `O(1)`** — only a few integer variables are used.
+- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

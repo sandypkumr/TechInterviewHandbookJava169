@@ -7,7 +7,7 @@ githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/mast
 patterns: ["dfs"]
 tags: []
 timeComplexity: "O(h)"
-spaceComplexity: "O(h)"
+spaceComplexity: "O(1)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
@@ -45,9 +45,13 @@ Output: 2
 **Constraints:**
 
 - The number of nodes in the tree is in the range `[2, 10^5]`.
+
 - `-10^9 <= Node.val <= 10^9`
+
 - All `Node.val` are **unique**.
+
 - `p != q`
+
 - `p` and `q` will exist in the BST.
 
 ## Java Solution
@@ -73,118 +77,23 @@ public class LowestCommonAncestorOfABinarySearchTree {
 
 ## Explanation
 
-### Problem Analysis
-
-In a binary search tree, every node separates the tree into two ordered sides:
-- values smaller than the node are in the left subtree
-- values larger than the node are in the right subtree
-
-That ordering is the whole reason this problem is simpler than the general binary tree LCA problem. We do not need to search every branch. We only need to find the first node where `p` and `q` stop going in the same direction.
-
 ### Approach
 
-Start at the current `root` and compare both target values with `root.val`:
-- if both `p` and `q` are smaller, recurse into `root.left`
-- if both `p` and `q` are larger, recurse into `root.right`
-- otherwise, the current `root` is the split point and therefore the LCA
+**Lowest Common Ancestor of a Binary Search Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-The method is recursive, so each call decides only one thing: keep moving left, keep moving right, or stop and return the current node.
-
-### Pattern Used
-
-This solution mainly uses **direct BST-guided recursion**.
-
-It is not a full tree traversal. The BST property lets the code discard one entire subtree on every step, which keeps the logic short and efficient.
-
-### Key Insight
-
-The lowest common ancestor is the first node where the two target nodes fall on different sides.
-
-If both targets are still on the same side, the current node cannot be the answer yet because both nodes are still contained in one subtree. Once they diverge, the current node is the lowest node that can still reach both targets.
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-```java
-public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
-    if (root == null) {
-        return null;
-    }
-    if (p.val < root.val && q.val < root.val) {
-        return lowestCommonAncestor(root.left, p, q);
-    } else if (p.val > root.val && q.val > root.val) {
-        return lowestCommonAncestor(root.right, p, q);
-    } else {
-        return root;
-    }
-}
-```
+The solution is implemented in `lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q)`:
 
-How the method works:
-
-1. `if (root == null)` is a defensive base case and returns `null`.
-2. `if (p.val < root.val && q.val < root.val)` means both targets are in the left subtree, so the method recurses on `root.left`.
-3. `else if (p.val > root.val && q.val > root.val)` means both targets are in the right subtree, so the method recurses on `root.right`.
-4. `else` means the values are no longer on the same side. That makes the current `root` the split point, so it is the LCA.
-
-### Example Walkthrough
-
-For `root = [6,2,8,0,4,7,9,null,null,3,5]`, `p = 2`, and `q = 8`:
-
-1. Start at `6`.
-2. `2 < 6` and `8 > 6`, so the two nodes are on different sides.
-3. The current node `6` is the split point.
-4. Return `6` immediately.
-
-For `p = 2` and `q = 4`:
-
-1. Start at `6`.
-2. `2 < 6` and `4 < 6`, so both nodes are on the left.
-3. Recurse into `2`.
-4. At node `2`, one target matches the current node and the other is in its right subtree.
-5. Node `2` is the first split point, so it is returned as the answer.
-
-### Key Variables Explained
-
-- **`root`**: the current node being checked.
-- **`p`**: one target node.
-- **`q`**: the other target node.
-- **`root.val`**: the value used to decide whether both targets go left, both go right, or split at the current node.
-
-### Why This Works
-
-The BST ordering guarantees that all values in the left subtree are smaller and all values in the right subtree are larger.
-
-Because of that:
-- if both targets are smaller than the current node, neither can be in the right subtree
-- if both targets are larger, neither can be in the left subtree
-- if one target is on each side, or one target equals the current node, then the current node is the lowest node that can still reach both targets
-
-So the recursion stops exactly at the node where the paths to `p` and `q` diverge.
-
-### Trick Used
-
-There is no special trick beyond using the BST property.
-
-The key simplification is that we never need to inspect both subtrees unless the answer is already implied by the current node.
-
-### Edge Cases Handled
-
-1. **One node is the ancestor of the other**
-   - Example: `p = 2`, `q = 4`
-   - when the recursion reaches `2`, one target is exactly the current node
-   - the method returns `2`, which matches the problem definition
-
-2. **The LCA is the root**
-   - if `p` and `q` are on different sides of the root, the first call returns `root`
-
-3. **Both nodes are deep in the same subtree**
-   - the method keeps moving down that side until it finds the split point
-
-4. **Null root**
-   - the method returns `null`
-   - this is only a safety check; the problem guarantees valid input
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(h)`** — the algorithm follows a single path down the tree, where `h` is the height of the BST.
-- **Space Complexity: `O(h)`** — the recursive call stack can grow to the height of the tree in the worst case.
+- **Time Complexity: `O(h)`** — see the analysis for full details.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

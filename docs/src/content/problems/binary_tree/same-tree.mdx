@@ -6,13 +6,13 @@ leetcodeUrl: "https://leetcode.com/problems/same-tree"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/SameTree.java"
 patterns: ["dfs"]
 tags: []
-timeComplexity: "O(min(m,n))"
+timeComplexity: "O(n)"
 spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 Given the roots of two binary trees `p` and `q`, write a function to check if they are the same or not.
@@ -66,122 +66,23 @@ public class SameTree {
 
 ## Explanation
 
-### Problem Analysis
-
-Two binary trees are identical only when both their structure and node values match. This is fundamentally a tree comparison problem where we must visit corresponding nodes from both trees simultaneously and verify structural and value equality.
-
-The challenge is recognizing that a value-only check is insufficient; position matters. A tree with nodes `[1,2,3]` differs from `[1,null,2]` because the second node is positioned differently.
-
 ### Approach
 
-Use recursive DFS to traverse both trees in parallel. At each step:
-- If both nodes are null, they match (base case: empty branches)
-- If exactly one is null, they don't match (structure differs)
-- If both exist, check value equality and recursively verify left and right subtrees
+**Same Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-This synchronized traversal ensures we compare nodes at identical positions in both trees.
-
-### Pattern Used
-
-**Synchronized recursive tree traversal** — two pointers move in lockstep through corresponding nodes.
-
-### Key Insight
-
-The key insight is that structural identity can be verified by synchronized parallel traversal. The recursion naturally handles the comparison: a boolean result combines with children's results via short-circuit AND evaluation, stopping immediately if any comparison fails.
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-```java
-public boolean isSameTree(TreeNode p, TreeNode q) {
-    // Both nodes are null: they match
-    if (p == null && q == null) {
-        return true;
-    }
-    // Exactly one is null: structure differs
-    if (p == null || q == null) {
-        return false;
-    }
-    // Both exist: check value and recurse on children
-    return p.val == q.val && isSameTree(p.left, q.left) && isSameTree(p.right, q.right);
-}
-```
+The solution is implemented in `isSameTree(TreeNode p, TreeNode q)`:
 
-1. **Base case 1**: If both `p` and `q` are null, they match; return true.
-2. **Base case 2**: If exactly one is null, they don't match; return false.
-3. **Recursive case**: Both nodes exist.
-   - Check if values are equal: `p.val == q.val`
-   - Recursively compare left subtrees: `isSameTree(p.left, q.left)`
-   - Recursively compare right subtrees: `isSameTree(p.right, q.right)`
-   - All three conditions must be true (short-circuit AND)
-
-### Example Walkthrough
-
-**Example 1: `p = [1,2,3], q = [1,2,3]` → true**
-
-```
-Tree p:         Tree q:
-    1               1
-   / \             / \
-  2   3           2   3
-```
-
-1. `isSameTree(p=1, q=1)`: values equal (1==1)
-   - `isSameTree(p.left=2, q.left=2)`: values equal (2==2)
-     - `isSameTree(null, null)`: both null → **true**
-     - `isSameTree(null, null)`: both null → **true**
-     - Returns **true**
-   - `isSameTree(p.right=3, q.right=3)`: values equal (3==3)
-     - All children null → returns **true**
-   - Returns **true**
-
-**Example 2: `p = [1,2], q = [1,null,2]` → false**
-
-```
-Tree p:         Tree q:
-    1               1
-   /                 \
-  2                   2
-```
-
-1. `isSameTree(p=1, q=1)`: 1==1 ✓
-   - `isSameTree(p.left=2, q.left=null)`: p!=null but q==null → **false** (returns immediately)
-
-### Key Variables Explained
-
-- **`p`, `q`**: Root nodes of the two trees being compared
-- **`p.val`, `q.val`**: Node values to be compared
-- **`p.left`, `p.right`**: Left and right children of node p
-- **`q.left`, `q.right`**: Left and right children of node q
-
-### Why This Works
-
-The recursion is correct because:
-
-1. **Base cases are exhaustive**: Either both are null (match), exactly one is null (no match), or both are non-null (check further).
-2. **Correctness by induction**: If left and right subtrees are identical and current nodes have the same value, then trees rooted at those nodes are identical.
-3. **Termination**: Recursion terminates at null nodes.
-4. **Completeness**: We check both structure (via null checks) and values.
-
-### Trick Used
-
-The short-circuit AND operator (`&&`):
-
-```java
-return p.val == q.val && isSameTree(p.left, q.left) && isSameTree(p.right, q.right);
-```
-
-If `p.val != q.val`, remaining recursions aren't evaluated, saving unnecessary traversal when trees diverge early.
-
-### Edge Cases Handled
-
-1. **Both empty**: Returns true (first condition)
-2. **One empty**: Returns false (second condition)
-3. **Same shape, different values**: Caught by value check
-4. **Different shapes**: Caught by null checks
-5. **Single node trees**: Both check null children, return appropriately
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(min(m,n))`** — We visit nodes from both trees. If trees differ early, we stop. `m` and `n` are node counts.
-- **Space Complexity: `O(h)`** — Recursion stack depth is tree height. In balanced trees, `O(log n)`; in skewed trees, `O(n)`.
-
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.

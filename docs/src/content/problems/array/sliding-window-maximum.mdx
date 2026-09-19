@@ -95,165 +95,25 @@ public class SlidingWindowMaximum {
 
 ## Explanation
 
-### Problem Analysis
-
-This problem asks for the maximum value in every sliding window of size `k` as it moves across the array.
-
-A brute-force approach would recompute the maximum for each window independently, comparing all `k` elements in each window. With `n - k + 1` windows, that would be `O(n * k)`, which is too slow for large inputs.
-
-We need a way to extract the maximum as the window slides, without rescanning the entire window each time.
-
 ### Approach
 
-The solution uses a **monotonic deque** to maintain indices in decreasing order of their corresponding values.
+**Sliding Window Maximum** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
 
-The deque stores indices (not values) from the current window, arranged so that:
-- the front index always points to the maximum value in the window
-- as new elements arrive, we remove indices that can never be the maximum again
-
-For each new element:
-1. Remove indices that fall outside the current window
-2. Remove all indices from the back whose values are smaller than or equal to the current element (they can never become the maximum while the current element is in any future window)
-3. Add the current index to the back
-4. The front of the deque now points to the maximum in the current window
-
-### Pattern Used
-
-This solution uses the **monotonic deque** pattern within a sliding window.
-
-It is a specialized technique that goes beyond a basic sliding window, because we maintain not just the window itself, but a specially-ordered structure (deque) that helps us answer the max query in constant time.
-
-### Key Insight
-
-By storing indices in decreasing order of their values, we ensure the maximum is always at the front of the deque.
-
-When a larger element arrives, smaller elements behind it can never be useful (they will leave the window before the larger element does, and they are all smaller anyway).
-
-So we discard those smaller elements immediately, keeping the deque lean and ensuring the front always represents the current max.
+Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
 
 ### Code Walkthrough
 
-```java
-public int[] maxSlidingWindow(int[] nums, int k) {
-    if (nums == null || nums.length == 0 || k <= 0) {
-        return new int[0];
-    }
+The solution is implemented in `maxSlidingWindow(int[] nums, int k)`:
 
-    int n = nums.length;
-    int[] result = new int[n - k + 1];
-    Deque<Integer> deque = new LinkedList<>();
+1. Initialise left and right pointers both at index 0.
+2. Expand the window by advancing the right pointer and updating the window state.
+3. When the window violates the constraint, shrink from the left until it is valid again.
+4. At each valid state, update the global answer (max length, min size, etc.).
+5. Continue until the right pointer reaches the end of the input.
 
-    for (int i = 0; i < n; i++) {
-        // Remove elements not in the current window
-        if (!deque.isEmpty() && deque.peekFirst() < i - k + 1) {
-            deque.pollFirst();
-        }
-
-        // Remove smaller elements from the back of the deque
-        while (!deque.isEmpty() && nums[deque.peekLast()] <= nums[i]) {
-            deque.pollLast();
-        }
-
-        // Add the current element to the deque
-        deque.offerLast(i);
-
-        // The front of the deque is the maximum for the current window
-        if (i >= k - 1) {
-            result[i - k + 1] = nums[deque.peekFirst()];
-        }
-    }
-
-    return result;
-}
-```
-
-How the method works:
-
-1. Handle edge cases: if the array is null, empty, or `k` is invalid, return an empty result.
-2. Create a `result` array of size `n - k + 1` to hold the maximum for each window.
-3. Create a `Deque<Integer>` to store indices.
-4. Loop through each index `i` from `0` to `n-1`:
-   - **Remove outdated indices**: if the front index is outside the window (before position `i - k + 1`), remove it.
-   - **Remove useless indices**: while the value at the back index is <= the current value, remove it (it can never be the max while the current element is in future windows).
-   - **Add the current index** to the back of the deque.
-   - **Record the result**: once the window is full (at `i >= k - 1`), store the value at the front index as the maximum for this window.
-5. Return the result array.
-
-### Example Walkthrough
-
-For `nums = [1,3,-1,-3,5,3,6,7]`, `k = 3`:
-
-| i | Window | nums[i] | Actions | Deque (indices) | Deque (values) | Result[i-k+1] |
-|---|--------|---------|---------|-----------------|----------------|---------------|
-| 0 | [1] | 1 | add 0 | [0] | [1] | — |
-| 1 | [1,3] | 3 | remove 0, add 1 | [1] | [3] | — |
-| 2 | [1,3,-1] | -1 | add 2 | [1,2] | [3,-1] | **3** |
-| 3 | [3,-1,-3] | -3 | remove 2, add 3 | [1,3] | [3,-3] | **3** |
-| 4 | [-1,-3,5] | 5 | remove 1,3, add 4 | [4] | [5] | **5** |
-| 5 | [-3,5,3] | 3 | add 5 | [4,5] | [5,3] | **5** |
-| 6 | [5,3,6] | 6 | remove 4,5, add 6 | [6] | [6] | **6** |
-| 7 | [3,6,7] | 7 | remove 6, add 7 | [7] | [7] | **7** |
-
-Result: `[3, 3, 5, 5, 6, 7]` ✓
-
-### Key Variables Explained
-
-- **`deque`**: stores indices of elements in the current window, ordered so that values are in decreasing order from front to back.
-- **`i`**: the current index being processed.
-- **`result`**: array of size `n - k + 1` containing the maximum for each window.
-- **`deque.peekFirst()`**: the index of the maximum value in the current window.
-- **`deque.peekLast()`**: the index of the smallest value currently tracked (which may be removed when a larger element arrives).
-
-### Why This Works
-
-Each index enters the deque exactly once and is removed exactly once.
-
-When an index is removed, it is either:
-- outside the window (front removal), or
-- smaller than a newer element and thus useless (back removal)
-
-This ensures that at any point, the deque contains only indices that could potentially be the maximum in some future window. The front is always the maximum of the current window.
-
-Since each operation (add, remove) is O(1) on a deque, and each index is processed once, the total time is O(n).
-
-### Trick Used
-
-The trick is to store **indices, not values**, and to maintain them in a specific order using a deque.
-
-This allows us to:
-- efficiently remove outdated indices from the front (when they leave the window)
-- efficiently remove useless indices from the back (before adding a larger element)
-- access the maximum in O(1) time
-
-Without this deque structure, finding the max in each window would require either:
-- a heap (O(n log k)), or
-- rescanning each window (O(n * k))
-
-### Edge Cases Handled
-
-1. **Single-element window** (`k = 1`)
-   - Each element is a window by itself
-   - result is simply the input array
-
-2. **All identical values** like `[5,5,5]` with `k = 2`
-   - the deque will retain multiple indices
-   - the first index in the window is popped as the window moves
-   - result is `[5,5]`
-
-3. **Strictly decreasing** like `[5,4,3,2,1]` with `k = 2`
-   - each new element becomes the maximum
-   - the older element is removed from the deque
-   - result is `[5,4,3,2]`
-
-4. **Strictly increasing** like `[1,2,3,4,5]` with `k = 2`
-   - the deque only stores the latest index at each window
-   - result is `[2,3,4,5]`
-
-5. **Single element array** like `[7]`
-   - the result is `[7]`
+&gt; **Note:** This solution also uses the **monotonic stack to find the next greater/smaller element in O(n)** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — each element is added to the deque once and removed from the deque once. Despite the nested while loop, the total number of removals across all iterations is at most `n`, so amortized cost is O(1) per element.
-- **Space Complexity: `O(k)`** — the deque stores at most `k` indices (the size of the window).
-
+- **Time Complexity: `O(n)`** — each element enters and leaves the window at most once, so the total work across all iterations is linear.
+- **Space Complexity: `O(k)`** — auxiliary space proportional to the input is required.

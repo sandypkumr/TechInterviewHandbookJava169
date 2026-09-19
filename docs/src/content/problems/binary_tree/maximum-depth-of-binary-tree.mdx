@@ -4,18 +4,18 @@ difficulty: "Easy"
 topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/maximum-depth-of-binary-tree"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/MaximumDepthOfBinaryTree.java"
-patterns: ["dfs"]
+patterns: ["dfs","bfs"]
 tags: []
 timeComplexity: "O(n)"
 spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
-javaApis: ["Math.max"]
+javaApis: ["Math.max/min"]
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
-Given the root of a binary tree, return its maximum depth.
+Given the `root` of a binary tree, return _its maximum depth_.
 
 A binary tree's **maximum depth** is the number of nodes along the longest path from the root node down to the farthest leaf node.
 
@@ -31,13 +31,6 @@ Output: 3
 ```
 Input: root = [1,null,2]
 Output: 2
-```
-
-**Example 3:**
-
-```
-Input: root = []
-Output: 0
 ```
 
 **Constraints:**
@@ -63,68 +56,25 @@ public class MaximumDepthOfBinaryTree {
 
 ## Explanation
 
-### Problem Analysis
-
-Maximum depth is the count of nodes from root to the farthest leaf (inclusive).
-
 ### Approach
 
-Recursively compute depth of left and right subtrees, return max + 1.
+**Maximum Depth of Binary Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-### Pattern Used
-
-**Simple recursive DFS** with direct combination of subproblem results.
-
-### Key Insight
-
-Depth at any node = 1 + max(leftDepth, rightDepth). Base case: null has depth 0.
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-1. Base case: null returns 0
-2. Recursively compute left depth
-3. Recursively compute right depth
-4. Return `max(leftDepth, rightDepth) + 1`
+The solution is implemented in `maxDepth(TreeNode root)`:
 
-### Example Walkthrough
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
-For `[3,9,20,null,null,15,7]`:
-
-```
-       3
-      / \
-     9   20
-        /  \
-       15   7
-```
-
-- Depth of 9 (leaf): 1
-- Depth of 15 (leaf): 1
-- Depth of 7 (leaf): 1
-- Depth of 20: max(1, 1) + 1 = 2
-- Depth of 3: max(1, 2) + 1 = 3
-
-Result: 3
-
-### Key Variables Explained
-
-- **`left depth`/`right depth`**: depths of child subtrees
-
-### Why This Works
-
-Recursion directly computes the definition: max depth = 1 + max of children's depths.
-
-### Trick Used
-
-None; straightforward recursion.
-
-### Edge Cases Handled
-
-1. Empty tree: returns 0
-2. Single node: returns 1
+&gt; **Note:** This solution also uses the **BFS to explore nodes level by level** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — Every node visited once
-- **Space Complexity: `O(h)`** — Recursion stack depth
-
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.

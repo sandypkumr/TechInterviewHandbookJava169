@@ -63,138 +63,20 @@ public class SingleNumber {
 
 ## Explanation
 
-### Problem Analysis
-
-The array contains exactly one value that appears once, while every other value appears twice.
-
-That means the duplicate values should cancel each other out somehow, leaving only the unique number behind.
-
-The problem also explicitly requires:
-- linear time
-- constant extra space
-
-So counting frequencies with extra storage or sorting the array is not the best fit for this exact implementation.
-
 ### Approach
 
-The solution makes one pass through the array and keeps a running XOR in `result`.
-
-For each number, it does:
-
-`result ^= num`
-
-This works because XOR has two key properties:
-- `a ^ a = 0`
-- `a ^ 0 = a`
-
-So every duplicated value removes itself, and the one value with no pair remains at the end.
-
-### Pattern Used
-
-This solution mainly relies on a **direct bitwise traversal using XOR cancellation**.
-
-There is no heavier pattern here like sliding window or dynamic programming. The main idea is simply one left-to-right pass plus the cancellation behavior of XOR.
-
-### Key Insight
-
-If the same number appears twice, XOR-ing both copies removes it completely:
-
-`x ^ x = 0`
-
-Since XOR is associative and commutative, the order does not matter. That lets all duplicate pairs cancel, leaving only the unpaired value.
+**Single Number** is a binary problem. The solution iterates over the input using a enhanced for-each loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(n)` time and `O(1)` space.
 
 ### Code Walkthrough
 
-```java
-public int singleNumber(int[] nums) {
-    int result = 0;
-    for (int num : nums) {
-        result ^= num;
-    }
-    return result;
-}
-```
+The solution is implemented in `singleNumber(int[] nums)`:
 
-How the method works:
-
-1. `result` starts at `0`.
-2. The loop visits each number in `nums` exactly once.
-3. `result ^= num` is shorthand for `result = result ^ num`.
-4. The first time a value appears, it gets folded into `result`.
-5. The second time that same value appears, it cancels back out.
-6. After the loop finishes, the only value left in `result` is the single number.
-
-### Example Walkthrough
-
-For `nums = [4,1,2,1,2]`:
-
-| Index | Number | `result` before | Operation | `result` after |
-|------:|--------|-----------------|-----------|----------------|
-| 0 | 4 | 0 | `0 ^ 4` | 4 |
-| 1 | 1 | 4 | `4 ^ 1` | 5 |
-| 2 | 2 | 5 | `5 ^ 2` | 7 |
-| 3 | 1 | 7 | `7 ^ 1` | 6 |
-| 4 | 2 | 6 | `6 ^ 2` | 4 |
-
-Final answer: `4`
-
-The intermediate XOR values are just running bitwise combinations. What matters is:
-- the two `1`s cancel each other
-- the two `2`s cancel each other
-- `4` has no matching pair, so it remains
-
-### Key Variables Explained
-
-- **`result`**: the running XOR of all numbers processed so far.
-- **`num`**: the current element from the array.
-- **`result ^= num`**: Java's XOR-assignment operator, which updates `result` in place.
-
-### Why This Works
-
-At every step of the loop, `result` equals the XOR of all numbers seen so far.
-
-Every duplicated value contributes:
-
-`a ^ a = 0`
-
-And XOR with zero changes nothing:
-
-`x ^ 0 = x`
-
-So after the full scan, every paired value has disappeared from the running XOR, and the only value left is the one that appeared once.
-
-### Trick Used
-
-The trick is using XOR as an implicit cancellation mechanism instead of storing counts.
-
-So the code avoids:
-- a hash map of frequencies
-- sorting the array
-- any extra memory proportional to input size
-
-There is no extra trick beyond that core XOR property.
-
-### Edge Cases Handled
-
-1. **Single element** like `[1]`
-   - `result` starts at `0`
-   - `0 ^ 1 = 1`
-   - answer is `1`
-
-2. **Unique value at the beginning** like `[7,3,3]`
-   - the two `3`s cancel later
-   - `7` remains
-
-3. **Unique value at the end** like `[5,5,9]`
-   - the pair cancels first
-   - `9` remains
-
-4. **Negative numbers** like `[-2,1,1]`
-   - XOR still works on Java `int` bit patterns
-   - duplicate values still cancel correctly
-   - answer is `-2`
+1. **Initialise** the necessary data structures.
+2. **Iterate** over the input using a enhanced for-each loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the code scans the array once, and each XOR operation is constant time.
-- **Space Complexity: `O(1)`** — the implementation uses only one extra variable, `result`.
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

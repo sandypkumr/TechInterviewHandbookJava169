@@ -44,6 +44,8 @@ Output: 1
 
 - `1 <= bad <= n <= 2^31 - 1`
 
+**Patterns:** `sliding-window`
+
 ## Java Solution
 
 ```java
@@ -77,159 +79,23 @@ public class FirstBadVersion {
 
 ## Explanation
 
-### Problem Analysis
-
-The versions are ordered from `1` to `n`, and once a version is bad, every version after it is also bad.
-
-That means the answers form a pattern like this:
-
-- good, good, good, bad, bad, bad
-
-So the real task is not to check every version. It is to find the **first position where the answer changes from false to true**.
-
-Because the problem also asks us to minimize API calls, a linear scan would be a poor fit.
-
 ### Approach
 
-The code uses binary search on the version number range `[1, n]`.
+**First Bad Version** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
 
-At each step:
-
-- pick the middle version `mid`
-- call `isBadVersion(mid)`
-- if `mid` is bad, the first bad version is at `mid` or somewhere before it
-- if `mid` is good, the first bad version must be after it
-
-This keeps shrinking the search space until `left` and `right` meet at exactly one version.
-
-### Pattern Used
-
-This is a **binary search on the answer**.
-
-More specifically, it is the common **first true in a monotonic boolean range** pattern:
-
-- `isBadVersion(version) == false` for all good versions
-- `isBadVersion(version) == true` starting from the first bad version onward
-
-### Key Insight
-
-When `isBadVersion(mid)` returns `true`, we cannot discard `mid` itself.
-
-That is the most important detail in this code.
-
-`mid` might be the first bad version, so the code does:
-
-- `right = mid`
-
-not:
-
-- `right = mid - 1`
-
-That choice is what makes the search converge to the **first** bad version instead of just any bad version.
+Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
 
 ### Code Walkthrough
 
-```java
-public int firstBadVersion(int n) {
-    int left = 1;
-    int right = n;
+The solution is implemented in `firstBadVersion(int n)`:
 
-    while (left < right) {
-        int mid = left + (right - left) / 2;
-
-        if (isBadVersion(mid)) {
-            right = mid; // Search in the left half
-        } else {
-            left = mid + 1; // Search in the right half
-        }
-    }
-
-    return left; // The first bad version
-}
-```
-
-How the method works:
-
-1. `left = 1` and `right = n` define the full search range.
-2. The loop runs while `left < right`, meaning there is still more than one candidate version.
-3. `mid = left + (right - left) / 2` computes the middle safely without risking integer overflow.
-4. If `isBadVersion(mid)` is `true`, then the first bad version is in the range `[left, mid]`, so the code sets `right = mid`.
-5. Otherwise, `mid` is definitely good, so the first bad version must be in `[mid + 1, right]`, and the code sets `left = mid + 1`.
-6. When the loop ends, `left == right`, so only one possible answer remains.
-7. The method returns `left`, which is the first bad version.
-
-Note: in LeetCode, `isBadVersion` is provided by the platform. The private method shown here is just a placeholder so the file is self-contained.
-
-### Example Walkthrough
-
-For `n = 5` and first bad version `= 4`:
-
-| `left` | `right` | `mid` | `isBadVersion(mid)` | Action |
-|-------:|--------:|------:|---------------------|--------|
-| 1 | 5 | 3 | `false` | `left = 4` |
-| 4 | 5 | 4 | `true` | `right = 4` |
-
-Now `left == right == 4`, so the loop stops and the method returns `4`.
-
-Notice what happened:
-
-- version `3` was confirmed good, so everything up to `3` was discarded
-- version `4` was bad, but it was kept in the search space because it could be the first bad version
-
-### Key Variables Explained
-
-- **`left`**: the smallest version index that could still be the first bad version.
-- **`right`**: the largest version index that could still be the first bad version.
-- **`mid`**: the middle version used to split the remaining search space.
-- **`isBadVersion(mid)`**: the API call that tells the algorithm which half can be discarded.
-
-### Why This Works
-
-The algorithm maintains an important invariant:
-
-- the first bad version always remains inside the current range `[left, right]`
-
-Initially that is true because the answer must be somewhere between `1` and `n`.
-
-On each iteration:
-
-- if `mid` is bad, the first bad version must be at `mid` or to its left, so replacing `right` with `mid` keeps the answer inside the range
-- if `mid` is good, then the first bad version must be strictly to the right of `mid`, so setting `left = mid + 1` also keeps the answer inside the range
-
-Since each step shrinks the range, eventually only one index remains. That index must be the first bad version.
-
-### Trick Used
-
-The main trick is using a **lower-bound style binary search**.
-
-Two implementation details matter most:
-
-- `right = mid` instead of `mid - 1` when `mid` is bad
-- `left + (right - left) / 2` instead of `(left + right) / 2` to avoid overflow for large `n`
-
-There is no extra clever data structure here — just careful boundary handling.
-
-### Edge Cases Handled
-
-1. **Only one version** like `n = 1`
-   - `left` and `right` both start at `1`
-   - the loop does not run
-   - the method correctly returns `1`
-
-2. **First version is already bad**
-   - repeated `true` results keep moving `right` leftward
-   - the answer converges to `1`
-
-3. **Last version is the first bad one**
-   - repeated `false` results move `left` rightward
-   - the answer converges to `n`
-
-4. **Very large `n`**
-   - the midpoint formula avoids overflow
-   - the algorithm still uses only logarithmically many API calls
+1. Define left and right boundaries covering all possible answers.
+2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
+3. Evaluate the predicate at mid to decide which half to discard.
+4. Narrow the range: move left = mid + 1 or right = mid - 1.
+5. Repeat until left &gt; right; the answer is typically left (or right + 1).
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — each API call cuts the remaining search range roughly in half.
-- **Space Complexity: `O(1)`** — only `left`, `right`, and `mid` are used.
-
+- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

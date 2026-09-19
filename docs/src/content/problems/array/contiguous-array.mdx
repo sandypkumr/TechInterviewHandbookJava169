@@ -12,10 +12,10 @@ isPremium: false
 hasProblemStatement: false
 javaApis: ["HashMap","Math.max/min"]
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
-Given a binary array `nums`, return the maximum length of a contiguous subarray with an equal number of `0` and `1`.
+Given a binary array `nums`, return _the maximum length of a contiguous subarray with an equal number of _`0`_ and _`1`.
 
 **Example 1:**
 
@@ -78,161 +78,25 @@ public class ContiguousArray {
 
 ## Explanation
 
-### Problem Analysis
-
-We need the **longest contiguous subarray** where the number of `0`s and `1`s is the same.
-
-Because the subarray must be contiguous, this is not just a frequency-counting problem. We need a way to recognize when the range between two indices has balanced out.
-
-A brute-force solution would try many start/end pairs and count zeros and ones inside each subarray. That would be too slow for arrays as large as `10^5`.
-
 ### Approach
 
-The code turns the problem into a running balance problem:
+The key insight for **Contiguous Array** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
 
-- treat `1` as `+1`
-- treat `0` as `-1`
-
-Now a subarray has equal numbers of `0` and `1` exactly when its total contribution is `0`.
-
-So while scanning left to right, the method maintains a running `count`:
-
-- add `1` for a `1`
-- subtract `1` for a `0`
-
-If the same `count` value appears at two different indices, then the subarray between those indices must be balanced.
-
-The `HashMap` stores the **first index** where each running `count` was seen. That lets the code compute the longest valid subarray ending at the current index.
-
-### Pattern Used
-
-This solution uses a **prefix-balance + hash map lookup** pattern.
-
-More specifically:
-
-- the running `count` behaves like a prefix sum
-- the `HashMap` remembers where each balance first appeared
-
-So the solution is mainly a direct one-pass traversal with prefix state tracking, not a sliding window.
-
-### Key Insight
-
-If two prefixes have the same running `count`, then the subarray between them contains equal numbers of `0` and `1`.
-
-Why?
-
-- each `1` contributes `+1`
-- each `0` contributes `-1`
-- equal numbers cancel out to `0`
-
-That means we do not need to inspect every subarray directly. We only need to remember where each running balance was first seen.
+This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
 
 ### Code Walkthrough
 
-```java
-public int findMaxLength(int[] nums) {
-    int maxLength = 0;
-    int count = 0;
-    HashMap<Integer, Integer> map = new HashMap<>();
-    map.put(0, -1); // Handle the case when the entire array is valid
+The solution is implemented in `findMaxLength(int[] nums)`:
 
-    for (int i = 0; i < nums.length; i++) {
-        count += (nums[i] == 1) ? 1 : -1;
+1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
+2. For each element, compute what you're looking for (a complement, a count, a flag).
+3. Check the hash structure first — if the target is there, you're done.
+4. Otherwise, insert the current element (or its metadata) into the structure.
+5. Return the result after the loop if no early exit occurred.
 
-        if (map.containsKey(count)) {
-            maxLength = Math.max(maxLength, i - map.get(count));
-        } else {
-            map.put(count, i);
-        }
-    }
-
-    return maxLength;
-}
-```
-
-How the method works:
-
-1. `maxLength` stores the best answer found so far.
-2. `count` stores the running balance between `1`s and `0`s.
-3. `map` records the earliest index where each `count` value appeared.
-4. `map.put(0, -1)` is important:
-   - it allows a balanced prefix starting at index `0` to be counted correctly
-   - if `count` becomes `0` at index `i`, the length is `i - (-1)`
-5. For each index `i`, the code updates `count` using `+1` for `1` and `-1` for `0`.
-6. If the current `count` was seen before, the subarray between the earlier index and `i` is balanced, so the code updates `maxLength`.
-7. If the current `count` is new, the code stores this index in the map.
-
-The method stores only the **first** occurrence of each `count`, because that gives the longest possible subarray when the same balance appears again later.
-
-### Example Walkthrough
-
-For `nums = [0,1,1,1,1,1,0,0,0]`:
-
-Start with:
-
-- `count = 0`
-- `maxLength = 0`
-- `map = {0: -1}`
-
-| Index | Value | Updated `count` | Seen before? | Action | `maxLength` |
-|------:|-------|------------------|--------------|--------|-------------|
-| 0 | 0 | -1 | no | store `-1 -> 0` | 0 |
-| 1 | 1 | 0 | yes, at `-1` | length = `1 - (-1) = 2` | 2 |
-| 2 | 1 | 1 | no | store `1 -> 2` | 2 |
-| 3 | 1 | 2 | no | store `2 -> 3` | 2 |
-| 4 | 1 | 3 | no | store `3 -> 4` | 2 |
-| 5 | 1 | 4 | no | store `4 -> 5` | 2 |
-| 6 | 0 | 3 | yes, at `4` | length = `6 - 4 = 2` | 2 |
-| 7 | 0 | 2 | yes, at `3` | length = `7 - 3 = 4` | 4 |
-| 8 | 0 | 1 | yes, at `2` | length = `8 - 2 = 6` | 6 |
-
-Final answer: `6`
-
-That length-`6` subarray is `nums[3..8] = [1,1,1,0,0,0]`, which has three `1`s and three `0`s.
-
-### Key Variables Explained
-
-- **`count`**: the running balance, where `1` adds `1` and `0` subtracts `1`.
-- **`map`**: maps each running `count` to the earliest index where it appeared.
-- **`maxLength`**: the longest balanced subarray found so far.
-- **`i`**: the current index during the left-to-right scan.
-
-### Why This Works
-
-At any index, `count` represents the net difference between how many `1`s and `0`s have appeared so far.
-
-If the same `count` appears again later, then the net change between those two positions is `0`. That means the subarray between them contains equal numbers of `0` and `1`.
-
-By storing the earliest index for each balance, the code ensures that any later repeat of that balance produces the longest possible subarray for that ending position.
-
-Taking the maximum over the entire scan gives the longest balanced contiguous subarray in the array.
-
-### Trick Used
-
-There are two small but important tricks here:
-
-1. **Treat `0` as `-1`** so the problem becomes finding repeated prefix balances.
-2. **Seed the map with `0 -> -1`** so balanced prefixes starting at index `0` work naturally without special-case code.
-
-### Edge Cases Handled
-
-1. **Balanced prefix from the start** like `[0,1]`
-   - `count` becomes `0` at index `1`
-   - because the map already contains `0 -> -1`, the method correctly returns length `2`
-
-2. **No balanced subarray** like `[1,1,1]`
-   - no repeated balance produces a zero-sum range
-   - `maxLength` stays `0`
-
-3. **Multiple repeated balances** like `[0,1,0,1,0,1]`
-   - the same `count` values appear many times
-   - keeping the first occurrence gives the longest valid lengths
-
-4. **Single element** like `[0]` or `[1]`
-   - one element alone cannot contain equal numbers of `0` and `1`
-   - answer is `0`
+&gt; **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the array is scanned once, and each `HashMap` operation is `O(1)` on average.
-- **Space Complexity: `O(n)`** — in the worst case, the map stores many distinct running `count` values.
+- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
+- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.

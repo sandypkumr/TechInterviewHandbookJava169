@@ -4,20 +4,20 @@ difficulty: "Medium"
 topic: "array"
 leetcodeUrl: "https://leetcode.com/problems/meeting-rooms-ii"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/MeetingRooms2.java"
-patterns: ["sorting", "two-pointers", "greedy"]
+patterns: ["heap","greedy","merge-intervals"]
 tags: []
 timeComplexity: "O(n log n)"
 spaceComplexity: "O(n)"
 isPremium: false
 hasProblemStatement: false
-javaApis: ["ArrayList", "Collections.sort", "Math.max/min"]
+javaApis: ["ArrayList","Collections.sort","Math.max/min"]
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 > 📝 **No problem description found in source.** Visit [LeetCode](https://leetcode.com/problems/meeting-rooms-ii) for the problem statement.
 
-**Patterns:** `sorting`, `two-pointers`, `greedy`
+**Patterns:** `sliding-window`, `merge-intervals`
 
 ## Java Solution
 
@@ -68,124 +68,25 @@ public class MeetingRooms2 {
 
 ## Explanation
 
-### Problem Analysis
-
-The problem asks for the minimum number of meeting rooms needed so that no overlapping meetings use the same room.
-
-The hard part is tracking how many meetings are active at the same time, because that is exactly the number of rooms we need at that moment.
-
 ### Approach
 
-The solution separates all meeting start times and end times into two lists.
+**Meeting Rooms II** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
 
-After sorting both lists, it scans them with two pointers:
-- if the next meeting starts before the earliest current meeting ends, a new room is needed
-- otherwise, one meeting has ended, so that room can be reused
-
-During the scan, the code keeps the largest active-room count it has seen. That peak is the answer.
-
-### Pattern Used
-
-This solution uses a **sorted two-pointer sweep**.
-
-It is also greedy because it always reuses a room as soon as one becomes available.
-
-### Key Insight
-
-Once the start times and end times are sorted, the next important event is always the earliest unused start or the earliest unused end.
-
-If `startTimes[startPointer] < endTimes[endPointer]`, the next meeting begins before any active meeting finishes, so the room count must go up.
-
-If that condition is false, an old meeting has already ended, so one room can be released before the next start is handled.
+A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
 
 ### Code Walkthrough
 
 The solution is implemented in `minMeetingRooms(List<Interval> intervals)`:
 
-1. Return `0` right away if `intervals` is `null` or empty.
-2. Create two lists: `startTimes` and `endTimes`.
-3. Copy every `interval.start` into `startTimes` and every `interval.end` into `endTimes`.
-4. Sort both lists with `Collections.sort(...)`.
-5. Use `startPointer` and `endPointer` to walk through the two sorted lists.
-6. If the next start is earlier than the next end, increment `roomCount` and move `startPointer` forward.
-7. Otherwise, decrement `roomCount` and move `endPointer` forward, because one room has just become free.
-8. After each step, update `maxRooms` with `Math.max(maxRooms, roomCount)`.
-9. Return `maxRooms` after all start times have been processed.
+1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
+2. Insert elements as you process them.
+3. Poll the top element when you need the current minimum/maximum.
+4. For "top-K" problems, keep the heap size bounded at K to save memory.
+5. After processing, the remaining heap elements or the polled sequence is your answer.
 
-The variables have different roles:
-- `roomCount` tells us how many rooms are currently in use during the sweep
-- `maxRooms` stores the highest value seen, which is the minimum number of rooms required
-
-### Example Walkthrough
-
-For `intervals = [[0, 30], [5, 10], [15, 20]]`:
-
-1. Split and sort the times:
-   - `startTimes = [0, 5, 15]`
-   - `endTimes = [10, 20, 30]`
-2. Compare `0` and `10`:
-   - `0 < 10`, so a meeting starts before any room is freed
-   - `roomCount = 1`, `maxRooms = 1`
-3. Compare `5` and `10`:
-   - `5 < 10`, so another room is needed
-   - `roomCount = 2`, `maxRooms = 2`
-4. Compare `15` and `10`:
-   - `15 < 10` is false, so one meeting has ended
-   - free one room: `roomCount = 1`, move `endPointer`
-5. Compare `15` and `20`:
-   - `15 < 20`, so the next meeting starts before the next one ends
-   - `roomCount = 2`, `maxRooms = 2`
-
-The maximum number of simultaneous meetings is `2`, so the answer is `2`.
-
-### Key Variables Explained
-
-- **`startTimes`**: all meeting start times, sorted from earliest to latest.
-- **`endTimes`**: all meeting end times, sorted from earliest to latest.
-- **`startPointer`**: index of the next start time to process.
-- **`endPointer`**: index of the next end time to process.
-- **`roomCount`**: how many rooms are currently needed at this point in the sweep.
-- **`maxRooms`**: the largest `roomCount` observed, which becomes the final answer.
-
-### Why This Works
-
-The sorted lists let the algorithm process meeting events in time order without tracking individual rooms.
-
-At any moment, the next change in room usage must come from either a meeting starting or a meeting ending.
-
-If the next start happens first, concurrency increases by one, so we need one more room.
-If the next end happens first, concurrency decreases by one, so a room becomes available for reuse.
-
-Because the algorithm always processes the earliest remaining event, `maxRooms` captures the highest overlap count, which is exactly the minimum number of rooms required.
-
-### Trick Used
-
-The main trick is splitting the intervals into two sorted lists instead of trying to assign room numbers directly.
-
-That means the code only cares about event order, not about which specific meeting goes into which room.
-
-### Edge Cases Handled
-
-1. **No meetings**
-   - the method returns `0` immediately
-
-2. **One meeting**
-   - one start is processed before one end
-   - `maxRooms` becomes `1`
-
-3. **Meetings that just touch** like `[[1, 2], [2, 3]]`
-   - the comparison uses `<`, not `<=`
-   - when a start time equals an end time, the room is reused
-
-4. **Many overlapping meetings**
-   - each start that arrives before the next end increases `roomCount`
-   - `maxRooms` records the peak overlap
-
-5. **Several meetings with the same start time**
-   - those starts are processed before later end times
-   - the room count rises correctly to reflect the overlap
+&gt; **Note:** This solution also uses the **greedy — make the locally optimal choice at each step** and **sort intervals by start time, then merge overlapping ones in one pass** techniques.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — sorting the two lists dominates the runtime, and the final sweep is linear.
-- **Space Complexity: `O(n)`** — the algorithm stores two extra lists of meeting times.
+- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
+- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.

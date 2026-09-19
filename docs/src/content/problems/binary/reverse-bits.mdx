@@ -4,7 +4,7 @@ difficulty: "Easy"
 topic: "binary"
 leetcodeUrl: "https://leetcode.com/problems/reverse-bits"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary/ReverseBits.java"
-patterns: ["bit-manipulation"]
+patterns: []
 tags: []
 timeComplexity: "O(1)"
 spaceComplexity: "O(1)"
@@ -12,7 +12,7 @@ isPremium: false
 hasProblemStatement: false
 javaApis: []
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 Reverse bits of a given 32 bits signed integer.
@@ -61,146 +61,20 @@ public class ReverseBits {
 
 ## Explanation
 
-### Problem Analysis
-
-The task is to reverse the bit order of a **32-bit integer**.
-
-That means:
-- the current least significant bit of `n` must become the next bit written into the answer
-- the current most significant bit of `n` must eventually move to the far right
-- we must process **all 32 positions**, including zeros
-
-So this problem is not about changing the numeric value directly. It is about rebuilding a new number from the original bit pattern in reverse order.
-
 ### Approach
 
-The code builds the reversed result one bit at a time.
-
-For each of the 32 iterations:
-- shift `result` left by one bit to make room
-- extract the last bit of `n` using `n & 1`
-- place that bit into `result`
-- shift `n` right so the next original bit becomes the new last bit
-
-After doing this 32 times, every original bit has been moved into its reversed position.
-
-### Pattern Used
-
-This solution mainly relies on **direct bit manipulation with a fixed-length traversal**.
-
-There is no heavier named pattern here. The method simply visits each bit once and constructs the answer as it goes.
-
-### Key Insight
-
-If we keep reading bits from `n` **right to left**, and keep appending them into `result` **left to right**, the order becomes reversed automatically.
-
-That is why the code first does `result <<= 1` and only then inserts the extracted bit with `result |= (n & 1)`.
+**Reverse Bits** is a binary problem. The solution iterates over the input using a indexed for-loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(1)` time and `O(1)` space.
 
 ### Code Walkthrough
 
-```java
-public int reverseBits(int n) {
-    int result = 0;
-    for (int i = 0; i < 32; i++) {
-        result <<= 1;
-        result |= (n & 1);
-        n >>= 1;
-    }
-    return result;
-}
-```
+The solution is implemented in `reverseBits(int n)`:
 
-How the method works:
-
-1. `result` starts at `0` and will store the reversed 32-bit pattern.
-2. The loop runs exactly `32` times because the problem is defined on a 32-bit integer.
-3. `result <<= 1` shifts the current bits in `result` to the left, opening one empty position at the end.
-4. `(n & 1)` extracts the current least significant bit of `n`.
-   - if the last bit is `1`, the expression is `1`
-   - if the last bit is `0`, the expression is `0`
-5. `result |= (n & 1)` writes that extracted bit into the newly opened position.
-6. `n >>= 1` shifts `n` right so the next original bit is ready for the next loop iteration.
-7. After the loop finishes, `result` contains the reversed bit order.
-
-### Example Walkthrough
-
-For `n = 43261596`, the 32-bit binary representation is:
-
-`00000010100101000001111010011100`
-
-The reversed 32-bit representation should be:
-
-`00111001011110000010100101000000`
-
-The code starts like this:
-
-| Iteration | `n & 1` | `result` after shift and insert |
-|----------:|---------|----------------------------------|
-| 1 | 0 | `0` |
-| 2 | 0 | `00` |
-| 3 | 1 | `001` |
-| 4 | 1 | `0011` |
-| 5 | 1 | `00111` |
-| 6 | 0 | `001110` |
-| 7 | 0 | `0011100` |
-| 8 | 1 | `00111001` |
-
-These bits are being read from the right side of the original number.
-
-The same process continues for all 32 iterations, and the final binary result becomes:
-
-`00111001011110000010100101000000`
-
-which is `964176192`.
-
-### Key Variables Explained
-
-- **`n`**: the input integer whose bits are being consumed from right to left.
-- **`result`**: the integer being built to hold the reversed bit pattern.
-- **`i`**: loop counter that guarantees exactly 32 bit-processing steps.
-- **`n & 1`**: extracts the current least significant bit from `n`.
-
-### Why This Works
-
-At the start of each iteration, the next bit we need from the original number is sitting at the right end of `n`.
-
-The code removes that bit logically by reading `n & 1`, then appends it to `result` after shifting `result` left. Because previously added bits keep moving left, earlier extracted bits end up in more significant positions.
-
-So:
-- the first extracted bit becomes the leftmost bit of the final answer
-- the second extracted bit becomes the next one
-- and so on until all 32 bits are reversed
-
-That exactly matches the problem requirement.
-
-### Trick Used
-
-The main trick is the **shift-then-insert** sequence:
-
-- `result <<= 1` makes space
-- `result |= (n & 1)` fills that space with the current bit
-
-There is no extra hidden trick beyond that. This is a straightforward bit-by-bit reversal.
-
-### Edge Cases Handled
-
-1. **Input is `0`**
-   - every extracted bit is `0`
-   - `result` stays `0`
-
-2. **Leading zeros in the original 32-bit representation**
-   - the loop still runs all 32 times
-   - so those zeros are preserved and correctly moved to the other side
-
-3. **Values where the reversed result sets the sign bit**
-   - the returned Java `int` may look negative
-   - that is still the correct 32-bit reversed pattern
-
-4. **Negative `int` values in Java**
-   - `n >>= 1` is a signed shift, but the method still works because it extracts exactly one bit per iteration and stops after 32 iterations
-   - the code is reversing the raw 32-bit pattern, not doing math based on sign
+1. **Initialise** the necessary data structures (`i`).
+2. **Iterate** over the input using a indexed for-loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(1)`** — the loop always runs exactly 32 times, so the amount of work is constant.
-- **Space Complexity: `O(1)`** — only a few integer variables are used.
+- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

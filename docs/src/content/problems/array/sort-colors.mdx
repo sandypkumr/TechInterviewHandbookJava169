@@ -15,7 +15,7 @@ similarProblems: []
 enrichmentNeeded: true
 ---
 
-Given an array `nums` with `n` objects colored red, white, or blue, sort them **in-place** so that objects of the same color are adjacent, with the colors in the order red, white, and blue.
+Given an array `nums` with `n` objects colored red, white, or blue, sort them **in-place **so that objects of the same color are adjacent, with the colors in the order red, white, and blue.
 
 We will use the integers `0`, `1`, and `2` to represent the color red, white, and blue, respectively.
 
@@ -78,192 +78,23 @@ public class SortColors {
 
 ## Explanation
 
-### Problem Analysis
-
-The array contains only three possible values: `0`, `1`, and `2`.
-
-The problem is not asking for a general sort. It specifically asks us to:
-- rearrange the values **in place**
-- avoid the library sort
-- ideally finish in **one pass** with constant extra space
-
-Because there are only three distinct values, the solution can place each number directly into its correct region instead of using a general-purpose sorting algorithm.
-
 ### Approach
 
-The code uses three pointers:
-- `low`: the next position where a `0` should go
-- `mid`: the current index being inspected
-- `high`: the next position where a `2` should go
+**Sort Colors** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
 
-As the loop runs, the array is divided into four regions:
-- `0 ... low - 1` → all `0`s
-- `low ... mid - 1` → all `1`s
-- `mid ... high` → values not processed yet
-- `high + 1 ... end` → all `2`s
-
-Each step looks at `nums[mid]` and decides whether that value belongs on the left, in the middle, or on the right.
-
-### Pattern Used
-
-This solution uses the **Dutch National Flag** pattern, which is a **three-pointer partitioning** approach.
-
-It is related to two pointers, but this exact code is more specific: it grows three value regions in a single scan.
-
-### Key Insight
-
-The key idea is that the algorithm never needs the entire array to be sorted at once.
-
-It only needs to maintain a correct partition:
-- everything before `low` is already `0`
-- everything after `high` is already `2`
-- everything from `low` to `mid - 1` is already `1`
-
-So the only unknown part is `mid ... high`. Every iteration shrinks that unprocessed region.
+Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
 
 ### Code Walkthrough
 
-```java
-public void sortColors(int[] nums) {
-    int low = 0, mid = 0, high = nums.length - 1;
+The solution is implemented in `sortColors(int[] nums)`:
 
-    while (mid <= high) {
-        if (nums[mid] == 0) {
-            swap(nums, low, mid);
-            low++;
-            mid++;
-        } else if (nums[mid] == 1) {
-            mid++;
-        } else {
-            swap(nums, mid, high);
-            high--;
-        }
-    }
-}
-```
-
-How the method works:
-
-1. `low`, `mid`, and `high` start at the left edge, left edge, and right edge of the array.
-2. The loop runs while `mid <= high`, which means there are still unprocessed values.
-3. If `nums[mid] == 0`:
-   - swap `nums[mid]` with `nums[low]`
-   - increment both `low` and `mid`
-   - this grows the left `0` region
-4. If `nums[mid] == 1`:
-   - just increment `mid`
-   - `1` already belongs in the middle region
-5. If `nums[mid] == 2`:
-   - swap `nums[mid]` with `nums[high]`
-   - decrement `high`
-   - do **not** increment `mid` yet, because the value swapped in from the right has not been processed
-
-The helper method:
-
-```java
-private void swap(int[] nums, int i, int j) {
-    int temp = nums[i];
-    nums[i] = nums[j];
-    nums[j] = temp;
-}
-```
-
-simply exchanges two array elements in constant time.
-
-### Example Walkthrough
-
-Take `nums = [2,0,2,1,1,0]`.
-
-Start:
-- `low = 0`
-- `mid = 0`
-- `high = 5`
-- array = `[2,0,2,1,1,0]`
-
-Step by step:
-
-1. `nums[mid] = 2`
-   - swap index `0` with index `5`
-   - array becomes `[0,0,2,1,1,2]`
-   - `high = 4`
-   - `mid` stays `0`
-
-2. `nums[mid] = 0`
-   - swap index `0` with index `0`
-   - array stays `[0,0,2,1,1,2]`
-   - `low = 1`, `mid = 1`
-
-3. `nums[mid] = 0`
-   - swap index `1` with index `1`
-   - array stays `[0,0,2,1,1,2]`
-   - `low = 2`, `mid = 2`
-
-4. `nums[mid] = 2`
-   - swap index `2` with index `4`
-   - array becomes `[0,0,1,1,2,2]`
-   - `high = 3`
-   - `mid` stays `2`
-
-5. `nums[mid] = 1`
-   - `mid = 3`
-
-6. `nums[mid] = 1`
-   - `mid = 4`
-
-Now `mid > high`, so the loop stops.
-
-Final array: `[0,0,1,1,2,2]`
-
-### Key Variables Explained
-
-- **`low`**: marks the next index where a `0` should be placed.
-- **`mid`**: scans the current unprocessed value.
-- **`high`**: marks the next index where a `2` should be placed.
-- **`nums[mid]`**: decides which branch of the loop runs.
-- **`swap(nums, i, j)`**: moves values into the correct region using only one temporary variable.
-
-### Why This Works
-
-The loop always preserves the partition boundaries.
-
-After each iteration:
-- everything before `low` is correctly placed as `0`
-- everything between `low` and `mid - 1` is correctly placed as `1`
-- everything after `high` is correctly placed as `2`
-- the unprocessed window gets smaller
-
-Each branch makes progress:
-- a `0` expands the left region
-- a `1` stays in the middle and lets the scan move forward
-- a `2` expands the right region
-
-When `mid` passes `high`, there is no unprocessed region left, so the entire array is sorted.
-
-### Trick Used
-
-The main trick is **not advancing `mid` after swapping with `high`**.
-
-That swapped-in value came from the unprocessed right side, so the code must inspect it before moving on. This detail is what keeps the one-pass partition correct.
-
-### Edge Cases Handled
-
-1. **Single element** like `[1]`
-   - the loop runs once
-   - the array remains unchanged
-
-2. **Already sorted input** like `[0,0,1,1,2,2]`
-   - the pointer rules still work normally
-   - the array stays sorted
-
-3. **All same color** like `[2,2,2]` or `[0,0,0]`
-   - swaps may happen with the same index
-   - the algorithm still terminates correctly
-
-4. **A new value swapped in from the right**
-   - the code rechecks `mid` instead of skipping it
-   - no unprocessed value is missed
+1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
+2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
+3. Compute the result for the current pair.
+4. If the result is too small, advance left to increase it; if too large, move right backward.
+5. Stop when the pointers meet or cross.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the loop scans the array once, and each iteration does constant work.
-- **Space Complexity: `O(1)`** — only `low`, `mid`, `high`, and the temporary variable in `swap` are used.
+- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

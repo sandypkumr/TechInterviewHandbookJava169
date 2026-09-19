@@ -5,14 +5,14 @@ topic: "binary"
 leetcodeUrl: "https://leetcode.com/problems/missing-number"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary/MissingNumber.java"
 patterns: []
-tags: []
+tags: ["xor-trick"]
 timeComplexity: "O(n)"
 spaceComplexity: "O(1)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 Given an array `nums` containing `n` distinct numbers in the range `[0, n]`, return _the only number in the range that is missing from the array._
@@ -50,8 +50,11 @@ Given an array `nums` containing `n` distinct numbers in the range `[0, n]`, ret
 **Constraints:**
 
 - `n == nums.length`
+
 - `1 <= n <= 10^4`
+
 - `0 <= nums[i] <= n`
+
 - All the numbers of `nums` are **unique**.
 
 **Follow up:** Could you implement a solution using only `O(1)` extra space complexity and `O(n)` runtime complexity?
@@ -76,155 +79,20 @@ public class MissingNumber {
 
 ## Explanation
 
-### Problem Analysis
-
-The array contains `n` distinct values, but the full range should contain `n + 1` values: every number from `0` to `n`.
-
-So exactly one number is missing.
-
-That turns the problem into a difference question:
-- what should the total sum of `0..n` be?
-- what is the sum of the numbers actually present?
-- how much is missing between those two totals?
-
-Because the input guarantees unique values and exactly one missing number, that difference is the answer.
-
 ### Approach
 
-The code uses the arithmetic series formula.
-
-First, it computes the sum we would expect if no number were missing:
-
-`0 + 1 + 2 + ... + n = n * (n + 1) / 2`
-
-Then it makes one pass through `nums` to compute the actual sum of the values in the array.
-
-Finally, it returns:
-
-`expectedSum - actualSum`
-
-That remaining difference is the missing number.
-
-### Pattern Used
-
-This solution mainly relies on **math formula plus direct traversal**.
-
-There is no special data structure and no advanced named pattern here. The method is simply:
-- compute the full expected total
-- subtract the total of the values we actually have
-
-### Key Insight
-
-If one number is missing from the range `0..n`, then the array's sum must be smaller than the full expected sum by exactly that number.
-
-So instead of trying to detect the missing value directly, the code finds it indirectly through the gap between two totals.
+**Missing Number** is a binary problem. The solution iterates over the input using a enhanced for-each loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(n)` time and `O(1)` space.
 
 ### Code Walkthrough
 
-```java
-public int missingNumber(int[] nums) {
-    int n = nums.length;
-    int expectedSum = n * (n + 1) / 2;
-    int actualSum = 0;
-    for (int num : nums) {
-        actualSum += num;
-    }
-    return expectedSum - actualSum;
-}
-```
+The solution is implemented in `missingNumber(int[] nums)`:
 
-How the method works:
-
-1. `n = nums.length` stores how many values are currently in the array.
-   - If the array has length `n`, then the intended range is `0` through `n`.
-
-2. `expectedSum = n * (n + 1) / 2` computes the total sum of that full range.
-   - This is the standard arithmetic series formula.
-
-3. `actualSum = 0` starts a running total for the values present in `nums`.
-
-4. The enhanced `for` loop visits each `num` and adds it into `actualSum`.
-
-5. `return expectedSum - actualSum` returns the missing value.
-   - If one value is absent, the actual sum is short by exactly that amount.
-
-### Example Walkthrough
-
-For `nums = [3,0,1]`:
-
-1. `n = 3`
-2. `expectedSum = 3 * 4 / 2 = 6`
-3. Scan the array to compute `actualSum`:
-
-| Step | `num` | `actualSum` after update |
-|------|------:|--------------------------:|
-| start | — | 0 |
-| 1 | 3 | 3 |
-| 2 | 0 | 3 |
-| 3 | 1 | 4 |
-
-4. Return `6 - 4 = 2`
-
-So the missing number is `2`.
-
-Quick check with `nums = [0,1]`:
-- `n = 2`
-- expected sum of `0..2` is `3`
-- actual sum is `1`
-- answer is `3 - 1 = 2`
-
-### Key Variables Explained
-
-- **`n`**: the current array length, which also tells us the expected range is `0..n`.
-- **`expectedSum`**: the sum of every number that should exist if nothing were missing.
-- **`actualSum`**: the running total of the numbers that actually appear in the array.
-- **`num`**: the current array element processed by the loop.
-
-### Why This Works
-
-Suppose the missing number is `m`.
-
-The full range `0..n` should add up to `expectedSum`.
-But the array is missing `m`, so its actual total is:
-
-`actualSum = expectedSum - m`
-
-Rearranging that gives:
-
-`m = expectedSum - actualSum`
-
-That is exactly what the method returns. Since the problem guarantees all numbers are distinct and exactly one number is missing, the difference cannot represent anything else.
-
-### Trick Used
-
-The trick is using the arithmetic sum formula so we do not need to sort the array or store seen values in a `HashSet`.
-
-That keeps the solution at `O(1)` extra space while still solving the problem in one pass.
-
-### Edge Cases Handled
-
-1. **Missing `0`** like `[1,2,3]`
-   - `n = 3`, so the expected range is `0..3`
-   - expected sum is `6`
-   - actual sum is also `6`
-   - difference is `0`, so the answer is `0`
-
-2. **Missing `n`** like `[0,1]`
-   - expected sum includes the largest value in the range
-   - the difference correctly returns `2`
-
-3. **Single element** like `[0]`
-   - `n = 1`, expected sum is `1`
-   - actual sum is `0`
-   - answer is `1`
-
-4. **Unsorted input** like `[3,0,1]`
-   - the order does not matter because the solution only depends on the total sum
-
-5. **Constraint-safe arithmetic**
-   - with `n <= 10^4`, the formula `n * (n + 1) / 2` fits safely in Java `int`
+1. **Initialise** the necessary data structures (`n`, `expectedSum`, `actualSum`).
+2. **Iterate** over the input using a enhanced for-each loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the loop scans the array once, and the formula calculation is constant time.
-- **Space Complexity: `O(1)`** — only a few integer variables are used.
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

@@ -6,8 +6,8 @@ leetcodeUrl: "https://leetcode.com/problems/combination-sum"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/CombinationSum.java"
 patterns: ["backtracking","dfs"]
 tags: []
-timeComplexity: "O(n^(target / minCandidate))"
-spaceComplexity: "O(target / minCandidate)"
+timeComplexity: "O(2^n)"
+spaceComplexity: "O(n)"
 isPremium: false
 hasProblemStatement: false
 javaApis: ["ArrayList"]
@@ -15,11 +15,11 @@ similarProblems: []
 enrichmentNeeded: true
 ---
 
-Given an array of **distinct** integers `candidates` and a target integer `target`, return a list of all **unique combinations** of `candidates` where the chosen numbers sum to `target`. You may return the combinations in **any order**.
+Given an array of **distinct** integers `candidates` and a target integer `target`, return _a list of all **unique combinations** of _`candidates`_ where the chosen numbers sum to _`target`_._ You may return the combinations in **any order**.
 
-The **same** number may be chosen from `candidates` an **unlimited number of times**. Two combinations are unique if the frequency of at least one chosen number is different.
+The **same** number may be chosen from `candidates` an **unlimited number of times**. Two combinations are unique if the frequency of at least one of the chosen numbers is different.
 
-The test cases are generated such that the number of unique combinations that sum to `target` is less than `150`.
+The test cases are generated such that the number of unique combinations that sum up to `target` is less than `150` combinations for the given input.
 
 **Example 1:**
 
@@ -49,8 +49,11 @@ Output: []
 **Constraints:**
 
 - `1 <= candidates.length <= 30`
+
 - `2 <= candidates[i] <= 40`
+
 - All elements of `candidates` are **distinct**.
+
 - `1 <= target <= 40`
 
 **Patterns:** `backtracking`
@@ -64,202 +67,50 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CombinationSum {
-	public List<List<Integer>> combinationSum(int[] candidates, int target) {
-		List<List<Integer>> result = new ArrayList<>();
-		backtrack(result, new ArrayList<>(), candidates, target, 0);
-		return result;
-	}
+    public List<List<Integer>> combinationSum(int[] candidates, int target) {
+        List<List<Integer>> result = new ArrayList<>();
+        backtrack(result, new ArrayList<>(), candidates, target, 0);
+        return result;
+    }
 
-	private void backtrack(List<List<Integer>> result, ArrayList<Integer> curList, int[] candidates, int target, int index) {
-		if (target == 0) {
-			result.add(new ArrayList<>(curList));
-			return;
-		}
-		if (target < 0) {
-			return;
-		}
-		for (int i = index; i < candidates.length; i++) {
-			curList.add(candidates[i]);
-			backtrack(result, curList, candidates, target - candidates[i], i); // Not i + 1 because we can reuse the same elements
-			curList.removeLast();
-		}
-	}
+    private void backtrack(List<List<Integer>> result, ArrayList<Integer> curList, int[] candidates, int target, int index) {
+        if (target == 0) {
+            result.add(new ArrayList<>(curList));
+            return;
+        }
+        if (target < 0) {
+            return;
+        }
+        for (int i = index; i < candidates.length; i++) {
+            curList.add(candidates[i]);
+            backtrack(result, curList, candidates, target - candidates[i], i); // Not i + 1 because we can reuse the same elements
+            curList.removeLast();
+        }
+    }
 }
 ```
 
 ## Explanation
 
-### Problem Analysis
-
-The goal is to return all **unique combinations** whose sum is exactly `target`.
-
-Two details matter most here:
-- each candidate can be used **multiple times**
-- combinations like `[2,3,2]` and `[2,2,3]` should count as the **same** combination
-
-So the real challenge is not just finding a sum. It is exploring all valid picks while avoiding duplicate reorderings of the same numbers.
-
 ### Approach
 
-The code uses recursive backtracking.
+**Combination Sum** requires enumerating all valid combinations/permutations/subsets. Backtracking systematically tries every candidate and immediately abandons ("prunes") any branch that cannot possibly lead to a valid solution, making it far faster than brute-force enumeration in practice.
 
-At each step, it keeps track of:
-- the current combination being built in `curList`
-- the remaining amount still needed in `target`
-- the earliest candidate position allowed for the next pick in `index`
-
-From one recursive call, the algorithm tries every candidate from `index` onward:
-- choose the number
-- subtract it from the remaining target
-- recurse deeper
-- undo the choice after returning
-
-If the remaining target becomes `0`, the current combination is valid.
-
-If the remaining target becomes negative, that branch is impossible and gets pruned immediately.
-
-### Pattern Used
-
-This solution mainly uses **backtracking with DFS**.
-
-There is no extra layer like sorting, memoization, or dynamic programming. The solution is a direct recursive search through possible combinations.
-
-### Key Insight
-
-The `index` parameter is what makes the result unique without extra duplicate checks.
-
-When the recursion chooses `candidates[i]`, the next recursive call starts again from `i`, not from `0`.
-
-That means:
-- the same number can be reused
-- earlier candidates are never revisited later in the same path
-
-So `[2,2,3]` can be generated, but `[3,2,2]` will not be generated as a separate duplicate ordering.
+Think of solving a sudoku: you place a digit, recursively try to solve the rest, and if you reach a contradiction you erase that digit (backtrack) and try the next. The key is that pruning can cut enormous branches of the search tree early.
 
 ### Code Walkthrough
 
-```java
-public List<List<Integer>> combinationSum(int[] candidates, int target) {
-	List<List<Integer>> result = new ArrayList<>();
-	backtrack(result, new ArrayList<>(), candidates, target, 0);
-	return result;
-}
+The solution is implemented in `combinationSum(int[] candidates, int target)`:
 
-private void backtrack(List<List<Integer>> result, ArrayList<Integer> curList, int[] candidates, int target, int index) {
-	if (target == 0) {
-		result.add(new ArrayList<>(curList));
-		return;
-	}
-	if (target < 0) {
-		return;
-	}
-	for (int i = index; i < candidates.length; i++) {
-		curList.add(candidates[i]);
-		backtrack(result, curList, candidates, target - candidates[i], i);
-		curList.removeLast();
-	}
-}
-```
+1. Define what constitutes a valid complete solution (base case).
+2. At each step, iterate over all possible next choices.
+3. Apply a choice (mutate state), then recurse.
+4. After recursion returns, undo the choice (backtrack) to restore state.
+5. Apply a pruning condition to skip choices that cannot lead to a valid solution.
 
-How the code works:
-
-1. `combinationSum(...)` creates `result` and starts recursion with an empty current list.
-2. `target == 0` means the values in `curList` add up exactly to the original target.
-3. The code adds `new ArrayList<>(curList)` instead of `curList` itself because `curList` will keep changing during backtracking.
-4. `target < 0` means the current path has already exceeded the target, so the method returns immediately.
-5. The loop runs from `index` to the end of `candidates`, which prevents duplicate reorderings.
-6. `curList.add(candidates[i])` chooses the current candidate.
-7. `backtrack(..., target - candidates[i], i)` moves to the next recursive level with a smaller remaining target.
-8. The recursive call passes `i`, not `i + 1`, so the same candidate may be chosen again.
-9. `curList.removeLast()` removes the most recently chosen value from the `ArrayList`, restoring the previous state for the next branch.
-
-### Example Walkthrough
-
-For `candidates = [2,3,6,7]` and `target = 7`:
-
-Start with:
-- `curList = []`
-- `target = 7`
-- `index = 0`
-
-Main branches:
-
-1. Choose `2`
-   - `curList = [2]`, remaining target = `5`
-   - choose `2` again
-	 - `curList = [2,2]`, remaining target = `3`
-	 - choose `2` again
-	   - `curList = [2,2,2]`, remaining target = `1`
-	   - any further pick makes the target negative, so those branches stop
-	 - move to `3`
-	   - `curList = [2,2,3]`, remaining target = `0`
-	   - add `[2,2,3]` to `result`
-
-2. Backtrack to the top level and choose `3`
-   - `curList = [3]`, remaining target = `4`
-   - trying `3`, `6`, or `7` from here does not lead to a valid total
-
-3. Choose `6`
-   - remaining target becomes `1`
-   - no valid continuation exists
-
-4. Choose `7`
-   - `curList = [7]`, remaining target = `0`
-   - add `[7]` to `result`
-
-Final result:
-- `[[2,2,3], [7]]`
-
-### Key Variables Explained
-
-- **`result`**: stores all valid combinations found so far.
-- **`curList`**: the current combination being built on one recursive path.
-- **`target`**: the remaining sum still needed for the current path.
-- **`index`**: the smallest candidate position allowed for the next choice.
-- **`i`**: the current loop position inside a recursive call.
-- **`candidates[i]`**: the candidate value currently being tried.
-
-### Why This Works
-
-The recursion maintains a useful invariant:
-- `curList` always contains the numbers chosen so far
-- `target` always equals the original target minus the sum of `curList`
-
-Because of that:
-- when `target == 0`, the current list is a complete valid combination
-- when `target < 0`, the branch can never become valid later
-
-The loop from `index` onward ensures combinations are built in a consistent candidate order. That means every valid combination is explored exactly once, without generating duplicate permutations.
-
-### Trick Used
-
-There is no advanced hidden trick here.
-
-The important implementation details are:
-- passing `i` instead of `i + 1` so a number can be reused
-- carrying `index` so the recursion does not generate the same combination in different orders
-
-Those two details are the main reason this simple backtracking solution matches the problem exactly.
-
-### Edge Cases Handled
-
-1. **Exact match with one candidate** like `candidates = [7]`, `target = 7`
-   - the first pick makes `target == 0`
-   - `[7]` is added immediately
-
-2. **No valid combination** like `candidates = [2]`, `target = 1`
-   - choosing `2` makes the target negative
-   - the recursion returns and the result stays empty
-
-3. **Repeated use of one value is necessary** like `candidates = [2,3,5]`, `target = 8`
-   - the recursion can keep choosing `2`
-   - combinations like `[2,2,2,2]` are supported naturally
-
-4. **Duplicate orderings must be avoided**
-   - `[2,3,3]` can be produced
-   - `[3,2,3]` is never produced separately because the recursion never goes backward in candidate indices
+&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n^(target / minCandidate))`** — the search is exponential in the worst case. The recursion depth can reach about `target / minCandidate`, and each level may branch across multiple candidates.
-- **Space Complexity: `O(target / minCandidate)`** — this is the maximum recursion depth, which is also the maximum size of `curList` on one path. The output list itself is extra and depends on the number of valid combinations.
+- **Time Complexity: `O(2^n)`** — worst-case exponential — every subset of the input may need to be explored.
+- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.

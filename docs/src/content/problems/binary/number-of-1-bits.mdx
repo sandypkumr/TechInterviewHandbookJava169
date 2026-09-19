@@ -72,117 +72,20 @@ public class NumberOf1Bits {
 
 ## Explanation
 
-### Problem Analysis
-
-This problem asks for the total count of 1 bits in the binary representation of a positive integer.
-
-For example:
-- `11` in binary is `1011`, which has three 1 bits.
-- `128` in binary is `10000000`, which has one 1 bit.
-
-A brute-force approach might convert the integer to a string and count '1' characters, but that wastes space. A smarter approach uses bit manipulation directly.
-
 ### Approach
 
-The solution scans the binary representation of `n` from right to left, checking one bit at a time.
-
-For each iteration:
-- extract the least significant bit using `n & 1`
-- add its value to the count
-- shift `n` right by 1 position to expose the next bit
-- repeat until all bits are processed
-
-### Pattern Used
-
-This is a classic **bit-by-bit iteration** pattern.
-
-We process the integer's binary representation one bit at a time instead of using external conversions or lookup tables.
-
-### Key Insight
-
-To check the least significant bit (rightmost bit), we use `n & 1`:
-- if the last bit is `1`, the result is `1`
-- if the last bit is `0`, the result is `0`
-
-After extracting that bit, we shift `n` right by 1 to expose the next bit in that position. We repeat until `n` becomes `0`.
+**Number of 1 Bits** is a binary problem. The solution iterates over the input using a iterative loop, applying the appropriate data structure (built-in arrays) to achieve the target complexities of `O(1)` time and `O(1)` space.
 
 ### Code Walkthrough
 
-```java
-public int hammingWeight(int n) {
-    int count = 0;
-    while (n != 0) {
-        count += n & 1;
-        n >>= 1;
-    }
-    return count;
-}
-```
+The solution is implemented in `hammingWeight(int n)`:
 
-How the method works:
-
-1. `count` starts at `0` because we have not counted any bits yet.
-2. The while loop continues as long as `n != 0`.
-3. `n & 1` extracts the least significant bit.
-   - This value is either `0` or `1`, so adding it to `count` either stays the same or increments by one.
-4. `n >>= 1` is a right shift that divides `n` by 2 and discards the least significant bit.
-5. After the loop ends, `count` contains the total number of 1 bits.
-
-### Example Walkthrough
-
-For `n = 11` (binary `1011`):
-
-| Iteration | `n` (binary) | `n & 1` | `count` after |
-|-----------|-------------|---------|---------------|
-| 0 | `1011` | `1` | `1` |
-| 1 | `101` | `1` | `2` |
-| 2 | `10` | `0` | `2` |
-| 3 | `1` | `1` | `3` |
-| 4 | `0` | — | loop ends |
-
-Final result: `3`
-
-### Key Variables Explained
-
-- **`count`**: accumulates the number of 1 bits found so far.
-- **`n`**: the integer being processed. It gets progressively smaller as we right-shift it.
-- **`n & 1`**: extracts the current least significant bit (either 0 or 1).
-- **`n >>= 1`**: right shift operator that divides n by 2, discarding the least significant bit.
-
-### Why This Works
-
-Since the input is positive, the right-shift operation eventually reduces `n` to `0`, guaranteeing the loop terminates.
-
-Every 1 bit in the original number will be extracted and counted exactly once before being shifted away.
-
-So after processing all bits, `count` holds the correct total.
-
-### Trick Used
-
-The trick is using bitwise operations instead of string conversions or loops over a fixed number of bits.
-
-We only loop as many times as there are bits in `n`, and we stop as soon as `n` becomes `0`. This is more efficient than always checking 32 bits for an integer.
-
-### Edge Cases Handled
-
-1. **Single bit set** like `1` (binary `1`)
-   - one iteration: `1 & 1 = 1`
-   - answer is `1`
-
-2. **No bits set except the highest** like `128` (binary `10000000`)
-   - most iterations: `n & 1 = 0`
-   - one iteration where `n & 1 = 1`
-   - answer is `1`
-
-3. **All bits set** like `2147483645` (binary with 30 ones)
-   - every iteration adds `1` to count
-   - answer is `30`
-
-4. **Maximum int value** like `2147483647` (all bits set in a 31-bit positive integer)
-   - each of 31 iterations finds a 1 bit
-   - answer is `31`
+1. **Initialise** the necessary data structures (`count`).
+2. **Iterate** over the input using a iterative loop.
+3. **Process** each element: apply the core logic and update state.
+4. **Return** the accumulated result after the loop.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(1)`** — the loop runs at most 32 times for a 32-bit integer, which is a constant regardless of input value.
-- **Space Complexity: `O(1)`** — only two variables (`count` and `n`) are used; no extra data structures.
+- **Time Complexity: `O(1)`** — only a constant number of operations are performed regardless of input size.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

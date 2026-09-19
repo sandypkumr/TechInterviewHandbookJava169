@@ -6,7 +6,7 @@ leetcodeUrl: "https://leetcode.com/problems/kth-smallest-element-in-a-bst"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search_tree/KthSmallestElementInABST.java"
 patterns: ["dfs","in-order traversal"]
 tags: []
-timeComplexity: "O(n)"
+timeComplexity: "O(h+k)"
 spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
@@ -72,165 +72,23 @@ public class KthSmallestElementInABST {
 
 ## Explanation
 
-### Problem Analysis
-
-This problem asks for the `k`th smallest value in a **binary search tree**.
-
-The important part is the BST property:
-- values in the left subtree are smaller than the current node
-- values in the right subtree are larger than the current node
-
-Because of that, if we visit the tree in **in-order** (`left -> node -> right`), we see the values in sorted order from smallest to largest.
-
-So the problem is really asking us to walk through the BST in sorted order and return the value at position `k`.
-
 ### Approach
 
-The code uses a recursive in-order traversal and keeps track of how many nodes have been visited so far.
+**Kth Smallest Element in a BST** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-It stores that state in two class-level variables:
-- `count` = how many nodes have been visited in sorted order
-- `result` = the answer once the `k`th node is reached
-
-The traversal logic is:
-1. go left first to smaller values
-2. process the current node
-3. increase `count`
-4. if this is the `k`th visited node, store its value in `result`
-5. otherwise continue to the right subtree
-
-### Pattern Used
-
-This solution mainly uses **BST in-order traversal with DFS recursion**.
-
-It is not doing anything more elaborate than that. The main idea is simply to use the BST's natural sorted traversal order.
-
-### Key Insight
-
-In-order traversal of a BST produces nodes in increasing order.
-
-That means:
-- the 1st visited node is the smallest
-- the 2nd visited node is the 2nd smallest
-- the `k`th visited node is the `k`th smallest
-
-So we do not need to collect all values and sort them later. We only need a running counter during traversal.
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-```java
-public int kthSmallest(TreeNode root, int k) {
-    inorder(root, k);
-    return result;
-}
+The solution is implemented in `kthSmallest(TreeNode root, int k)`:
 
-private void inorder(TreeNode node, int k) {
-    if (node == null) {
-        return;
-    }
-    inorder(node.left, k);
-    count++;
-    if (count == k) {
-        result = node.val;
-        return;
-    }
-    inorder(node.right, k);
-}
-```
-
-How the method works:
-
-1. `kthSmallest` starts the recursive in-order traversal from `root`.
-2. `if (node == null)` stops recursion at empty child pointers.
-3. `inorder(node.left, k)` visits smaller values first.
-4. After returning from the left subtree, `count++` marks the current node as visited.
-5. If `count == k`, the current node is the `k`th smallest, so the code stores `node.val` in `result`.
-6. If not, `inorder(node.right, k)` continues to larger values.
-
-One important detail about this exact code: when `count == k`, the current call returns immediately, but earlier recursive stack frames may still continue afterward. So this implementation is correct, but it does **not** fully stop the entire traversal as soon as the answer is found.
-
-### Example Walkthrough
-
-For `root = [5,3,6,2,4,null,null,1]` and `k = 3`:
-
-The BST is:
-
-```text
-        5
-       / \
-      3   6
-     / \
-    2   4
-   /
-  1
-```
-
-Its in-order traversal is:
-
-`1 -> 2 -> 3 -> 4 -> 5 -> 6`
-
-Now follow the code:
-
-1. Go all the way left and visit `1` → `count = 1`
-2. Return to `2` and visit it → `count = 2`
-3. Return to `3` and visit it → `count = 3`
-4. Since `count == k`, set `result = 3`
-
-So the returned answer is `3`.
-
-With this exact implementation, some remaining recursive calls may still run after that point, but `result` stays `3`, so the final answer remains correct.
-
-### Key Variables Explained
-
-- **`count`**: how many nodes have been visited so far in in-order sequence.
-- **`result`**: stores the value of the `k`th visited node.
-- **`root`**: the starting node of the BST.
-- **`node`**: the current node being processed by the recursive helper.
-- **`k`**: the target rank in sorted order.
-
-### Why This Works
-
-The solution works because of two facts:
-
-1. In a BST, all left-subtree values come before the current node, and all right-subtree values come after it in sorted order.
-2. In-order traversal visits `left -> node -> right`.
-
-So the traversal visits nodes exactly in increasing order.
-
-That means the moment `count` becomes `k`, the current node must be the `k`th smallest value.
-
-Even if this implementation continues traversing later nodes, `result` does not change, because `count` keeps increasing and the condition `count == k` can only be true once.
-
-### Trick Used
-
-There is no fancy trick here.
-
-The useful idea is simply to combine:
-- the BST's sorted in-order property
-- a running visit counter
-
-That avoids creating an extra array or list of all node values.
-
-### Edge Cases Handled
-
-1. **`k = 1`**
-   - the first node visited in-order is the leftmost node
-   - that is the smallest value
-
-2. **Single-node tree**
-   - `count` becomes `1` at the root
-   - the root value is returned
-
-3. **Skewed BST**
-   - the recursion still works whether the tree is mostly left-heavy or right-heavy
-   - the recursion depth becomes the tree height
-
-4. **Answer found before traversal fully ends**
-   - this exact implementation may still visit some later nodes
-   - `result` remains correct once it has been set
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — although the answer is identified when `count == k`, this exact implementation may still continue traversing other nodes through earlier recursive stack frames, so in the worst case it can visit the whole tree.
-- **Space Complexity: `O(h)`** — the recursion stack uses space proportional to the tree height `h`; in a skewed tree, that can become `O(n)`.
-
+- **Time Complexity: `O(h+k)`** — see the analysis for full details.
+- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.

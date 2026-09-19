@@ -4,25 +4,25 @@ difficulty: "Medium"
 topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/path-sum-iii"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/PathSum3.java"
-patterns: ["dfs", "prefix-sum"]
+patterns: ["dfs","prefix-sum"]
 tags: []
-timeComplexity: "O(n)"
-spaceComplexity: "O(h)"
+timeComplexity: ""
+spaceComplexity: ""
 isPremium: false
 hasProblemStatement: false
 javaApis: ["HashMap"]
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 Given the `root` of a binary tree and an integer `targetSum`, return _the number of paths where the sum of the values along the path equals_ `targetSum`.
 
-The path does not need to start or end at the root or a leaf, but it must go downwards (i.e., travel only from parent nodes to child nodes).
+The path does not need to start or end at the root or a leaf, but it must go downwards (i.e., traveling only from parent nodes to child nodes).
 
 **Example 1:**
 
 ```
-Input: root = [10,5,-3,3,2,null,11], targetSum = 8
+Input: root = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8
 Output: 3
 Explanation: The paths that sum to 8 are shown.
 ```
@@ -30,17 +30,19 @@ Explanation: The paths that sum to 8 are shown.
 **Example 2:**
 
 ```
-Input: root = [5,4,8,11,null,13,4,7,2,null,1], targetSum = 22
+Input: root = [5,4,8,11,null,13,4,7,2,null,null,5,1], targetSum = 22
 Output: 3
 ```
 
 **Constraints:**
 
-- The number of nodes in the tree is in the range `[1, 1000]`.
+- The number of nodes in the tree is in the range `[0, 1000]`.
 
 - `-10^9 <= Node.val <= 10^9`
 
 - `-1000 <= targetSum <= 1000`
+
+**Patterns:** `dfs`, `prefix-sum`
 
 ## Java Solution
 
@@ -79,136 +81,25 @@ public class PathSum3 {
 
 ## Explanation
 
-### Problem Analysis
-
-Unlike Path Sum II (which requires root-to-leaf paths), this problem allows paths starting and ending at any nodes (going downward). This is fundamentally different: a brute-force approach checking all node pairs would be O(n²). The optimal approach uses prefix sum thinking.
-
 ### Approach
 
-The key insight is using a prefix sum HashMap:
-1. Track cumulative sum from root to each node
-2. At each node, check if `(current prefix sum) - targetSum` exists in the map
-3. If yes, all such prefixes represent valid paths to this node
-4. Use DFS to traverse and maintain prefix sum counts
-5. Backtrack: remove current sum from map after exploring children
+**Path Sum III** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-### Pattern Used
-
-**DFS with prefix sum HashMap** for counting paths in O(n) time.
-
-### Key Insight
-
-The crucial insight is: if `prefixSum[node] - prefixSum[ancestor] == targetSum`, then there's a valid path from ancestor to node with the target sum. By storing prefix sum frequencies, we count how many such paths exist for the current node in O(1).
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-**Entry point:**
-```java
-public int pathSum(TreeNode root, int targetSum) {
-    Map<Long, Integer> prefixSumMap = new HashMap<>();
-    prefixSumMap.put(0L, 1);  // Base case: prefix sum of 0 appears once
-    return dfs(root, 0L, targetSum, prefixSumMap);
-}
-```
+The solution is implemented in `pathSum(TreeNode root, int targetSum)`:
 
-Initialize with `0L → 1` because an empty prefix (before any node) has sum 0.
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
-**DFS function:**
-```java
-private int dfs(TreeNode node, long curSum, int targetSum, Map<Long, Integer> prefixSumMap) {
-    if (node == null) {
-        return 0;  // Base case: null node contributes 0 paths
-    }
-
-    curSum += node.val;  // Add current node's value to prefix sum
-
-    // Count paths ending at this node with target sum
-    int count = prefixSumMap.getOrDefault(curSum - targetSum, 0);
-
-    // Add this prefix sum to the map
-    prefixSumMap.put(curSum, prefixSumMap.getOrDefault(curSum, 0) + 1);
-
-    // Recurse on children
-    count += dfs(node.left, curSum, targetSum, prefixSumMap);
-    count += dfs(node.right, curSum, targetSum, prefixSumMap);
-
-    // Backtrack: remove this prefix sum (for exploring other branches)
-    prefixSumMap.put(curSum, prefixSumMap.get(curSum) - 1);
-
-    return count;
-}
-```
-
-1. **Add node value**: `curSum += node.val`
-2. **Count valid paths**: If `curSum - targetSum` is in the map, those prefixes represent valid paths
-3. **Record prefix**: Add current prefix sum to map for future nodes
-4. **Explore children**: Recurse left and right
-5. **Backtrack**: Remove current prefix sum to restore map state
-
-### Example Walkthrough
-
-For `root = [10,5,-3,3,2,null,11], targetSum = 8`:
-
-```
-         10
-        /  \
-       5   -3
-      / \
-     3   2
-    11
-```
-
-DFS traversal:
-- At 10: curSum=10, check 10-8=2 in map? No. Add 10→1. Recurse.
-- At 5: curSum=15, check 15-8=7? No. Add 15→1. Recurse.
-- At 3: curSum=18, check 18-8=10? Yes! count=1. Add 18→1. (leaf, backtrack)
-- Back at 5: Remove 18.
-- At 2: curSum=17, check 17-8=9? No. Add 17→1. (leaf, backtrack)
-- Back at 5: Remove 17.
-- Back at 10: Remove 15.
-- At -3: curSum=7, check 7-8=-1? No. Add 7→1. Recurse.
-- At 11: curSum=18, check 18-8=10? Yes! count=1 (cumulative). Add 18→1. (leaf, backtrack)
-- Back at -3: Remove 18. Back at 10. Remove 7.
-
-Actually more paths: [5,3], [5,2], [-3,11] = 3 paths total.
-
-### Key Variables Explained
-
-- **`prefixSumMap`**: Frequency map of prefix sums from root to ancestors
-- **`curSum`**: Cumulative sum from root to current node
-- **`curSum - targetSum`**: If this prefix sum exists in map, we have a valid path ending here
-- **`count`**: Number of valid paths found
-
-### Why This Works
-
-The algorithm is correct because:
-
-1. **Prefix sum property**: sum(node_i to node_j) = prefixSum(node_j) - prefixSum(node_i)
-2. **If curSum - targetSum is in map**: We found ancestors with that prefix sum, so curSum - that prefix = targetSum
-3. **Frequency counting**: Multiple ancestors can have the same prefix sum; we count all valid paths
-4. **Backtracking**: Map is correctly maintained; each branch sees the right set of ancestral prefixes
-5. **Complete coverage**: Every path going downward from any node to any descendant is counted
-
-### Trick Used
-
-The main trick is using `curSum - targetSum` as a lookup key:
-
-```java
-int count = prefixSumMap.getOrDefault(curSum - targetSum, 0);
-```
-
-This converts the problem from "find paths with sum == target" to "find ancestors with prefix sum == curSum - target". The HashMap enables O(1) lookup instead of O(n) search.
-
-### Edge Cases Handled
-
-1. **Negative node values**: Handled correctly by addition
-2. **Negative targetSum**: Works with the algorithm
-3. **Zero values**: Correctly counted
-4. **All paths contribute**: Paths of any length are counted
-5. **Single node matching**: If root.val == targetSum, it's counted
+&gt; **Note:** This solution also uses the **prefix sum array for O(1) range queries** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — Each node visited once; HashMap operations are O(1)
-- **Space Complexity: `O(h)`** — Recursion depth plus HashMap size (at most h entries at any time due to backtracking)
-
+- **Time Complexity: `?`** — see analysis above.
+- **Space Complexity: `?`** — see analysis above.

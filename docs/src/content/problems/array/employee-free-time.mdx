@@ -4,31 +4,36 @@ difficulty: "Hard"
 topic: "array"
 leetcodeUrl: "https://leetcode.com/problems/employee-free-time"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/EmployeeFreeTime.java"
-patterns: ["merge-intervals"]
+patterns: ["heap","merge-intervals"]
 tags: []
 timeComplexity: "O(n log n)"
 spaceComplexity: "O(n)"
 isPremium: false
 hasProblemStatement: true
-javaApis: ["ArrayList","Comparator.comparingInt","List.getFirst","Math.max"]
+javaApis: ["ArrayList","Math.max/min"]
 similarProblems: []
 enrichmentNeeded: true
 ---
 
-You are given each employee's working schedule, where every employee has a list of non-overlapping intervals sorted by start time.
+We are given a list of employees, where each employee has a list of non-overlapping intervals representing their
+working hours. These intervals are sorted by start time. We need to find the common free time intervals across all
+employees.
 
-Return the finite intervals where **all employees are free**.
+
+
+The free time intervals are the time periods when all employees are not working.
+
+
+
 
 **Example:**
+    Input: [[[1, 3], [6, 7]], [[2, 4]], [[2, 5], [9, 12]]]
+    Output: [[4, 6], [7, 9]]
 
-```text
-Input:  [[[1, 3], [6, 7]], [[2, 4]], [[2, 5], [9, 12]]]
-Output: [[5, 6], [7, 9]]
-```
 
-Explanation:
-- the busy intervals merge into `[1, 5]`, `[6, 7]`, and `[9, 12]`
-- the gaps between those merged busy blocks are `[5, 6]` and `[7, 9]`
+
+    Explanation:
+    The common free time intervals are [4, 6] and [7, 9].
 
 **Patterns:** `merge-intervals`
 
@@ -50,10 +55,10 @@ import java.util.List;
  * <p>
  * Example:
  *     Input: [[[1, 3], [6, 7]], [[2, 4]], [[2, 5], [9, 12]]]
- *     Output: [[5, 6], [7, 9]]
+ *     Output: [[4, 6], [7, 9]]
  * <p>
  *     Explanation:
- *     The common free time intervals are [5, 6] and [7, 9].
+ *     The common free time intervals are [4, 6] and [7, 9].
  */
 public class EmployeeFreeTime {
     public List<Interval> employeeFreeTime(List<List<Interval>> schedule) {
@@ -85,167 +90,25 @@ public class EmployeeFreeTime {
 
 ## Explanation
 
-### Problem Analysis
-
-Each employee's schedule is already sorted and non-overlapping **within that employee's own list**.
-
-But the shared free time depends on **all employees together**, so the real task is to combine everyone's busy intervals and find the gaps between them.
-
-That means the easiest way to think about the problem is:
-- collect every busy interval
-- merge overlaps across employees
-- return the gaps between merged busy blocks
-
 ### Approach
 
-The code does exactly that in three steps:
-1. Flatten all employee schedules into one list called `allIntervals`
-2. Sort that list by interval start time
-3. Scan from left to right while tracking the end of the current merged busy block
+**Employee Free Time** needs to repeatedly find the smallest or largest element from a dynamically changing collection. A heap (Java's `PriorityQueue`) maintains this invariant with O(log n) insert and O(log n) remove, far better than sorting the entire collection each time.
 
-During the scan:
-- if the next interval starts **after** the current merged end, that gap is common free time
-- otherwise, the intervals overlap or touch, so we extend the merged end if needed
-
-### Pattern Used
-
-This solution mainly uses an **interval flatten + sort + merge-style scan**.
-
-It is closest to the merge-intervals pattern, even though the code does not explicitly build a separate merged list of busy intervals.
-
-### Key Insight
-
-Common free time is just the space between merged busy intervals.
-
-So instead of trying to intersect each employee's free slots directly, the code turns the problem into one combined busy timeline.
-
-The variable `end` is enough to represent the right boundary of the merged busy block seen so far.
+A min-heap is like a waiting room where the most urgent patient always sits at the front. As patients arrive or leave, the room reorganises in O(log n) time to keep the most urgent at the front — you never need to scan everyone to find them.
 
 ### Code Walkthrough
 
-```java
-public List<Interval> employeeFreeTime(List<List<Interval>> schedule) {
-    List<Interval> allIntervals = new ArrayList<>();
-    for (List<Interval> employeeSchedule : schedule) {
-        allIntervals.addAll(employeeSchedule);
-    }
+The solution is implemented in `employeeFreeTime(List<List<Interval>> schedule)`:
 
-    allIntervals.sort(Comparator.comparingInt(a -> a.start));
+1. Choose a min-heap (natural order) or max-heap (Comparator.reverseOrder()).
+2. Insert elements as you process them.
+3. Poll the top element when you need the current minimum/maximum.
+4. For "top-K" problems, keep the heap size bounded at K to save memory.
+5. After processing, the remaining heap elements or the polled sequence is your answer.
 
-    List<Interval> freeTime = new ArrayList<>();
-    int end = allIntervals.getFirst().end;
-    for (int i = 1; i < allIntervals.size(); i++) {
-        Interval current = allIntervals.get(i);
-        if (current.start > end) {
-            freeTime.add(new Interval(end, current.start));
-        }
-        end = Math.max(end, current.end);
-    }
-
-    return freeTime;
-}
-```
-
-How this method works:
-
-1. `allIntervals` gathers every employee's working interval into one list.
-2. `allIntervals.sort(Comparator.comparingInt(a -> a.start))` puts all busy intervals in chronological order.
-3. `end` starts as the end of the first interval in the sorted list.
-4. For each later interval `current`:
-   - if `current.start > end`, there is a real gap, so the code adds `new Interval(end, current.start)` to `freeTime`
-   - regardless, `end = Math.max(end, current.end)` keeps the merged busy block extended as far right as needed
-5. After the scan, `freeTime` contains every finite interval where nobody is working.
-
-### Example Walkthrough
-
-For:
-
-```text
-schedule = [[[1, 3], [6, 7]], [[2, 4]], [[2, 5], [9, 12]]]
-```
-After flattening:
-
-```text
-[[1, 3], [6, 7], [2, 4], [2, 5], [9, 12]]
-```
-
-After sorting by start time:
-
-```text
-[[1, 3], [2, 4], [2, 5], [6, 7], [9, 12]]
-```
-Now scan:
-
-| Current interval | `end` before | Gap found? | `end` after |
-|------------------|--------------|------------|-------------|
-| start with `[1, 3]` | — | — | `3` |
-| `[2, 4]` | `3` | no, because `2 <= 3` | `4` |
-| `[2, 5]` | `4` | no, because `2 <= 4` | `5` |
-| `[6, 7]` | `5` | yes → add `[5, 6]` | `7` |
-| `[9, 12]` | `7` | yes → add `[7, 9]` | `12` |
-
-Final result:
-
-```text
-[[5, 6], [7, 9]]
-```
-
-### Key Variables Explained
-
-- **`schedule`**: the full input, where each inner list is one employee's working intervals.
-- **`allIntervals`**: the flattened list of every busy interval from every employee.
-- **`freeTime`**: the result list of common free intervals.
-- **`end`**: the farthest end time of the merged busy block processed so far.
-- **`current`**: the interval currently being compared against that merged busy block.
-
-### Why This Works
-
-After sorting, intervals are processed from left to right in start-time order.
-
-At every step, `end` represents the rightmost point covered by the merged union of all intervals seen so far.
-
-So there are only two possibilities for the next interval:
-
-1. **`current.start <= end`**
-   - the next interval overlaps or touches the current merged busy block
-   - there is no free time between them
-   - we only update `end` if this interval stretches farther right
-
-2. **`current.start > end`**
-   - there is uncovered time between `end` and `current.start`
-   - since intervals are sorted, no later interval can remove that gap retroactively
-   - that uncovered range must therefore be common free time
-
-Because the scan checks every interval once after sorting, it finds every gap exactly once.
-
-### Trick Used
-
-There is no advanced trick or special data structure here.
-
-The useful simplification is to avoid computing each employee's free slots separately. The code combines everyone's **busy** time first, then finds gaps while merging on the fly.
-
-### Edge Cases Handled
-
-1. **Overlapping intervals from different employees**
-   - examples like `[1, 3]`, `[2, 4]`, and `[2, 5]` are merged naturally
-   - `end = Math.max(end, current.end)` keeps the busy block correct
-
-2. **Touching intervals** like `[3, 5]` and `[5, 6]`
-   - the code checks `current.start > end`, not `>=`
-   - so touching intervals do **not** create a zero-length free interval
-
-3. **One interval fully inside another**
-   - if `current.end` is smaller than `end`, the merged boundary stays unchanged
-   - this prevents false free gaps
-
-4. **Multiple separate free gaps**
-   - every time a later interval starts after `end`, one new free interval is added
-
-Note: this implementation assumes there is at least one interval overall, because it initializes `end` with `allIntervals.getFirst()`.
+&gt; **Note:** This solution also uses the **sort intervals by start time, then merge overlapping ones in one pass** technique.
 
 ### Complexity Analysis
 
-Let `n` be the total number of intervals across all employees.
-
-- **Time Complexity: `O(n log n)`** — flattening is `O(n)`, sorting is `O(n log n)`, and the final scan is `O(n)`.
-- **Space Complexity: `O(n)`** — the flattened list `allIntervals` stores all intervals before sorting.
+- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
+- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.

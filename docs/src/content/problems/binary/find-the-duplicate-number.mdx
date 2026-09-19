@@ -45,13 +45,17 @@ Output: 3
 **Constraints:**
 
 - `1 <= n <= 10^5`
+
 - `nums.length == n + 1`
+
 - `1 <= nums[i] <= n`
+
 - All the integers in `nums` appear only **once** except for **precisely one integer** which appears **two or more** times.
 
 **Follow up:**
 
 - How can we prove that at least one duplicate number must exist in `nums`?
+
 - Can you solve the problem in linear runtime complexity?
 
 ## Java Solution
@@ -82,188 +86,23 @@ public class FindTheDuplicateNumber {
 
 ## Explanation
 
-### Problem Analysis
-
-The array has `n + 1` numbers, but every value must be in the range `[1, n]`.
-
-That means there are more positions than distinct values, so at least one value must repeat. The problem also adds two important restrictions:
-
-- we cannot modify the array
-- we must use only constant extra space
-
-Those restrictions rule out common solutions like sorting the array in place or using a `HashSet`.
-
 ### Approach
 
-This solution treats the array like an **implicit linked structure**:
+**Find the Duplicate Number** uses two pointers moving at different speeds — slow advances one step at a time, fast advances two. If a cycle exists, the fast pointer eventually laps the slow pointer and they meet inside the cycle. If no cycle exists, fast reaches the end first.
 
-- each index is a node
-- the value at that index tells us the next node to visit
-
-So from index `i`, we move to `nums[i]`.
-
-Because every value is between `1` and `n`, every jump stays within valid indices. Since one value is duplicated, two different positions eventually point into the same path, which creates a cycle.
-
-Once the problem is viewed this way, the code uses Floyd's cycle detection algorithm in two phases:
-
-1. Find an intersection point inside the cycle using a slow and fast pointer.
-2. Reset one pointer to the start and move both one step at a time until they meet again.
-
-That second meeting point is the duplicate number.
-
-### Pattern Used
-
-This solution uses the **fast and slow pointer** pattern.
-
-More specifically, it applies Floyd's cycle detection on an array that is being interpreted as a linked list, not on an actual `ListNode` structure.
-
-### Key Insight
-
-The duplicate number is exactly what causes two paths to merge.
-
-When we treat `nums[i]` as the next pointer, that merge creates a cycle. The entry point of that cycle corresponds to the duplicated value.
-
-So the problem is not really about counting duplicates directly. It is about finding the entrance to the cycle created by the duplicate.
+Think of two runners on a circular track: the faster runner will always eventually overtake (lap) the slower one. If the track has no loop (i.e., it ends), the faster runner simply reaches the finish line first.
 
 ### Code Walkthrough
 
-```java
-public int findDuplicate(int[] nums) {
-    int slow = nums[0];
-    int fast = nums[0];
+The solution is implemented in `findDuplicate(int[] nums)`:
 
-    do {
-        slow = nums[slow];
-        fast = nums[nums[fast]];
-    } while (slow != fast);
-
-    slow = nums[0];
-    while (slow != fast) {
-        slow = nums[slow];
-        fast = nums[fast];
-    }
-
-    return slow;
-}
-```
-
-How the method works:
-
-1. `slow` and `fast` both start at `nums[0]`.
-   - The code starts from the value at index `0`, not from index `0` itself.
-   - That places both pointers directly into the valid `1..n` range used by the traversal.
-
-2. The `do { ... } while (slow != fast);` loop finds a meeting point inside the cycle.
-   - `slow = nums[slow]` moves one step.
-   - `fast = nums[nums[fast]]` moves two steps.
-   - Because a cycle exists, these two pointers must eventually meet.
-
-3. After the first meeting, `slow` is reset to `nums[0]`.
-   - `fast` stays at the meeting point inside the cycle.
-
-4. The second `while (slow != fast)` loop moves both pointers one step at a time.
-   - `slow = nums[slow]`
-   - `fast = nums[fast]`
-
-5. Their next meeting point is the cycle entrance, which is the duplicate value, so the method returns `slow`.
-
-The `do-while` is important here because `slow` and `fast` start equal. We need to move them first before checking whether they have met.
-
-### Example Walkthrough
-
-Take `nums = [1,3,4,2,2]`.
-
-The implicit links are:
-
-- `0 -> 1`
-- `1 -> 3`
-- `3 -> 2`
-- `2 -> 4`
-- `4 -> 2`
-
-Notice the cycle:
-
-`2 -> 4 -> 2 -> 4 -> ...`
-
-#### Phase 1: find a meeting point
-
-Start:
-
-- `slow = nums[0] = 1`
-- `fast = nums[0] = 1`
-
-After each loop:
-
-| Step | `slow` move | `fast` move |
-|------|-------------|-------------|
-| 1 | `nums[1] = 3` | `nums[nums[1]] = nums[3] = 2` |
-| 2 | `nums[3] = 2` | `nums[nums[2]] = nums[4] = 2` |
-
-Now `slow == fast == 2`, so a cycle has been confirmed.
-
-#### Phase 2: find the cycle entrance
-
-Reset:
-
-- `slow = nums[0] = 1`
-- `fast = 2`
-
-Move both one step at a time:
-
-| Step | `slow` | `fast` |
-|------|--------|--------|
-| 1 | `nums[1] = 3` | `nums[2] = 4` |
-| 2 | `nums[3] = 2` | `nums[4] = 2` |
-
-They meet at `2`, so the duplicate number is `2`.
-
-### Key Variables Explained
-
-- **`slow`**: moves one jump at a time through the implicit linked structure.
-- **`fast`**: moves two jumps at a time to guarantee a meeting inside the cycle.
-- **`nums[i]`**: acts like a “next pointer” from node `i` to node `nums[i]`.
-
-### Why This Works
-
-Because the array has `n + 1` positions but only values `1` through `n`, at least one value must repeat.
-
-That repeated value causes two different indices to point into the same continuation path. In linked-list terms, that creates a cycle.
-
-Floyd's algorithm has two guarantees:
-
-1. If a cycle exists, a fast pointer and slow pointer will meet somewhere inside it.
-2. If one pointer is reset to the start and both then move one step at a time, they will meet at the cycle entrance.
-
-In this problem, the cycle entrance is the duplicated value itself, which is why returning `slow` gives the correct answer.
-
-### Trick Used
-
-The real trick is the modeling step.
-
-The code never counts values and never modifies the array. Instead, it reinterprets the array as pointer jumps and turns the duplicate-number problem into a cycle-entry problem.
-
-Once that transformation is recognized, Floyd's algorithm gives the required `O(n)` time and `O(1)` extra space solution.
-
-### Edge Cases Handled
-
-1. **Duplicate repeated many times** like `[3,3,3,3,3]`
-   - every path quickly falls into the same cycle
-   - the algorithm still finds `3`
-
-2. **Smallest valid case** like `[1,1]`
-   - both pointers immediately move within the cycle around `1`
-   - answer is `1`
-
-3. **Duplicate not near the front** like `[1,4,6,3,2,5,6]`
-   - the non-cycle path may be longer
-   - Floyd's method still reaches the cycle and finds its entry correctly
-
-4. **Duplicate appearing more than twice**
-   - the problem allows this
-   - the cycle interpretation still holds because the same value is still the merge point
+1. Initialise slow = head and fast = head.
+2. Advance slow by one step and fast by two steps each iteration.
+3. If fast or fast.next is null, there is no cycle.
+4. If slow == fast, a cycle is detected (meeting point is inside the cycle).
+5. To find the cycle entry point, reset one pointer to head and advance both one step at a time.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — both phases together take linear time because each pointer traversal is bounded by the array size.
-- **Space Complexity: `O(1)`** — only `slow` and `fast` are used beyond the input array.
-
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

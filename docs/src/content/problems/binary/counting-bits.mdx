@@ -15,15 +15,7 @@ similarProblems: []
 enrichmentNeeded: true
 ---
 
-Given an integer `n`, return an array `ans` of length `n + 1` such that for each `i` where `0 <= i <= n`, `ans[i]` is the number of `1`s in the binary representation of `i`.
-
-**Example 1:**
-
-```
-Input: n = 2
-Output: [0,1,1]
-Explanation:
-0 --> 0
+Given an integer `n`, return _an array _`ans`_ of length _`n + 1`_ such that for each _`i`_ _(`0  0
 1 --> 1
 2 --> 10
 ```
@@ -49,6 +41,7 @@ Explanation:
 **Follow up:**
 
 - It is very easy to come up with a solution with a runtime of `O(n log n)`. Can you do it in linear time `O(n)` and possibly in a single pass?
+
 - Can you do it without using any built-in function (i.e., like `__builtin_popcount` in C++)?
 
 ## Java Solution
@@ -69,150 +62,23 @@ public class CountingBits {
 
 ## Explanation
 
-### Problem Analysis
-
-This problem asks for the number of `1` bits in every integer from `0` to `n`.
-
-The important detail is that we do **not** want to count bits for each number independently. That would repeat work, especially because nearby numbers share most of their binary structure.
-
-The follow-up makes the goal even clearer: we want a linear-time solution, ideally in one pass, without using any built-in bit-count function.
-
 ### Approach
 
-The code builds the answer array from left to right.
+**Counting Bits** has optimal substructure: the answer to the full problem can be built from answers to smaller sub-problems. Without memoisation, a naive recursion solves the same sub-problem exponentially many times; DP stores each result once and reuses it in O(1).
 
-For each number `i`, it uses this recurrence:
-
-`result[i] = result[i >> 1] + (i & 1)`
-
-That formula comes directly from binary representation:
-- `i >> 1` removes the last bit of `i`
-- `(i & 1)` tells us whether that removed last bit was `1`
-
-So the number of set bits in `i` is:
-- the number of set bits in `i >> 1`
-- plus `1` if `i` is odd, otherwise plus `0`
-
-Because `i >> 1` is always smaller than `i`, its answer has already been computed earlier in the loop.
-
-### Pattern Used
-
-This solution mainly uses **bottom-up dynamic programming with bit manipulation**.
-
-It is dynamic programming because each answer is built from a smaller previously computed answer, and it uses bit operations to identify exactly what changes between `i` and `i >> 1`.
-
-### Key Insight
-
-If you remove the last binary digit of a number, you get a smaller number whose bit count is already known.
-
-For example:
-- `6` is `110`, and `6 >> 1` is `3` which is `11`
-- `5` is `101`, and `5 >> 1` is `2` which is `10`
-
-The only information lost during that shift is the last bit. So once we know the count for `i >> 1`, we only need to add `0` or `1` depending on whether `i` ends in `0` or `1`.
-
-That is why the whole problem can be solved in one linear pass.
+Think of computing Fibonacci numbers: fib(5) needs fib(4) and fib(3), which both need fib(2) — without caching you'd compute fib(2) repeatedly. DP caches each sub-answer so every value is computed exactly once, reducing exponential work to polynomial.
 
 ### Code Walkthrough
 
-```java
-public int[] countBits(int n) {
-    int[] result = new int[n + 1];
-    for (int i = 1; i <= n; i++) {
-        result[i] = result[i >> 1] + (i & 1);
-    }
-    return result;
-}
-```
+The solution is implemented in `countBits(int n)`:
 
-How the method works:
-
-1. `result` is created with size `n + 1` so there is one slot for every number from `0` through `n`.
-2. `result[0]` is already `0` because Java initializes integer arrays with zero values.
-3. The loop starts at `1`, since the answer for `0` needs no computation.
-4. For each `i`, `i >> 1` gives the smaller number formed by dropping the last bit.
-5. `(i & 1)` extracts that last bit:
-   - `0` if `i` is even
-   - `1` if `i` is odd
-6. Adding those two parts gives the bit count for `i`.
-7. After the loop finishes, `result` contains all answers from `0` to `n`.
-
-### Example Walkthrough
-
-For `n = 5`, the method fills `result` like this:
-
-| `i` | Binary of `i` | `i >> 1` | `result[i >> 1]` | `i & 1` | `result[i]` |
-|-----|---------------|----------|------------------|---------|-------------|
-| 0 | `0` | — | — | — | `0` |
-| 1 | `1` | `0` | `0` | `1` | `1` |
-| 2 | `10` | `1` | `1` | `0` | `1` |
-| 3 | `11` | `1` | `1` | `1` | `2` |
-| 4 | `100` | `2` | `1` | `0` | `1` |
-| 5 | `101` | `2` | `1` | `1` | `2` |
-
-Final output:
-
-`[0, 1, 1, 2, 1, 2]`
-
-Each value is computed from an earlier value, so the code never has to recount all bits from scratch.
-
-### Key Variables Explained
-
-- **`n`**: the largest number we need to evaluate.
-- **`result`**: the output array where `result[i]` stores the number of `1` bits in `i`.
-- **`i`**: the current number being processed.
-- **`i >> 1`**: the smaller subproblem formed by removing the last binary bit of `i`.
-- **`i & 1`**: the last bit of `i`, used to determine whether `i` contributes one additional set bit beyond `i >> 1`.
-
-### Why This Works
-
-For every integer `i`, its binary representation can be split into:
-
-- all bits except the last one
-- the last bit itself
-
-`i >> 1` represents the first part, and `(i & 1)` represents the second part.
-
-So the number of set bits in `i` must be:
-
-`bitCount(i >> 1) + lastBit`
-
-The loop processes numbers in increasing order, which guarantees that `result[i >> 1]` is already available when `result[i]` is computed.
-
-That makes every transition valid and ensures the final array is correct.
-
-### Trick Used
-
-The key trick is the compact recurrence:
-
-`result[i] = result[i >> 1] + (i & 1)`
-
-It packs two ideas into one line:
-- shifting right reuses a smaller solved problem
-- masking with `1` tells whether the current number adds one extra set bit
-
-So there is a real bit-manipulation trick here, but it stays simple and directly tied to the DP idea.
-
-### Edge Cases Handled
-
-1. **`n = 0`**
-   - the array size is `1`
-   - the loop never runs
-   - the method correctly returns `[0]`
-
-2. **Even numbers** like `4` (`100`)
-   - `(i & 1)` is `0`
-   - the bit count stays the same as `result[i >> 1]`
-
-3. **Odd numbers** like `5` (`101`)
-   - `(i & 1)` is `1`
-   - the bit count is one more than `result[i >> 1]`
-
-4. **Powers of two** like `8` (`1000`)
-   - repeated shifting eventually reaches `1`
-   - the count correctly stays `1`
+1. Define the state: what does dp[i] (or dp[i][j]) represent?
+2. Write the recurrence relation that builds dp[i] from previously computed states.
+3. Identify and set the base cases (dp[0], dp[1], etc.).
+4. Fill the table bottom-up (or top-down with memoisation) in the correct order.
+5. Read off the final answer from dp[n] (or dp[m][n] for 2-D problems).
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the loop runs once for each integer from `1` to `n`, and each iteration does constant work.
-- **Space Complexity: `O(n)`** — the method stores the answer for all `n + 1` numbers in the `result` array.
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(n)`** — the DP table has O(n) entries (or O(n²) for 2-D DP — see the dp array dimensions).

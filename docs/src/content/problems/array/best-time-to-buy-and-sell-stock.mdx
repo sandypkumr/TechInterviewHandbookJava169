@@ -67,125 +67,25 @@ public class BestTimeToBuyAndSellStock {
 
 ## Explanation
 
-### Problem Analysis
-
-This problem asks for the best profit from exactly one buy and one later sell.
-
-That creates two important rules:
-- the buy day must come before the sell day
-- if prices never go up after a buy, the answer must be `0`
-
-A brute-force solution would try every buy/sell pair, but that would be too slow for large inputs.
-
 ### Approach
 
-The solution makes one pass through the array while keeping track of:
-- the cheapest price seen so far
-- the best profit seen so far
+**Best Time to Buy and Sell Stock** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
 
-At each price, the algorithm decides whether this price is:
-- a better day to buy, or
-- a good day to sell using the lowest earlier price
-
-### Pattern Used
-
-This solution uses a **greedy one-pass scan**.
-
-It is also closely related to the idea behind a sliding window, because we continuously maintain the best buying point seen before the current day, but the main idea here is greedy state tracking rather than a formal expanding/shrinking window.
-
-### Key Insight
-
-For any day used as the selling day, the best possible buy is simply the **minimum price seen before that day**.
-
-So instead of checking all earlier days, we only need one value: `minPrice`.
-
-That lets us compute the best profit ending at the current day in constant time.
+The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
 
 ### Code Walkthrough
 
-```java
-public int maxProfit(int[] prices) {
-    int maxProfit = 0;
-    int minPrice = Integer.MAX_VALUE;
-    for (int price : prices) {
-        if (price < minPrice) {
-            minPrice = price;
-        } else {
-            maxProfit = Math.max(maxProfit, price - minPrice);
-        }
-    }
-    return maxProfit;
-}
-```
+The solution is implemented in `maxProfit(int[] prices)`:
 
-How the method works:
+1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
+2. Sort or arrange the input according to this criterion.
+3. Iterate and make the greedy decision at each step without revisiting previous choices.
+4. Update state (current end, running sum, remaining capacity) after each decision.
+5. Return the accumulated result.
 
-1. `maxProfit` starts at `0` because making no transaction is always allowed.
-2. `minPrice` starts at `Integer.MAX_VALUE` so the first real price will replace it.
-3. For each `price`:
-   - if `price < minPrice`, we found a better buying opportunity
-   - otherwise, we treat this day as a potential sell day and compute `price - minPrice`
-4. `Math.max(maxProfit, price - minPrice)` keeps the best profit seen so far.
-5. After the loop, `maxProfit` is the answer.
-
-### Example Walkthrough
-
-For `prices = [7,1,5,3,6,4]`:
-
-| Day | Price | `minPrice` after update | Profit if sold today | `maxProfit` |
-|-----|-------|-------------------------|----------------------|--------------|
-| 0 | 7 | 7 | — | 0 |
-| 1 | 1 | 1 | — | 0 |
-| 2 | 5 | 1 | 4 | 4 |
-| 3 | 3 | 1 | 2 | 4 |
-| 4 | 6 | 1 | 5 | 5 |
-| 5 | 4 | 1 | 3 | 5 |
-
-Best result:
-- buy at `1`
-- sell at `6`
-- profit = `5`
-
-### Key Variables Explained
-
-- **`minPrice`**: the lowest price seen so far. It represents the best buying opportunity available before the current day.
-- **`maxProfit`**: the highest profit found so far.
-- **`price`**: the current day's price while scanning the array.
-
-### Why This Works
-
-The algorithm is correct because every valid transaction has a sell day, and for that sell day the only buy day that matters is the cheapest earlier day.
-
-By updating `minPrice` as we move left to right, we always know the best buy candidate available for the current day.
-
-So when we compute `price - minPrice`, we are computing the best profit for transactions that sell today. Taking the maximum over all days gives the global best answer.
-
-### Trick Used
-
-The trick is that we do **not** store all buy/sell pairs.
-
-We only keep two numbers:
-- the best buy seen so far
-- the best profit seen so far
-
-That collapses an `O(n^2)` search into a single linear scan.
-
-### Edge Cases Handled
-
-1. **Strictly decreasing prices** like `[7,6,4,3,1]`
-   - `minPrice` keeps decreasing
-   - no positive profit is ever found
-   - answer stays `0`
-
-2. **Single day** like `[5]`
-   - there is no future day to sell
-   - answer is `0`
-
-3. **Immediate profit** like `[1,5]`
-   - `minPrice` becomes `1`
-   - next day gives profit `4`
+&gt; **Note:** This solution also uses the **sliding window to avoid redundant re-computation** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the array is scanned once, and each iteration does constant work.
-- **Space Complexity: `O(1)`** — only two tracking variables are used.
+- **Time Complexity: `O(n)`** — each element enters and leaves the window at most once, so the total work across all iterations is linear.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

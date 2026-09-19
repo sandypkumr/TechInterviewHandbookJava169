@@ -4,10 +4,10 @@ difficulty: "Medium"
 topic: "array"
 leetcodeUrl: "https://leetcode.com/problems/product-of-array-except-self"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/ProductOfArrayExceptSelf.java"
-patterns: ["prefix-suffix"]
+patterns: ["prefix-sum"]
 tags: ["classic"]
 timeComplexity: "O(n)"
-spaceComplexity: "O(n)"
+spaceComplexity: "O(1)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
@@ -27,7 +27,6 @@ You must write an algorithm that runs in `O(n)` time and without using the divis
 Input: nums = [1,2,3,4]
 Output: [24,12,8,6]
 ```
-
 **Example 2:**
 
 ```
@@ -38,7 +37,9 @@ Output: [0,0,9,0,0]
 **Constraints:**
 
 - `2 <= nums.length <= 10^5`
+
 - `-30 <= nums[i] <= 30`
+
 - The input is generated such that `answer[i]` is **guaranteed** to fit in a **32-bit** integer.
 
 **Follow up:** Can you solve the problem in `O(1)` extra space complexity? (The output array **does not** count as extra space for space complexity analysis.)
@@ -76,173 +77,22 @@ public class ProductOfArrayExceptSelf {
 
 ## Explanation
 
-### Problem Analysis
-
-For each index `i`, we need the product of **all elements except `nums[i]`**.
-
-Two constraints make the problem interesting:
-- the solution must run in `O(n)` time
-- division is not allowed
-
-So we cannot compute one total product and divide by `nums[i]`, and we also cannot multiply all other elements separately for each index because that would be `O(n^2)`.
-
 ### Approach
 
-The code solves this by splitting the answer at each index into two parts:
-- the product of everything to the left
-- the product of everything to the right
+**Product of Array Except Self** requires repeated range-sum queries. Computing each sum from scratch is O(n) per query; a prefix sum array precomputes cumulative totals so any range sum [l, r] reduces to prefixSum[r] - prefixSum[l - 1] — a single O(1) subtraction.
 
-It stores those in two helper arrays:
-- `leftProducts[i]`
-- `rightProducts[i]`
-
-Then the final answer is:
-
-`result[i] = leftProducts[i] * rightProducts[i]`
-
-That gives the product of all elements except `nums[i]` without ever using division.
-
-### Pattern Used
-
-This solution mainly relies on **prefix/suffix precomputation**.
-
-More specifically, it builds running products from the left and from the right, then combines them. It is a direct array-processing approach rather than a hash-map, greedy, or sorting solution.
-
-### Key Insight
-
-Every element except `nums[i]` belongs to exactly one of two groups:
-- elements before index `i`
-- elements after index `i`
-
-If we already know the product of both groups, multiplying them immediately gives the required answer for index `i`.
+Imagine a running tally of rainfall: instead of adding up each day's rain for every query, you keep a running total. The rain from day l to day r is simply totalUpToR - totalUpToL-1.
 
 ### Code Walkthrough
 
-```java
-public int[] productExceptSelf(int[] nums) {
-    int n = nums.length;
-    int[] result = new int[n];
-    int[] leftProducts = new int[n];
-    int[] rightProducts = new int[n];
+The solution is implemented in `productExceptSelf(int[] nums)`:
 
-    leftProducts[0] = 1;
-    for (int i = 1; i < n; i++) {
-        leftProducts[i] = leftProducts[i - 1] * nums[i - 1];
-    }
-
-    rightProducts[n - 1] = 1;
-    for (int i = n - 2; i >= 0; i--) {
-        rightProducts[i] = rightProducts[i + 1] * nums[i + 1];
-    }
-
-    for (int i = 0; i < n; i++) {
-        result[i] = leftProducts[i] * rightProducts[i];
-    }
-
-    return result;
-}
-```
-
-How the method works:
-
-1. `n` stores the array length.
-2. `result`, `leftProducts`, and `rightProducts` are created with size `n`.
-3. `leftProducts[0] = 1` because there is nothing to the left of the first element.
-4. The first loop fills `leftProducts`:
-   - `leftProducts[i] = leftProducts[i - 1] * nums[i - 1]`
-   - so each position stores the product of all values before `i`
-5. `rightProducts[n - 1] = 1` because there is nothing to the right of the last element.
-6. The second loop fills `rightProducts` from right to left:
-   - `rightProducts[i] = rightProducts[i + 1] * nums[i + 1]`
-   - so each position stores the product of all values after `i`
-7. The final loop multiplies the left-side and right-side products for each index.
-8. The completed `result` array is returned.
-
-### Example Walkthrough
-
-For `nums = [1,2,3,4]`:
-
-First build `leftProducts`:
-
-| Index | Meaning | Value |
-|------:|---------|-------|
-| 0 | product of elements before index 0 | 1 |
-| 1 | `1` | 1 |
-| 2 | `1 * 2` | 2 |
-| 3 | `1 * 2 * 3` | 6 |
-
-So:
-
-`leftProducts = [1,1,2,6]`
-
-Then build `rightProducts`:
-
-| Index | Meaning | Value |
-|------:|---------|-------|
-| 3 | product of elements after index 3 | 1 |
-| 2 | `4` | 4 |
-| 1 | `3 * 4` | 12 |
-| 0 | `2 * 3 * 4` | 24 |
-
-So:
-
-`rightProducts = [24,12,4,1]`
-
-Now combine both arrays:
-
-| Index | `leftProducts[i]` | `rightProducts[i]` | `result[i]` |
-|------:|-------------------|--------------------|-------------|
-| 0 | 1 | 24 | 24 |
-| 1 | 1 | 12 | 12 |
-| 2 | 2 | 4 | 8 |
-| 3 | 6 | 1 | 6 |
-
-Final answer: `[24,12,8,6]`
-
-### Key Variables Explained
-
-- **`n`**: the length of the input array.
-- **`leftProducts`**: stores the product of elements strictly before each index.
-- **`rightProducts`**: stores the product of elements strictly after each index.
-- **`result`**: the final output array.
-- **`i`**: the loop index used to fill the helper arrays and final answer.
-
-### Why This Works
-
-For any index `i`, the desired answer must include every value except `nums[i]`.
-
-The first loop guarantees that `leftProducts[i]` contains exactly the product of all elements before `i`.
-The second loop guarantees that `rightProducts[i]` contains exactly the product of all elements after `i`.
-
-Those two sets cover all required elements and do not include `nums[i]`, so multiplying them produces the correct answer.
-
-The initialization with `1` is also essential. Since `1` is the multiplicative identity, it correctly represents an empty side for the first and last positions.
-
-### Trick Used
-
-There is no special hidden trick beyond the core decomposition.
-
-The useful move is realizing that “product except self” can be built from a left contribution and a right contribution, so each index can be answered in constant time after preprocessing.
-
-### Edge Cases Handled
-
-1. **First index**
-   - there is no left side
-   - `leftProducts[0] = 1` handles that correctly
-
-2. **Last index**
-   - there is no right side
-   - `rightProducts[n - 1] = 1` handles that correctly
-
-3. **Arrays containing zero** like `[-1,1,0,-3,3]`
-   - zeros naturally flow through the prefix and suffix products
-   - only the position that excludes the zero can produce the non-zero product
-
-4. **Negative numbers**
-   - the same multiplication logic still applies
-   - sign changes are handled naturally by the products
+1. Allocate prefix[n + 1] initialised to 0.
+2. Fill prefix[i] = prefix[i - 1] + nums[i - 1] for i from 1 to n.
+3. Answer a range query [l, r] (0-indexed) as prefix[r + 1] - prefix[l].
+4. Use a HashMap from prefix-sum → first index to detect subarrays with a target sum.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the method makes three linear passes over arrays of length `n`.
-- **Space Complexity: `O(n)`** — in addition to the output array, the implementation uses `leftProducts` and `rightProducts`, each of size `n`.
+- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
+- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.

@@ -5,14 +5,14 @@ topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/invert-binary-tree"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/InvertBinaryTree.java"
 patterns: ["dfs"]
-tags: []
+tags: ["classic"]
 timeComplexity: "O(n)"
 spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 Given the `root` of a binary tree, invert the tree, and return _its root_.
@@ -44,6 +44,8 @@ Output: []
 
 - `-100 <= Node.val <= 100`
 
+**Patterns:** `sliding-window`
+
 ## Java Solution
 
 ```java
@@ -55,10 +57,12 @@ public class InvertBinaryTree {
             return null;
         }
 
+        // Swap the left and right children
         TreeNode temp = root.left;
         root.left = root.right;
         root.right = temp;
 
+        // Recursively invert the left and right subtrees
         invertTree(root.left);
         invertTree(root.right);
 
@@ -69,79 +73,23 @@ public class InvertBinaryTree {
 
 ## Explanation
 
-### Problem Analysis
-
-Inverting a tree means swapping left and right children at every node.
-
 ### Approach
 
-Recursive DFS: at each node, swap left and right children, then recurse on both.
+**Invert Binary Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-### Pattern Used
-
-**Simple recursive tree traversal** with in-place modification.
-
-### Key Insight
-
-Each node's inversion is independent: swap its children, then recurse.
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-1. Base case: null returns null
-2. Swap left and right: `temp = left; left = right; right = temp`
-3. Recursively invert left subtree
-4. Recursively invert right subtree
-5. Return root
+The solution is implemented in `invertTree(TreeNode root)`:
 
-### Example Walkthrough
-
-For `[4,2,7,1,3,6,9]`:
-
-Original:
-```
-       4
-      / \
-     2   7
-    / \ / \
-   1  3 6  9
-```
-
-- At node 4: swap children (2↔7), recurse
-- At node 2: swap children (1↔3), recurse
-- At node 1: null children, return
-- At node 3: null children, return
-- At node 7: swap children (6↔9), recurse
-- At node 6: null children, return
-- At node 9: null children, return
-
-Result:
-```
-       4
-      / \
-     7   2
-    / \ / \
-   9  6 3  1
-```
-
-### Key Variables Explained
-
-- **`temp`**: temporary storage for swapping
-
-### Why This Works
-
-Swapping children at every node inverts the tree. Recursion ensures every node is processed.
-
-### Trick Used
-
-None; straightforward swap using a temp variable.
-
-### Edge Cases Handled
-
-1. Empty tree: returns null
-2. Single node: no children to swap
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — Every node visited once
-- **Space Complexity: `O(h)`** — Recursion stack depth
-
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.

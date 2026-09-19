@@ -10,16 +10,16 @@ timeComplexity: "O(n)"
 spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
-javaApis: ["Math.max"]
+javaApis: ["Math.max/min","Integer.MAX/MIN_VALUE"]
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
-A path in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge connecting them. A node can only appear in the sequence at most once. Note that the path does not need to pass through the root.
+A **path** in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge connecting them. A node can only appear in the sequence **at most once**. Note that the path does not need to pass through the root.
 
-The path sum of a path is the sum of the node's values in the path.
+The **path sum** of a path is the sum of the node's values in the path.
 
-Given the `root` of a binary tree, return _the maximum path sum of any non-empty path_.
+Given the `root` of a binary tree, return _the maximum **path sum** of any **non-empty** path_.
 
 **Example 1:**
 
@@ -39,9 +39,11 @@ Explanation: The optimal path is 15 -> 20 -> 7 with a path sum of 15 + 20 + 7 = 
 
 **Constraints:**
 
-- The number of nodes in the tree is in the range `[1, 3000]`.
+- The number of nodes in the tree is in the range `[1, 3 * 10^4]`.
 
 - `-1000 <= Node.val <= 1000`
+
+**Patterns:** `sliding-window`
 
 ## Java Solution
 
@@ -73,124 +75,23 @@ public class BinaryTreeMaximumPathSum {
 
 ## Explanation
 
-### Problem Analysis
-
-A path can bend at any node and include any subset of the tree's edges. A path can go downward from a node to its descendants, not just root-to-leaf or root-to-root paths.
-
-The key challenge is that the optimal path can bend at any node, combining parts of left and right subtrees.
-
 ### Approach
 
-Use DFS to compute for each node:
-1. The maximum linear path sum starting from that node going down (used by the parent)
-2. The maximum path sum that bends at that node (considering both subtrees)
+**Binary Tree Maximum Path Sum** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
 
-Maintain a global maximum across all nodes.
-
-### Pattern Used
-
-This solution uses **recursive tree traversal with global state tracking**.
-
-The pattern separates the value returned to the parent (max linear path) from the value being optimized globally (max path sum).
-
-### Key Insight
-
-For each node, there are two relevant sums:
-- **Linear path**: From this node down one child (what parent needs)
-- **Bent path**: Through this node using both children (global maximum candidate)
-
-These are different! The return value is the linear path; `maxSum` tracks the bent path globally.
+Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
 
 ### Code Walkthrough
 
-**`maxPathSum` (entry point):**
-- Initialize `maxSum` to `Integer.MIN_VALUE` (handles negative numbers)
-- Call `findMaxPath` on root
-- Return global maximum
+The solution is implemented in `maxPathSum(TreeNode root)`:
 
-**`findMaxPath` (core logic):**
-
-1. Base case: null node contributes 0.
-
-2. Get max linear path sums from children:
-   - `left = Math.max(findMaxPath(node.left), 0)`
-   - `right = Math.max(findMaxPath(node.right), 0)`
-   - Use `Math.max(..., 0)` because we can skip a negative subtree
-
-3. Calculate the bent path through this node:
-   - `currentMax = node.val + left + right`
-   - Update global: `maxSum = Math.max(maxSum, currentMax)`
-
-4. Return the linear path for the parent:
-   - `node.val + Math.max(left, right)`
-   - Include only one child (the better one) plus this node
-
-### Example Walkthrough
-
-For `[-10,9,20,null,null,15,7]`:
-
-```
-       -10
-        / \
-       9   20
-          /  \
-         15   7
-```
-
-**DFS order:**
-
-1. `findMaxPath(9)` → returns 9, maxSum = 9
-2. `findMaxPath(15)` → returns 15, maxSum = 15
-3. `findMaxPath(7)` → returns 7, maxSum = 15
-4. `findMaxPath(20)`:
-   - left = max(15, 0) = 15
-   - right = max(7, 0) = 7
-   - currentMax = 20 + 15 + 7 = 42
-   - maxSum = 42
-   - returns 20 + max(15, 7) = 35
-5. `findMaxPath(-10)`:
-   - left = max(9, 0) = 9
-   - right = max(35, 0) = 35
-   - currentMax = -10 + 9 + 35 = 34
-   - maxSum stays 42
-   - returns -10 + max(9, 35) = 25
-
-**Result: 42**
-
-### Key Variables Explained
-
-- **`maxSum`**: global maximum path sum (can bend at any node)
-- **`left`/`right`**: max linear path sums from children (or 0 if negative)
-- **`currentMax`**: bent path sum at this node (may not be returned)
-- **`return value`**: linear path sum for parent (what parent will use)
-
-### Why This Works
-
-Correctness relies on:
-
-1. Every path either doesn't use a node, goes linear from it, or bends at it
-2. DFS reaches every node and updates maxSum for all paths
-3. `Math.max(..., 0)` skips negative subtrees, optimizing the path
-4. Return value provides parent the best linear option
-
-### Trick Used
-
-The main trick is the dual use of return values vs. global state:
-- Return value: max linear path (what parent needs)
-- Global maxSum: max bent path (what we optimize)
-
-This separates two concerns with one DFS traversal.
-
-### Edge Cases Handled
-
-1. **Negative numbers**: Initialized with `Integer.MIN_VALUE`; negative paths are considered
-2. **Single node**: Returns that node's value
-3. **All negative values**: Chooses least negative path
-4. **Very large/small values**: Uses `Integer.MIN_VALUE` to avoid overflow issues
+1. Choose a starting node and mark it as visited.
+2. Recursively (or with an explicit stack) visit each unvisited neighbour.
+3. Perform the required computation during entry or exit of each node.
+4. Backtrack naturally when recursion returns — the call stack handles the state.
+5. Repeat for all unvisited nodes to cover disconnected components if needed.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — Each node is visited once.
-
-- **Space Complexity: `O(h)`** — Recursion stack depth equals tree height.
-
+- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
+- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.

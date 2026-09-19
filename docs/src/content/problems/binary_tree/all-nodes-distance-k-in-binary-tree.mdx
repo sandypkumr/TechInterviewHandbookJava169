@@ -4,15 +4,15 @@ difficulty: "Medium"
 topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/all-nodes-distance-k-in-binary-tree"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/AllNodesDistanceKInBinaryTree.java"
-patterns: ["bfs"]
+patterns: ["sliding-window","bfs"]
 tags: []
-timeComplexity: "O(n)"
-spaceComplexity: "O(n)"
+timeComplexity: ""
+spaceComplexity: ""
 isPremium: false
 hasProblemStatement: false
 javaApis: ["HashMap","HashSet","LinkedList","ArrayList"]
 similarProblems: []
-enrichmentNeeded: false
+enrichmentNeeded: true
 ---
 
 Given the `root` of a binary tree, the value of a target node `target`, and an integer `k`, return _an array of the values of all nodes that have a distance _`k`_ from the target node._
@@ -45,6 +45,8 @@ Output: []
 - `target` is the value of one of the nodes in the tree.
 
 - `0 <= k <= 1000`
+
+**Patterns:** `sliding-window`, `bfs`
 
 ## Java Solution
 
@@ -106,165 +108,25 @@ public class AllNodesDistanceKInBinaryTree {
 
 ## Explanation
 
-### Problem Analysis
-
-In a standard binary tree, each node knows only its children. To find all nodes at distance `k` from a target, we must explore in all directions: down to descendants, and also up through ancestors to find unrelated subtrees.
-
-The problem requires:
-- Starting from a target node
-- Exploring nodes at exactly distance `k` (not closer, not farther)
-- Collecting values from nodes in all directions: left, right, and parent
-
 ### Approach
 
-The solution uses two key techniques:
+**All Nodes Distance K in Binary Tree** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
 
-1. **Build a parent map**: traverse the tree once to record each node's parent. This enables upward movement during the search.
-2. **BFS from the target**: start at the target and expand outward level by level. At each level, explore all three directions: left child, right child, and parent.
-
-The algorithm:
-- Preprocess the tree to create a parent mapping.
-- Initialize BFS with the target node.
-- For each level, expand to unvisited neighbors (left, right, parent).
-- Stop when reaching distance `k`.
-- Collect all nodes remaining in the queue at that level.
-
-### Pattern Used
-
-This solution primarily uses **breadth-first search (BFS) with bidirectional exploration**.
-
-Unlike typical BFS that moves downward only, this solution treats the tree as an undirected graph by using the parent map, allowing the algorithm to explore upward and sideways as well.
-
-### Key Insight
-
-The key insight is that by maintaining a parent map, we can treat the tree as a graph where each node has up to three neighbors: left child, right child, and parent.
-
-BFS naturally explores nodes by distance, so once we reach distance `k`, all nodes in the queue at that moment are exactly `k` steps away from the target.
+Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
 
 ### Code Walkthrough
 
-**`buildParentMap` (preprocessing):**
+The solution is implemented in `distanceK(TreeNode root, TreeNode target, int k)`:
 
-```java
-private void buildParentMap(TreeNode node, TreeNode parent, Map<TreeNode, TreeNode> parentMap) {
-    if (node == null) return;
-    parentMap.put(node, parent);
-    buildParentMap(node.left, node, parentMap);
-    buildParentMap(node.right, node, parentMap);
-}
-```
+1. Initialise left and right pointers both at index 0.
+2. Expand the window by advancing the right pointer and updating the window state.
+3. When the window violates the constraint, shrink from the left until it is valid again.
+4. At each valid state, update the global answer (max length, min size, etc.).
+5. Continue until the right pointer reaches the end of the input.
 
-This recursively traverses the entire tree, storing each node's parent reference. The root's parent is `null`.
-
-**`distanceK` main algorithm:**
-
-1. Build the parent map with a single DFS pass.
-
-2. Initialize BFS:
-   - `queue`: starts with just the target node
-   - `visited`: tracks visited nodes to avoid cycles
-   - `currentLevel`: tracks distance from target
-
-3. Level-by-level BFS loop:
-   ```java
-   while (!queue.isEmpty()) {
-       if (currentLevel == k) break;
-       int size = queue.size();
-       for (int i = 0; i < size; i++) {
-           TreeNode node = queue.poll();
-           // Add unvisited neighbors in all directions
-           if (node.left != null && visited.add(node.left)) {
-               queue.offer(node.left);
-           }
-           if (node.right != null && visited.add(node.right)) {
-               queue.offer(node.right);
-           }
-           TreeNode parent = parentMap.get(node);
-           if (parent != null && visited.add(parent)) {
-               queue.offer(parent);
-           }
-       }
-       currentLevel++;
-   }
-   ```
-
-   - `size` captures the number of nodes at the current level
-   - For each node, try to add left, right, and parent (if they exist and haven't been visited)
-   - `visited.add()` returns `true` if the node was new, acting as both a check and an insertion
-
-4. Collect results from the queue (which now contains all nodes at distance `k`).
-
-### Example Walkthrough
-
-For the tree `[3,5,1,6,2,0,8,null,null,7,4]` with target `5` and `k=2`:
-
-```
-         3
-       /   \
-      5     1
-     / \   / \
-    6   2 0   8
-       / \
-      7   4
-```
-
-1. **Build parent map**: Each node stores its parent reference (root 3's parent is `null`).
-
-2. **BFS iteration 1** (distance 0):
-   - Queue: `[5]`
-   - Add neighbors of 5: left child 6, right child 2, parent 3
-   - Mark all as visited
-   - Queue after iteration: `[6, 2, 3]`
-   - `currentLevel` becomes 1
-
-3. **BFS iteration 2** (distance 1):
-   - Process 6: no unvisited neighbors
-   - Process 2: add left child 7, right child 4, parent 5 (already visited)
-   - Process 3: add left child 5 (visited), right child 1
-   - Queue after iteration: `[7, 4, 1]`
-   - `currentLevel` becomes 2, which equals `k`, so break
-
-4. **Collect results**: `[7, 4, 1]`
-
-### Key Variables Explained
-
-- **`parentMap`**: maps each node to its parent; root maps to `null`
-- **`queue`**: holds nodes at the current distance level
-- **`visited`**: set of nodes already processed to prevent revisiting
-- **`currentLevel`**: distance from the target node
-- **`size`**: number of nodes at the current level (used for level-based iteration)
-
-### Why This Works
-
-The algorithm is correct because:
-
-1. The parent map enables traversal in all directions, treating the tree as an undirected graph.
-2. BFS explores nodes in order of distance, guaranteeing that when `currentLevel == k`, all nodes in the queue are exactly distance `k` away.
-3. The visited set prevents infinite loops in the graph traversal.
-4. Each node is processed exactly once, so the algorithm is efficient.
-
-### Trick Used
-
-The main trick is using `visited.add(node)` in the conditional expression:
-```java
-if (node.left != null && visited.add(node.left)) {
-    queue.offer(node.left);
-}
-```
-
-`Set.add()` returns `true` if the element was new (not already present) and `false` if it was already in the set. This combines the membership check and insertion into a single operation, avoiding redundant set lookups.
-
-### Edge Cases Handled
-
-1. **k = 0**: Only the target node is returned (it's distance 0 from itself).
-2. **k > tree height**: No nodes exist at that distance, so an empty list is returned.
-3. **Single-node tree**: If `k > 0`, returns empty; if `k == 0`, returns the single node's value.
-4. **Target is the root**: Parent is `null`, so the parent neighbor check fails (correctly skipped).
-5. **Target is a leaf**: Only left, right, and parent neighbors exist; the check `if (node.left != null)` handles this.
+&gt; **Note:** This solution also uses the **BFS to explore nodes level by level** technique.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — The parent map requires a full traversal of the tree (`O(n)`). The BFS in the worst case visits all nodes (`O(n)`), so total is `O(n)`.
-
-- **Space Complexity: `O(n)`** — The parent map stores one entry per node (`O(n)`). The queue and visited set can each hold up to `n` nodes in the worst case (`O(n)`).
-
+- **Time Complexity: `?`** — see analysis above.
+- **Space Complexity: `?`** — see analysis above.
