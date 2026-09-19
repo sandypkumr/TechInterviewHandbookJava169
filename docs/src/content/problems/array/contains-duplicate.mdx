@@ -17,6 +17,25 @@ enrichmentNeeded: true
 
 Given an integer array `nums`, return `true` if any value appears **at least twice** in the array, and return `false` if every element is distinct.
 
+---
+title: "Contains Duplicate"
+difficulty: "Easy"
+topic: "array"
+leetcodeUrl: "https://leetcode.com/problems/contains-duplicate"
+githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/ContainsDuplicate.java"
+patterns: ["hash-map"]
+tags: []
+timeComplexity: "O(n)"
+spaceComplexity: "O(n)"
+isPremium: false
+hasProblemStatement: false
+javaApis: ["HashSet"]
+similarProblems: []
+enrichmentNeeded: true
+---
+
+Given an integer array `nums`, return `true` if any value appears **at least twice** in the array, and return `false` if every element is distinct.
+
 **Example 1:**
 
 **Input:** nums = [1,2,3,1]
@@ -72,23 +91,117 @@ public class ContainsDuplicate {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks whether the array contains at least one repeated value.
+
+We do not need to know:
+- how many times a value repeats
+- where all duplicates occur
+- which value repeats the most
+
+We only need a yes/no answer, and we can return as soon as the first duplicate is found.
+
 ### Approach
 
-The key insight for **Contains Duplicate** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashSet` so that any future lookup takes constant time instead of requiring another full pass.
+The solution scans the array once and keeps a `HashSet` of all values seen so far.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+For each number:
+- if it is new, add it to the set
+- if it is already present, return `true` immediately
+
+If the scan finishes without finding a repeat, return `false`.
+
+### Pattern Used
+
+This is the classic **hash set lookup** pattern.
+
+We trade extra space for faster duplicate detection.
+
+### Key Insight
+
+The moment a number appears for the second time, it must already be in the set.
+
+That means we never need nested loops. A constant-time average lookup in a `HashSet` is enough.
 
 ### Code Walkthrough
 
-The solution is implemented in `containsDuplicate(int[] nums)`:
+```java
+public boolean containsDuplicate(int[] nums) {
+    Set<Integer> set = new HashSet<>();
+    for (int num : nums) {
+        if (!set.add(num)) {
+            return true;
+        }
+    }
+    return false;
+}
+```
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+How the method works:
+
+1. Create an empty `HashSet` named `set`.
+2. Loop through every number in `nums`.
+3. Call `set.add(num)`.
+   - If the number was not present, Java adds it and returns `true`.
+   - If the number was already present, Java leaves the set unchanged and returns `false`.
+4. The condition `!set.add(num)` is therefore true exactly when a duplicate is found.
+5. If the loop ends, every value was unique, so return `false`.
+
+### Example Walkthrough
+
+For `nums = [1,2,3,1]`:
+
+| Index | Number | Set before | `set.add(num)` | Set after | Result |
+|------:|--------|------------|----------------|-----------|--------|
+| 0 | 1 | `{}` | `true` | `{1}` | continue |
+| 1 | 2 | `{1}` | `true` | `{1, 2}` | continue |
+| 2 | 3 | `{1, 2}` | `true` | `{1, 2, 3}` | continue |
+| 3 | 1 | `{1, 2, 3}` | `false` | `{1, 2, 3}` | return `true` |
+
+As soon as the second `1` is processed, the method knows a duplicate exists.
+
+### Key Variables Explained
+
+- **`set`**: stores the unique values seen so far.
+- **`num`**: the current element being processed.
+- **`set.add(num)`**: both checks membership and inserts the value if it is new.
+
+### Why This Works
+
+At any point in the loop, `set` contains exactly the values that appeared earlier in the array.
+
+So when the current number is already in `set`, we know that value has appeared before and a duplicate exists.
+
+If the loop finishes without triggering that case, then every value appeared only once.
+
+### Trick Used
+
+The main trick is using `set.add(num)` as both:
+- the membership test
+- the insertion step
+
+That avoids writing separate `contains` and `add` calls.
+
+### Edge Cases Handled
+
+1. **All unique values** like `[1,2,3,4]`
+   - every insertion succeeds
+   - answer is `false`
+
+2. **Duplicate appears early** like `[5,5,1,2]`
+   - the method returns quickly
+   - no need to scan the rest of the array
+
+3. **Duplicate appears late** like `[1,2,3,4,1]`
+   - the method still works correctly
+   - it simply returns `true` later in the scan
+
+4. **Single element** like `[7]`
+   - one value cannot be a duplicate by itself
+   - answer is `false`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity: `O(n)`** — we scan the array once, and each `HashSet` operation is `O(1)` on average.
+- **Space Complexity: `O(n)`** — in the worst case, all values are unique, so the set stores all `n` elements.

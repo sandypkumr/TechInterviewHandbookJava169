@@ -4,7 +4,7 @@ difficulty: "Medium"
 topic: "array"
 leetcodeUrl: "https://leetcode.com/problems/non-overlapping-intervals"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/array/NonOverlappingIntervals.java"
-patterns: ["greedy","merge-intervals"]
+patterns: ["greedy"]
 tags: []
 timeComplexity: "O(n log n)"
 spaceComplexity: "O(1)"
@@ -46,12 +46,10 @@ Explanation: You don't need to remove any of the intervals since they're already
 **Constraints:**
 
 - `1 <= intervals.length <= 10^5`
-
 - `intervals[i].length == 2`
-
 - `-5 * 10^4 <= starti < endi <= 5 * 10^4`
 
-**Patterns:** `merge-intervals`
+**Patterns:** `greedy`
 
 ## Java Solution
 
@@ -88,25 +86,134 @@ public class NonOverlappingIntervals {
 
 ## Explanation
 
+### Problem Analysis
+
+The goal is to remove the fewest intervals so that the remaining intervals do not overlap.
+
+Two intervals only overlap when the next interval starts **before** the current end boundary. If one interval ends exactly where the next one starts, that is still allowed.
+
+So the real job is to keep intervals in a way that leaves the most room for future intervals.
+
 ### Approach
 
-**Non-overlapping Intervals** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+The solution sorts the intervals by end time and then scans them once.
 
-The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+After sorting:
+- keep the first interval as the current interval we accept
+- compare each next interval's start with the current `end`
+- if the start is smaller than `end`, the interval overlaps and must be removed
+- otherwise, keep it and move `end` forward to that interval's end
+
+This greedy choice works because the interval that finishes earlier blocks less of the timeline.
+
+### Pattern Used
+
+This is a **greedy interval scheduling** pattern.
+
+The algorithm always prefers the interval with the earliest finishing time among the intervals it can still keep.
+
+### Key Insight
+
+If two intervals overlap, keeping the one with the smaller end time is always better.
+
+That choice:
+- leaves more room for later intervals
+- reduces the chance of future conflicts
+- helps minimize the number of removals
+
+This is why sorting by end time is the key step in the solution.
 
 ### Code Walkthrough
 
-The solution is implemented in `eraseOverlapIntervals(int[][] intervals)`:
+The method `eraseOverlapIntervals(int[][] intervals)` works in four steps:
 
-1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
-2. Sort or arrange the input according to this criterion.
-3. Iterate and make the greedy decision at each step without revisiting previous choices.
-4. Update state (current end, running sum, remaining capacity) after each decision.
-5. Return the accumulated result.
+1. Return `0` immediately if the input is `null` or empty.
+2. Sort the intervals by end time with `Arrays.sort(intervals, Comparator.comparingInt(a -> a[1]))`.
+3. Set `end` to the end of the first interval after sorting.
+4. Scan the rest of the intervals and count every overlap.
 
-&gt; **Note:** This solution also uses the **sort intervals by start time, then merge overlapping ones in one pass** technique.
+The main loop is:
+
+```java
+for (int i = 1; i < intervals.length; i++) {
+    if (intervals[i][0] < end) {
+        count++;
+    } else {
+        end = intervals[i][1];
+    }
+}
+```
+
+How to read it:
+- `intervals[i][0] < end` means the current interval starts too early, so it overlaps with the interval we kept
+- `count++` means we remove that overlapping interval
+- the `else` branch means the interval is safe to keep, so we update `end`
+
+### Example Walkthrough
+
+For `intervals = [[1,2],[2,3],[3,4],[1,3]]`:
+
+1. Sort by end time.
+   - One valid order is `[[1,2],[2,3],[1,3],[3,4]]`
+2. Set `end = 2`, `count = 0`
+3. Check `[2,3]`:
+   - `2 < 2` is false
+   - keep it and update `end = 3`
+4. Check `[1,3]`:
+   - `1 < 3` is true
+   - it overlaps, so `count = 1`
+5. Check `[3,4]`:
+   - `3 < 3` is false
+   - keep it and update `end = 4`
+6. Return `count = 1`
+
+So removing `[1,3]` is enough to make the rest non-overlapping.
+
+### Key Variables Explained
+
+- **`intervals`**: the input array of `[start, end]` pairs
+- **`count`**: the number of intervals removed so far
+- **`end`**: the end time of the last interval we decided to keep
+- **`i`**: the current interval being checked in the sorted array
+
+### Why This Works
+
+Sorting by end time ensures that the interval we keep first is the one that finishes earliest.
+
+That is optimal because it leaves the largest possible remaining window for later intervals.
+
+When the scan sees an interval that starts before `end`, that interval cannot coexist with the current kept interval. Since the current kept interval already ends as early as possible among the processed intervals, removing the new overlapping interval is the safe greedy choice.
+
+By repeating that choice through the sorted list, the algorithm counts exactly the minimum number of intervals that must be removed.
+
+### Trick Used
+
+There is no special data-structure trick here.
+
+The key move is simply to sort by end time and use one running `end` boundary to decide whether each interval fits.
+
+### Edge Cases Handled
+
+1. **Empty input** like `[]`
+   - the method returns `0`
+
+2. **Single interval** like `[[5, 8]]`
+   - nothing can overlap with it
+   - answer is `0`
+
+3. **Touching intervals** like `[[1, 2], [2, 3]]`
+   - `2 < 2` is false
+   - they are treated as non-overlapping
+
+4. **All intervals overlap** like `[[1, 4], [2, 3], [3, 5]]`
+   - the scan counts every conflicting interval
+   - only one interval can be kept from the overlapping group
+
+5. **Already non-overlapping intervals** like `[[1, 2], [3, 4], [5, 6]]`
+   - every comparison fails the overlap check
+   - answer is `0`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n log n)`** — dominated by sorting the input (O(n log n)); the subsequent linear scan is O(n).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n log n)`** — sorting dominates the runtime, and the final scan is linear.
+- **Space Complexity: `O(1)`** — the algorithm uses only a few extra variables beyond the input array.

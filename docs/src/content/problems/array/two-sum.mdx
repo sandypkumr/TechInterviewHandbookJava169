@@ -17,7 +17,7 @@ enrichmentNeeded: true
 
 Given an array of integers `nums` and an integer `target`, return _indices of the two numbers such that they add up to `target`_.
 
-You may assume that each input would have **_exactly_ one solution**, and you may not use the _same_ element twice.
+You may assume that each input would have **exactly one solution**, and you may not use the _same_ element twice.
 
 You can return the answer in any order.
 
@@ -45,7 +45,10 @@ Output: [0,1]
 
 **Constraints:**
 
-- `2  time complexity?
+- `2 <= nums.length <= 10^4`
+- `-10^9 <= nums[i] <= 10^9`
+- `-10^9 <= target <= 10^9`
+- Only one valid answer exists.
 
 ## Java Solution
 
@@ -75,23 +78,149 @@ public class TwoSum {
 
 ## Explanation
 
+### Problem Analysis
+
+We need the **indices** of two numbers whose values add up to `target`.
+
+Two details matter here:
+- we need indices, not the values themselves
+- we cannot use the same element twice
+
+A brute-force solution would try every pair of indices and check whether their sum equals `target`, but that would take `O(n^2)` time. This code avoids that by remembering earlier numbers while scanning the array once.
+
 ### Approach
 
-The key insight for **Two Sum** is that a brute-force nested-loop search would cost O(n²) time — we can cut that to O(n) by trading space for speed. As we scan the array once, we store information in a `HashMap` so that any future lookup takes constant time instead of requiring another full pass.
+The solution uses a `HashMap` named `numMap`.
 
-This "remember what we've seen" strategy is one of the most powerful tools in competitive programming. Instead of asking "does the answer exist somewhere in the array?" by re-scanning, we simply ask "is the answer already in my map?" — a single O(1) operation.
+As it loops through the array, for each `nums[i]` it calculates the complement needed to reach the target:
+
+`diff = target - nums[i]`
+
+Then it checks whether that complement has already appeared earlier.
+
+- If yes, the stored index of `diff` and the current index `i` are the answer.
+- If not, the current number is added to the map so that later elements can match with it.
+
+So the map always stores numbers seen **before** the current position.
+
+### Pattern Used
+
+This solution uses a **one-pass hash map lookup** pattern.
+
+The logic is straightforward: traverse once, remember earlier values, and use constant-time average lookups to find the needed complement.
+
+### Key Insight
+
+For every number, there is exactly one value that would complete the pair:
+
+`target - currentNumber`
+
+So the important question at each step is not "which pair should I try?" but:
+
+> Have I already seen the number that completes the current value?
+
+If yes, we can return immediately.
 
 ### Code Walkthrough
 
-The solution is implemented in `twoSum(int[] nums, int target)`:
+```java
+public int[] twoSum(int[] nums, int target) {
+    int[] result = new int[2];
+    Map<Integer, Integer> numMap = new HashMap<>();
+    for (int i = 0; i < nums.length; i++) {
+        int diff = target - nums[i];
+        if (numMap.containsKey(diff)) {
+            result[0] = numMap.get(diff);
+            result[1] = i;
+            return result;
+        }
+        numMap.put(nums[i], i);
+    }
+    return null;
+}
+```
 
-1. Initialise an empty hash structure (HashMap or HashSet) before iterating.
-2. For each element, compute what you're looking for (a complement, a count, a flag).
-3. Check the hash structure first — if the target is there, you're done.
-4. Otherwise, insert the current element (or its metadata) into the structure.
-5. Return the result after the loop if no early exit occurred.
+How the method works:
+
+1. `result` is created with size `2` because the answer is always a pair of indices.
+2. `numMap` stores `number -> index` for values already processed.
+3. The loop scans the array left to right using index `i`.
+4. `diff = target - nums[i]` computes the value needed to pair with the current number.
+5. `numMap.containsKey(diff)` checks whether that needed value appeared earlier.
+6. If it did, `numMap.get(diff)` gives the earlier index, and `i` is the current index, so the method fills `result` and returns.
+7. If it did not, `numMap.put(nums[i], i)` stores the current number and its index for future iterations.
+8. `return null` is only a fallback. Because the problem guarantees exactly one valid answer, the method should return from inside the loop.
+
+The order is important:
+- check for the complement first
+- insert the current value second
+
+That is what ensures the same element is never used twice.
+
+### Example Walkthrough
+
+For `nums = [3,2,4]` and `target = 6`:
+
+| Index `i` | `nums[i]` | `diff` | `numMap` before | Action |
+|----------:|-----------|--------|-----------------|--------|
+| 0 | 3 | 3 | `{}` | `3` not found, store `3 -> 0` |
+| 1 | 2 | 4 | `{3=0}` | `4` not found, store `2 -> 1` |
+| 2 | 4 | 2 | `{3=0, 2=1}` | `2` found at index `1`, return `[1, 2]` |
+
+So by the time the loop reaches `4`, the map already remembers that `2` appeared earlier at index `1`.
+
+### Key Variables Explained
+
+- **`result`**: the output array that stores the two answer indices.
+- **`numMap`**: a map from a previously seen number to its index.
+- **`i`**: the current index being processed.
+- **`diff`**: the complement needed to make `nums[i] + diff = target`.
+- **`numMap.get(diff)`**: the earlier index where the matching complement was found.
+
+### Why This Works
+
+At the start of each iteration, `numMap` contains exactly the values from indices `0` to `i - 1`.
+
+So when the code checks `numMap.containsKey(diff)`, it is checking whether there exists an earlier index `j` such that:
+
+`nums[j] + nums[i] = target`
+
+If yes, returning `[j, i]` is correct.
+
+If not, storing `nums[i]` keeps the same invariant true for the next iteration.
+
+Since the problem guarantees exactly one solution, this process must eventually find that pair.
+
+### Trick Used
+
+The main trick is checking the complement **before** inserting the current number into the map.
+
+That matters for inputs like `nums = [3,3]`, `target = 6`:
+- at index `0`, the map is empty, so no match is found
+- then `3 -> 0` is stored
+- at index `1`, the code looks for `3`, finds index `0`, and returns `[0, 1]`
+
+So the solution naturally avoids pairing an element with itself.
+
+### Edge Cases Handled
+
+1. **Pair uses the same value twice** like `[3,3]`
+   - the first `3` is stored
+   - the second `3` matches it and returns two different indices
+
+2. **Negative numbers** like `[-3,4,3,90]`, `target = 0`
+   - complement lookup works the same way
+   - `3` matches the earlier `-3`
+
+3. **Answer found early** like `[2,7,11,15]`, `target = 9`
+   - the method returns as soon as `[0,1]` is found
+   - there is no unnecessary extra work
+
+4. **No valid pair in arbitrary input**
+   - this implementation would return `null`
+   - but under this problem's constraints, that path should not be reached
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the array is traversed exactly once; all HashMap/HashSet operations are O(1) amortised.
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity: `O(n)`** — the array is scanned once, and each `HashMap` lookup or insertion is `O(1)` on average.
+- **Space Complexity: `O(n)`** — in the worst case, the map stores almost every earlier element before the answer is found.

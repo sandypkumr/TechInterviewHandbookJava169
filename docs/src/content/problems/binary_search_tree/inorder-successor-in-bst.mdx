@@ -4,7 +4,7 @@ difficulty: "Medium"
 topic: "binary_search_tree"
 leetcodeUrl: "https://leetcode.com/problems/inorder-successor-in-bst"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search_tree/InorderSuccessorInBST.java"
-patterns: ["binary-search","dfs"]
+patterns: ["binary-search"]
 tags: []
 timeComplexity: "O(h)"
 spaceComplexity: "O(1)"
@@ -85,25 +85,147 @@ public class InorderSuccessorInBST {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks for the **next node in inorder order** after `p`, which means the node with the **smallest value greater than `p.val`**.
+
+Since the input tree is a **binary search tree**, we can use its ordering directly:
+- all values in the left subtree are smaller than the current node
+- all values in the right subtree are larger than the current node
+
+That means we do **not** need to build the full inorder traversal or scan every node. We only need to keep track of the best "just larger than `p`" candidate while walking down the tree.
+
 ### Approach
 
-**Inorder Successor in BST** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The solution starts at the root and moves downward like a BST search.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+At each node:
+- if `p.val < root.val`, the current node is a valid successor candidate
+  - save it in `successor`
+  - move left to see whether there is an even smaller valid candidate
+- otherwise, move right
+  - the current node cannot be the successor
+  - its left subtree also cannot contain the successor because those values are even smaller
+
+When the loop finishes, `successor` is either the smallest value greater than `p.val` or `null` if no such value exists.
+
+### Pattern Used
+
+This solution mainly uses **direct BST traversal with binary-search-style decisions**.
+
+It is not a full DFS over the whole tree. The code follows only one search path from the root, using BST comparisons to discard entire subtrees.
+
+### Key Insight
+
+The successor must come from the set of nodes whose values are **greater than `p.val`**.
+
+Among those nodes, we want the **smallest** one.
+
+So whenever the code sees a node with `root.val > p.val`, it records that node as the current best answer and then moves left to try to improve it.
 
 ### Code Walkthrough
 
-The solution is implemented in `inorderSuccessor(TreeNode root, TreeNode p)`:
+```java
+public TreeNode inorderSuccessor(TreeNode root, TreeNode p) {
+    TreeNode successor = null;
+    while (root != null) {
+        if (p.val < root.val) {
+            successor = root;
+            root = root.left;
+        } else {
+            root = root.right;
+        }
+    }
+    return successor;
+}
+```
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+How the method works:
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+1. `successor` starts as `null` because the answer might not exist.
+2. The loop uses `root` as a moving pointer through the BST.
+3. If `p.val < root.val`:
+   - `root` is bigger than `p`, so it is a possible successor
+   - store it in `successor`
+   - move to `root.left` to look for a smaller larger value
+4. Otherwise, move to `root.right`.
+   - if `root.val == p.val`, the successor must be somewhere to the right
+   - if `root.val < p.val`, both `root` and its left subtree are too small
+5. When `root` becomes `null`, the search path is done and the best saved candidate is returned.
+
+### Example Walkthrough
+
+Consider:
+
+`root = [5,3,6,2,4,null,null,1]`, `p = 3`
+
+We want the smallest value greater than `3`, so the answer should be `4`.
+
+Step by step:
+
+1. Start at `root = 5`
+   - `3 < 5`, so `5` is a valid candidate
+   - set `successor = 5`
+   - move left to `3`
+
+2. At `root = 3`
+   - `3 < 3` is false
+   - move right to `4`
+
+3. At `root = 4`
+   - `3 < 4`, so `4` is a better candidate than `5`
+   - set `successor = 4`
+   - move left to `null`
+
+4. The loop ends, so return `successor = 4`
+
+This matches the idea of always keeping the best larger candidate seen so far.
+
+### Key Variables Explained
+
+- **`root`**: reused as the current traversal pointer while moving down the BST.
+- **`p`**: the target node whose inorder successor we need to find.
+- **`successor`**: the best candidate found so far; it always stores a node value greater than `p.val` that could still be the smallest such value.
+
+### Why This Works
+
+The invariant is:
+
+> At every step, `successor` is the smallest valid candidate seen so far.
+
+If `root.val > p.val`, then `root` could be the answer, but a better answer might exist in the left subtree, so the code saves `root` and goes left.
+
+If `root.val <= p.val`, then `root` cannot be the successor. Its left subtree also cannot contain the successor, because every value there is less than `root.val`. So moving right is the only useful choice.
+
+By repeatedly discarding impossible subtrees and remembering the best larger node found on the path, the algorithm ends with exactly the inorder successor.
+
+### Trick Used
+
+There is no fancy trick here.
+
+The practical trick is simply: **when you move left from a node larger than `p`, save that node as the current answer**.
+
+That is enough to avoid building an inorder list or traversing the full tree.
+
+### Edge Cases Handled
+
+1. **`p` is the largest node in the BST**
+   - no node has a larger value
+   - `successor` stays `null`
+
+2. **The successor is an ancestor of `p`**
+   - this happens when `p` has no right subtree
+   - the earlier saved candidate becomes the answer
+
+3. **`p` has a right subtree**
+   - the search moves right from `p`
+   - then it keeps checking for the smallest larger node there
+
+4. **Single-node tree**
+   - the loop ends without finding a larger value
+   - the method returns `null`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(h)`** — see the analysis for full details.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(h)`** — the code only walks down one root-to-leaf path, where `h` is the tree height. This is `O(log n)` for a balanced BST and `O(n)` for a skewed tree.
+- **Space Complexity: `O(1)`** — only a couple of pointers are used, with no recursion and no extra data structure.

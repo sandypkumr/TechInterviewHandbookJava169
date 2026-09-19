@@ -88,23 +88,131 @@ public class TimeBasedKeyValueStore {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem requires a data structure that can:
+1. Store multiple values for the same key at different timestamps
+2. Given a key and a timestamp, retrieve the value associated with the **largest timestamp that does not exceed the query timestamp**
+
+This creates a precise lookup constraint: if you ask for the value at time `5`, and values exist at times `1` and `4`, you should get the value from time `4`, not time `1`.
+
 ### Approach
 
-**Time Based Key-Value Store** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The solution uses a nested map structure:
+- A `HashMap<String, TreeMap<Integer, String>>` maps each key to a sorted collection of `(timestamp, value)` pairs
+- For `set()`: add the timestamp-value pair to the TreeMap for that key
+- For `get()`: use the TreeMap's `floorEntry(timestamp)` method to find the largest timestamp ≤ the query timestamp
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+The `TreeMap` maintains timestamps in sorted order and provides logarithmic lookup via `floorEntry()`, which internally uses binary search on the balanced tree.
+
+### Pattern Used
+
+This solution uses **data structure composition** — combining HashMap and TreeMap to achieve efficient range queries on time-based data.
+
+The pattern relies on the fact that timestamps are sorted, so we can use a balanced binary search tree to perform efficient lookups.
+
+### Key Insight
+
+Once timestamps for a key are sorted, finding the "largest timestamp ≤ query" is a classic binary search problem.
+
+Rather than implementing binary search manually, we leverage Java's `TreeMap.floorEntry()`, which does exactly this: it returns the entry with the largest key ≤ the given key.
+
+This avoids code duplication and uses a well-tested, optimized implementation.
 
 ### Code Walkthrough
 
-The solution is implemented in `set(String key, String value, int timestamp)`:
+```java
+public void set(String key, String value, int timestamp) {
+    map.computeIfAbsent(key, k -> new TreeMap<>()).put(timestamp, value);
+}
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+public String get(String key, int timestamp) {
+    if (!map.containsKey(key)) return "";
+    TreeMap<Integer, String> tree = map.get(key);
+    Map.Entry<Integer, String> entry = tree.floorEntry(timestamp);
+    return entry != null ? entry.getValue() : "";
+}
+```
+
+How the methods work:
+
+**`set()` method:**
+1. `map.computeIfAbsent(key, k -> new TreeMap<>())` gets the TreeMap for this key, creating one if it doesn't exist
+2. `.put(timestamp, value)` stores the value at the given timestamp
+3. The TreeMap automatically maintains timestamps in sorted order
+
+**`get()` method:**
+1. If the key doesn't exist in the map, return `""` (empty string)
+2. Get the TreeMap containing all `(timestamp, value)` pairs for this key
+3. `tree.floorEntry(timestamp)` finds the entry with the largest timestamp ≤ the query timestamp
+4. If such an entry exists, return its value; otherwise return `""`
+
+### Example Walkthrough
+
+For the given example:
+
+| Operation | State | Explanation |
+|-----------|-------|-------------|
+| `set("foo", "bar", 1)` | TreeMap for "foo": {1 → "bar"} | Store the first value |
+| `get("foo", 1)` | Returns "bar" | floorEntry(1) finds exact match at timestamp 1 |
+| `get("foo", 3)` | Returns "bar" | floorEntry(3) finds largest ≤ 3, which is timestamp 1 |
+| `set("foo", "bar2", 4)` | TreeMap for "foo": {1 → "bar", 4 → "bar2"} | Store second value for same key |
+| `get("foo", 4)` | Returns "bar2" | floorEntry(4) finds exact match at timestamp 4 |
+| `get("foo", 5)` | Returns "bar2" | floorEntry(5) finds largest ≤ 5, which is timestamp 4 |
+
+### Key Variables Explained
+
+- **`map`**: the top-level HashMap that maps string keys to TreeMaps of timestamps
+- **`tree`**: a TreeMap containing `(timestamp → value)` pairs for a single key, maintained in ascending order by timestamp
+- **`entry`**: the result of `floorEntry()`, which is the `(timestamp, value)` pair with the largest timestamp ≤ query timestamp
+- **`timestamp`**: both a storage key (in the TreeMap) and a query parameter
+
+### Why This Works
+
+The correctness depends on two properties:
+
+1. **Sorted order**: Because the TreeMap keeps timestamps sorted, the largest timestamp ≤ the query is guaranteed to be the correct value to return.
+
+2. **Logarithmic lookup**: The TreeMap is a balanced binary search tree, so `floorEntry()` runs in O(log n) time, avoiding a full linear scan through all timestamps for a key.
+
+When `floorEntry(timestamp)` is called on a TreeMap, it performs a binary search within the tree's structure, finding the floor in logarithmic time.
+
+### Trick Used
+
+The main trick is **delegating binary search to TreeMap.floorEntry()**.
+
+Rather than manually implementing binary search with while loops and mid calculations, we rely on TreeMap's built-in binary search capability, which is:
+- Simpler to write and understand
+- Less prone to off-by-one errors
+- Optimized by the Java standard library
+
+This is a common interview pattern: recognize when a standard data structure's method solves your exact problem.
+
+### Edge Cases Handled
+
+1. **Key does not exist**
+   - `map.containsKey(key)` returns false
+   - Return `""` immediately
+
+2. **Query timestamp is earlier than all stored timestamps**
+   - `floorEntry(timestamp)` returns `null`
+   - Return `""`
+
+3. **Query timestamp exactly matches a stored timestamp**
+   - `floorEntry(timestamp)` returns that exact entry
+   - Return its value
+
+4. **Query timestamp is later than all stored timestamps**
+   - `floorEntry(timestamp)` returns the entry with the largest timestamp
+   - Return that value
+
+5. **Single value for a key**
+   - The TreeMap contains only one `(timestamp, value)` pair
+   - `floorEntry()` correctly returns it if query ≥ that timestamp
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(n)`** — the hash structure can hold up to n entries in the worst case.
+- **Time Complexity: `O(log n)` per `get()` operation** — TreeMap.floorEntry() performs a binary search on the balanced tree
+- **Time Complexity: `O(log m)` per `set()` operation** — TreeMap.put() is O(log m) where m is the number of timestamps for that key
+- **Space Complexity: `O(n)`** — the structure stores all key-timestamp-value triples, where n is the total number of set operations
+

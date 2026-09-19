@@ -15,13 +15,13 @@ similarProblems: []
 enrichmentNeeded: true
 ---
 
-You are given an array of non-overlapping intervals `intervals` where `intervals[i] = [starti, endi]` represent the start and the end of the `i^th` interval and `intervals` is sorted in ascending order by `starti`. You are also given an interval `newInterval = [start, end]` that represents the start and end of another interval.
+You are given an array of non-overlapping intervals `intervals` where `intervals[i] = [starti, endi]` represent the start and end of the `i^th` interval, and `intervals` is sorted in ascending order by `starti`. You are also given an interval `newInterval = [start, end]` that represents the start and end of another interval.
 
-Insert `newInterval` into `intervals` such that `intervals` is still sorted in ascending order by `starti` and `intervals` still does not have any overlapping intervals (merge overlapping intervals if necessary).
+Insert `newInterval` into `intervals` such that `intervals` is still sorted in ascending order by `starti` and still does not have any overlapping intervals. Merge overlapping intervals if necessary.
 
-Return `intervals`_ after the insertion_.
+Return `intervals` after the insertion.
 
-**Note** that you don't need to modify `intervals` in-place. You can make a new array and return it.
+**Note** that you do not need to modify `intervals` in-place. You can make a new array and return it.
 
 **Example 1:**
 
@@ -41,15 +41,10 @@ Explanation: Because the new interval [4,8] overlaps with [3,5],[6,7],[8,10].
 **Constraints:**
 
 - `0 <= intervals.length <= 10^4`
-
 - `intervals[i].length == 2`
-
 - `0 <= starti <= endi <= 10^5`
-
 - `intervals` is sorted by `starti` in **ascending** order.
-
 - `newInterval.length == 2`
-
 - `0 <= start <= end <= 10^5`
 
 **Patterns:** `merge-intervals`
@@ -65,18 +60,23 @@ public class InsertInterval {
         int[][] result = new int[n + 1][2];
         int index = 0;
         int i = 0;
+
         while (i < n && intervals[i][1] < newInterval[0]) {
             result[index++] = intervals[i++];
         }
+
         while (i < n && intervals[i][0] <= newInterval[1]) {
             newInterval[0] = Math.min(newInterval[0], intervals[i][0]);
             newInterval[1] = Math.max(newInterval[1], intervals[i][1]);
             i++;
         }
+
         result[index++] = newInterval;
+
         while (i < n) {
             result[index++] = intervals[i++];
         }
+
         int[][] finalResult = new int[index][2];
         System.arraycopy(result, 0, finalResult, 0, index);
         return finalResult;
@@ -86,23 +86,115 @@ public class InsertInterval {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks us to insert one interval into a list of already sorted, non-overlapping intervals and return the updated list.
+
+The final result must still be sorted and must not contain overlaps. That means the new interval may:
+- fit completely before all existing intervals
+- fit completely after all existing intervals
+- overlap with one or more intervals in the middle and need to be merged
+
+The Java solution handles all three cases in one left-to-right scan.
+
 ### Approach
 
-**Insert Interval** deals with overlapping intervals. After sorting by start time, any interval that overlaps with the previous one (its start ≤ previous end) can be merged by extending the end. A single left-to-right scan after sorting handles all merges in O(n).
+The method splits the work into three phases:
+1. copy every interval that ends before the new interval starts
+2. merge every interval that overlaps the new interval
+3. copy every remaining interval that starts after the merged interval ends
 
-Visualise intervals as horizontal bars on a timeline. Once sorted by left edge, you walk left to right: if the new bar overlaps the current merged bar, extend the merged bar; otherwise, seal the current bar and start a new one.
+The merged interval is stored directly in `newInterval`, so the code only needs to keep adjusting its boundaries while overlapping intervals are consumed.
+
+### Pattern Used
+
+This is a **merge-intervals** solution using **direct traversal**.
+
+It does not rely on sorting or a separate stack/heap structure. The input is already sorted, so the algorithm only needs one pass to place the new interval in the correct spot and merge overlaps as needed.
+
+### Key Insight
+
+Because the intervals are already sorted by start time, we can classify each interval by comparing it with `newInterval`:
+- if an interval ends before `newInterval` starts, it belongs before the merge
+- if an interval starts before or at `newInterval` ends, it overlaps and must be merged
+- once an interval starts after the merged interval ends, it belongs after the merge
+
+That lets us process the array in order without revisiting any interval.
 
 ### Code Walkthrough
 
-The solution is implemented in `insert(int[][] intervals, int[] newInterval)`:
+The method `insert(int[][] intervals, int[] newInterval)` works as follows:
 
-1. Sort intervals by their start value.
-2. Initialise the result list with the first interval.
-3. For each subsequent interval, compare its start with the end of the last interval in the result.
-4. If they overlap (start ≤ last.end), update last.end = max(last.end, current.end).
-5. Otherwise, append the current interval as a new merged interval.
+1. `n` stores the number of existing intervals.
+2. `result` is created with size `n + 1` because inserting one interval can increase the total count by at most one.
+3. `index` tracks where the next interval should be written in `result`.
+4. `i` scans through `intervals` from left to right.
+5. The first `while` loop copies all intervals whose end is strictly less than `newInterval[0]`.
+6. The second `while` loop merges every overlapping interval by shrinking and expanding `newInterval` with `Math.min` and `Math.max`.
+7. `result[index++] = newInterval` writes the fully merged interval into the output.
+8. The third `while` loop copies the remaining intervals that come after the merged interval.
+9. `finalResult` is created with the exact used length, and `System.arraycopy` copies only the populated portion of `result` into it.
+
+### Example Walkthrough
+
+For `intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]]` and `newInterval = [4,8]`:
+
+1. `[[1,2]]` ends before `4`, so it is copied directly to `result`.
+2. `[[3,5],[6,7],[8,10]]` all overlap with `[4,8]`, so `newInterval` expands step by step:
+   - merge `[4,8]` with `[3,5]` → `[3,8]`
+   - merge `[3,8]` with `[6,7]` → `[3,8]`
+   - merge `[3,8]` with `[8,10]` → `[3,10]`
+3. The merged interval `[3,10]` is written into `result`.
+4. `[[12,16]]` starts after the merged interval ends, so it is copied as-is.
+
+Final output: `[[1,2],[3,10],[12,16]]`.
+
+### Key Variables Explained
+
+- **`n`**: the number of input intervals.
+- **`result`**: temporary output array with enough room for one extra interval.
+- **`index`**: the current write position in `result`.
+- **`i`**: the current read position in `intervals`.
+- **`newInterval`**: the interval being inserted; it is also reused as the merged interval accumulator.
+- **`finalResult`**: the trimmed array that contains only the populated portion of `result`.
+
+### Why This Works
+
+The algorithm is correct because every interval must fall into exactly one of three groups relative to the inserted interval:
+
+1. **Before the new interval** — it ends too early to overlap, so it can be copied unchanged.
+2. **Overlapping the new interval** — it must be merged, and updating the start/end with `Math.min` and `Math.max` produces the full union.
+3. **After the new interval** — it starts too late to overlap, so it can also be copied unchanged.
+
+Since the input is sorted, these groups appear in order, so a single pass is enough. No interval is skipped or processed twice.
+
+### Trick Used
+
+There is no hidden trick here.
+
+The most useful implementation detail is reusing `newInterval` itself as the merged interval, which avoids creating extra temporary intervals while the overlaps are being absorbed.
+
+### Edge Cases Handled
+
+1. **No intervals at all** like `intervals = []`
+   - the first and third loops do nothing
+   - `newInterval` is inserted directly
+
+2. **New interval goes before all others** like `intervals = [[5,7]]`, `newInterval = [1,2]`
+   - the first loop copies nothing
+   - the merged interval is written first
+   - the existing interval is copied afterward
+
+3. **New interval goes after all others** like `intervals = [[1,2]]`, `newInterval = [5,7]`
+   - the first loop copies all existing intervals
+   - no overlap is found
+   - `newInterval` is appended at the end
+
+4. **New interval overlaps several intervals**
+   - the second loop keeps expanding `newInterval` until the overlap range ends
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — each interval is visited at most once across the three loops.
+- **Space Complexity: `O(n)`** — the output array may store up to `n + 1` intervals, and the final trimmed copy is also linear in size.
+

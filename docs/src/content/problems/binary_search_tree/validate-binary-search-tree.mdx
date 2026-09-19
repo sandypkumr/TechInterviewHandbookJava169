@@ -20,9 +20,7 @@ Given the `root` of a binary tree, _determine if it is a valid binary search tre
 A **valid BST** is defined as follows:
 
 - The left subtree of a node contains only nodes with keys **strictly less than** the node's key.
-
 - The right subtree of a node contains only nodes with keys **strictly greater than** the node's key.
-
 - Both the left and right subtrees must also be binary search trees.
 
 **Example 1:**
@@ -43,7 +41,6 @@ Explanation: The root node's value is 5 but its right child's value is 4.
 **Constraints:**
 
 - The number of nodes in the tree is in the range `[1, 10^4]`.
-
 - `-2^31 <= Node.val <= 2^31 - 1`
 
 ## Java Solution
@@ -70,23 +67,114 @@ public class ValidateBinarySearchTree {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks whether the tree obeys the BST rule at every node, not just at the root.
+
+That means each node must stay inside the value range inherited from all of its ancestors:
+- values in the left subtree must be smaller than the current node
+- values in the right subtree must be larger than the current node
+- duplicate values are not allowed
+
 ### Approach
 
-**Validate Binary Search Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+The solution uses a recursive helper that carries the valid range for the current subtree.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+The public method starts with the widest possible range:
+- `Long.MIN_VALUE` as the lower bound
+- `Long.MAX_VALUE` as the upper bound
+
+At each node, the helper checks whether `node.val` is still inside that open interval. If it is, the recursion continues into both children with updated bounds.
+
+### Pattern Used
+
+This solution uses **recursive depth-first traversal with range validation**.
+
+It is not a graph-style DFS problem. The traversal is simply a clean way to pass ancestor constraints down the tree.
+
+### Key Insight
+
+The key idea is that a node does not need to be compared with every ancestor one by one.
+
+Instead, the ancestors can be summarized as one valid interval:
+
+`min < node.val < max`
+
+When we go left, we tighten the upper bound to the parent value. When we go right, we tighten the lower bound to the parent value.
 
 ### Code Walkthrough
 
-The solution is implemented in `isValidBST(TreeNode root)`:
+The wrapper method `isValidBST(TreeNode root)` starts the validation:
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+```java
+return isValidBST(root, Long.MIN_VALUE, Long.MAX_VALUE);
+```
+
+The helper method does three things:
+
+1. `if (node == null) return true;`
+   - An empty subtree is valid.
+
+2. `if (node.val <= min || node.val >= max) return false;`
+   - The current value violates the BST rule if it is outside the allowed range.
+
+3. `return isValidBST(node.left, min, node.val) && isValidBST(node.right, node.val, max);`
+   - The left child keeps the same lower bound and gets a tighter upper bound.
+   - The right child keeps the same upper bound and gets a tighter lower bound.
+   - Both subtrees must be valid for the current subtree to be valid.
+
+Using `long` for the bounds matters because the tree values are `int`. That makes the initial range safely wider than any possible node value.
+
+### Example Walkthrough
+
+For `root = [5,1,4,null,null,3,6]`:
+
+1. Start at `5` with range `(-∞, +∞)`.
+2. Check the left child `1` with range `(-∞, 5)`.
+   - `1` is valid.
+3. Check the right child `4` with range `(5, +∞)`.
+   - `4` is invalid because it is not greater than `5`.
+
+The function returns `false` immediately, which matches the BST rule: everything in the right subtree of `5` must be greater than `5`.
+
+### Key Variables Explained
+
+- **`node`**: the current node being validated.
+- **`min`**: the exclusive lower bound that `node.val` must be greater than.
+- **`max`**: the exclusive upper bound that `node.val` must be less than.
+- **`root`**: the starting node passed into the public validation method.
+
+### Why This Works
+
+The recursion is correct because each call checks exactly the subtree rooted at `node` under the range constraints imposed by all ancestors above it.
+
+When we recurse left, the current node becomes the new upper bound. When we recurse right, the current node becomes the new lower bound.
+
+So if any node violates the rule, it will fail as soon as it is checked, and that failure propagates back up through the `&&` chain.
+
+### Trick Used
+
+The main trick is carrying **ancestor-based bounds** instead of comparing only parent and child values.
+
+This is what catches violations like a value that is smaller than the root but appears in the root’s right subtree.
+
+Using `long` bounds is also a practical detail that avoids edge issues with `Integer.MIN_VALUE` and `Integer.MAX_VALUE`.
+
+### Edge Cases Handled
+
+1. **Single node tree**
+   - The node is checked against the full range and is valid.
+
+2. **Duplicate values**
+   - Rejected because the checks use `<=` and `>=`, so the range is strictly open.
+
+3. **Extreme integer values**
+   - Safe because the helper uses `long` bounds instead of `int` bounds.
+
+4. **Empty subtree during recursion**
+   - Returns `true`, which allows the recursion to stop naturally at leaf boundaries.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)`** — every node is visited once.
+- **Space Complexity: `O(h)`** — the recursion depth is proportional to the tree height, where `h` is `O(log n)` for a balanced tree and `O(n)` in the worst case.

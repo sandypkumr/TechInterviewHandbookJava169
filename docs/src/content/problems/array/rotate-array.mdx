@@ -14,11 +14,8 @@ javaApis: []
 similarProblems: []
 enrichmentNeeded: true
 ---
-
 Given an integer array `nums`, rotate the array to the right by `k` steps, where `k` is non-negative.
-
 **Example 1:**
-
 ```
 Input: nums = [1,2,3,4,5,6,7], k = 3
 Output: [5,6,7,1,2,3,4]
@@ -27,9 +24,7 @@ rotate 1 steps to the right: [7,1,2,3,4,5,6]
 rotate 2 steps to the right: [6,7,1,2,3,4,5]
 rotate 3 steps to the right: [5,6,7,1,2,3,4]
 ```
-
 **Example 2:**
-
 ```
 Input: nums = [-1,-100,3,99], k = 2
 Output: [3,99,-1,-100]
@@ -37,28 +32,17 @@ Explanation:
 rotate 1 steps to the right: [99,-1,-100,3]
 rotate 2 steps to the right: [3,99,-1,-100]
 ```
-
 **Constraints:**
-
 - `1 <= nums.length <= 10^5`
-
 - `-2^31 <= nums[i] <= 2^31 - 1`
-
 - `0 <= k <= 10^5`
-
 **Follow up:**
-
 - Try to come up with as many solutions as you can. There are at least **three** different ways to solve this problem.
-
 - Could you do it in-place with `O(1)` extra space?
-
-**Patterns:** `merge-intervals`
-
+**Patterns:** `two-pointers`
 ## Java Solution
-
 ```java
 package array;
-
 public class RotateArray {
     public void rotate(int[] nums, int k) {
         int n = nums.length;
@@ -67,7 +51,6 @@ public class RotateArray {
         reverse(nums, 0, k - 1); // Reverse the first k elements
         reverse(nums, k, n - 1); // Reverse the remaining elements
     }
-
     private void reverse(int[] nums, int start, int end) {
         while (start < end) {
             int temp = nums[start];
@@ -79,26 +62,70 @@ public class RotateArray {
     }
 }
 ```
-
 ## Explanation
-
+### Problem Analysis
+The problem asks us to rotate the array to the right by `k` steps without creating another array.
+The key requirement is that the values keep their relative order inside the two segments that move:
+- the last `k` elements move to the front
+- the first `n - k` elements move to the back
+Because the update must happen in place, the solution needs a way to rearrange the same array rather than copy elements into a new one.
 ### Approach
-
-**Rotate Array** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
-
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
-
+The code uses a **three-reversal strategy**:
+1. Reduce `k` with `k = k % n` so we only rotate by the meaningful remainder.
+2. Reverse the entire array.
+3. Reverse the first `k` elements.
+4. Reverse the remaining `n - k` elements.
+This gives the final rotated array while using only constant extra space.
+### Pattern Used
+This solution uses a **two-pointer in-place reversal** pattern.
+The main work is not search or dynamic programming. It is a direct array transformation built from repeated segment reversals.
+### Key Insight
+A right rotation by `k` can be split into two blocks:
+- the suffix of length `k`
+- the prefix of length `n - k`
+If we reverse the whole array first, those blocks land in the correct positions, but each block is backwards. Reversing each block again restores the proper order.
+That is why three reversals are enough.
 ### Code Walkthrough
-
-The solution is implemented in `rotate(int[] nums, int k)`:
-
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
-
+The solution is implemented in `rotate(int[] nums, int k)` and the helper `reverse(int[] nums, int start, int end)`.
+1. `int n = nums.length;` stores the array size.
+2. `k = k % n;` removes full rotations. Rotating by `n`, `2n`, or `3n` changes nothing.
+3. `reverse(nums, 0, n - 1);` reverses the whole array.
+4. `reverse(nums, 0, k - 1);` fixes the first block, which now contains the elements that should appear at the front.
+5. `reverse(nums, k, n - 1);` fixes the remaining block.
+The helper method uses two pointers:
+- `start` moves forward
+- `end` moves backward
+On each loop iteration, the values at those two positions are swapped, and the pointers move toward each other until the segment is fully reversed.
+### Example Walkthrough
+For `nums = [1,2,3,4,5,6,7]` and `k = 3`:
+1. `k = 3 % 7 = 3`
+2. Reverse the whole array → `[7,6,5,4,3,2,1]`
+3. Reverse the first `3` elements → `[5,6,7,4,3,2,1]`
+4. Reverse the remaining elements → `[5,6,7,1,2,3,4]`
+Final result: `[5,6,7,1,2,3,4]`
+### Key Variables Explained
+- **`nums`**: the array being rotated in place.
+- **`k`**: the number of right rotations, reduced with modulo so it stays within the array length.
+- **`n`**: the length of the array.
+- **`start`**: the left pointer used by `reverse`.
+- **`end`**: the right pointer used by `reverse`.
+- **`temp`**: the temporary variable used to swap two values safely.
+### Why This Works
+The method works because reversing is an in-place operation that preserves the values in a segment while changing their order.
+After the full reverse, the elements that should move to the front are already grouped together, but in reverse order. Reversing that front block restores its original order. The same idea applies to the remaining block.
+So the three reversals recreate exactly the array you would get by shifting every element right by `k` positions.
+### Trick Used
+The trick is to replace repeated element shifting with three in-place reversals.
+That is much cleaner than moving elements one step at a time, and it keeps the extra space at `O(1)`.
+### Edge Cases Handled
+1. **`k` is larger than `n`**
+   - `k % n` converts it to the equivalent smaller rotation.
+2. **`k = 0` or `k` is a multiple of `n`**
+   - the array ends up unchanged after the three reversals.
+3. **Single-element array**
+   - every reverse operation is a no-op, so the array stays the same.
+4. **In-place update**
+   - no extra array is created, so the solution respects the `O(1)` space requirement.
 ### Complexity Analysis
-
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — each reversal scans part of the array once, and the three passes together are still linear.
+- **Space Complexity: `O(1)`** — the algorithm only uses a few variables for swapping and indexing.

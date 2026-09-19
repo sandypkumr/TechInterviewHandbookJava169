@@ -92,23 +92,152 @@ public class GasStation {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to find a starting station from which the car can complete one full circular trip without the tank ever going negative.
+
+Two facts define the problem:
+- the car must survive every leg of the trip in order
+- the total gas across all stations must be at least the total travel cost
+
+A brute-force solution would try every starting index and simulate the whole loop each time. This code avoids that by eliminating impossible starts during a single pass.
+
 ### Approach
 
-**Gas Station** has a greedy property: at every decision point, the locally optimal choice leads to a globally optimal solution. Unlike DP, which considers all sub-problems, a greedy algorithm commits to one choice and never reconsiders.
+The solution scans the arrays once while maintaining four values:
+- `totalGas`: the sum of all gas values
+- `totalCost`: the sum of all travel costs
+- `currentGas`: the running fuel balance for the current candidate start
+- `startStation`: the current candidate starting index
 
-The challenge with greedy is proving correctness (an exchange argument usually works: show that swapping any two elements in a non-greedy solution to match the greedy order never makes things worse). Once you accept the greedy choice is safe, the algorithm is typically simple and fast.
+At each station `i`, the code adds the net gain `gas[i] - cost[i]` to `currentGas`.
+
+If `currentGas` becomes negative, then the current candidate cannot reach station `i + 1`. At that point, the code discards that entire segment, sets `startStation = i + 1`, and resets `currentGas` to `0`.
+
+After the loop:
+- if `totalGas < totalCost`, no starting point can complete the circuit, so return `-1`
+- otherwise, return `startStation`
+
+### Pattern Used
+
+This is a **greedy one-pass traversal**.
+
+The solution mainly relies on direct traversal and greedy elimination of bad starting positions. It does not use sorting, a queue, or any extra data structure.
+
+### Key Insight
+
+If starting from `startStation` causes the running balance to become negative at station `i`, then **none of the stations from `startStation` through `i` can be a valid answer**.
+
+Why?
+
+Because every station inside that failed segment would begin with no more fuel advantage than the original candidate had before reaching the failure point. So if the first candidate already fails by the time it reaches `i + 1`, every station before that point also fails.
+
+That is why the code can safely skip all those stations and jump directly to `i + 1`.
 
 ### Code Walkthrough
 
-The solution is implemented in `canCompleteCircuit(int[] gas, int[] cost)`:
+```java
+public int canCompleteCircuit(int[] gas, int[] cost) {
+    int totalGas = 0;
+    int totalCost = 0;
+    int currentGas = 0;
+    int startStation = 0;
 
-1. Identify the greedy criterion (sort by end time, sort by cost, always pick the max/min, etc.).
-2. Sort or arrange the input according to this criterion.
-3. Iterate and make the greedy decision at each step without revisiting previous choices.
-4. Update state (current end, running sum, remaining capacity) after each decision.
-5. Return the accumulated result.
+    for (int i = 0; i < gas.length; i++) {
+        totalGas += gas[i];
+        totalCost += cost[i];
+        currentGas += gas[i] - cost[i];
+
+        if (currentGas < 0) {
+            startStation = i + 1;
+            currentGas = 0;
+        }
+    }
+
+    return totalGas < totalCost ? -1 : startStation;
+}
+```
+
+How the method works:
+
+1. `totalGas` and `totalCost` track the full amount of fuel available and required across the whole route.
+2. `currentGas` tracks the running balance if we start from the current `startStation`.
+3. `currentGas += gas[i] - cost[i]` applies the net fuel effect at station `i`.
+4. If `currentGas < 0`, the current candidate start has failed:
+   - `startStation = i + 1`
+   - `currentGas = 0`
+5. After the loop, the ternary return checks whether the entire route is possible at all.
+6. If enough total gas exists, the final `startStation` is returned.
+
+### Example Walkthrough
+
+For `gas = [1,2,3,4,5]` and `cost = [3,4,5,1,2]`:
+
+| Index | `gas[i]` | `cost[i]` | Net `gas[i] - cost[i]` | `currentGas` after update | Action | `startStation` |
+|------:|----------|-----------|-------------------------|---------------------------|--------|----------------|
+| 0 | 1 | 3 | -2 | -2 | negative, reset | 1 |
+| 1 | 2 | 4 | -2 | -2 | negative, reset | 2 |
+| 2 | 3 | 5 | -2 | -2 | negative, reset | 3 |
+| 3 | 4 | 1 | 3 | 3 | continue | 3 |
+| 4 | 5 | 2 | 3 | 6 | continue | 3 |
+
+Meanwhile:
+- `totalGas = 15`
+- `totalCost = 15`
+
+So the trip is possible overall, and the final answer is `3`.
+
+Starting at station `3` works because the surplus from stations `3` and `4` is enough to cover the earlier deficits after the route wraps around.
+
+### Key Variables Explained
+
+- **`totalGas`**: total fuel available across the whole circle.
+- **`totalCost`**: total fuel required to drive the whole circle.
+- **`currentGas`**: current running tank balance for the active candidate start.
+- **`startStation`**: the current candidate answer.
+- **`i`**: the station index being processed in the loop.
+
+### Why This Works
+
+The correctness comes from combining a global check with a local greedy rule.
+
+First, if `totalGas < totalCost`, then even the best possible starting point cannot succeed, because the entire circle does not contain enough fuel.
+
+Second, when `currentGas` becomes negative at station `i`, the code proves that the current candidate start and every station before `i + 1` in that segment are impossible. So moving `startStation` to `i + 1` never throws away a valid answer.
+
+By the end of the scan:
+- all impossible starting segments have been discarded
+- the remaining candidate is the only index that can complete the loop if a solution exists
+
+That matches the problem's guarantee that the valid answer is unique.
+
+### Trick Used
+
+The main trick is separating the problem into two simple checks:
+- a **global feasibility test** using `totalGas` and `totalCost`
+- a **local greedy reset rule** using `currentGas`
+
+There is no fancy data-structure trick here. The important observation is that one negative running balance eliminates an entire block of starting positions at once.
+
+### Edge Cases Handled
+
+1. **Impossible overall case** like `gas = [2,3,4]`, `cost = [3,4,3]`
+   - total gas is less than total cost
+   - the method returns `-1`
+
+2. **Several failed starts before the real answer**
+   - the code may reset `startStation` multiple times
+   - it still lands on the correct final candidate
+
+3. **Exactly enough total gas**
+   - `totalGas == totalCost` is still valid
+   - the method can return a working start
+
+4. **Single station**
+   - if `gas[0] >= cost[0]`, the answer is `0`
+   - otherwise, the answer is `-1`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n)`** — the arrays are scanned once, and each station does constant work.
+- **Space Complexity: `O(1)`** — only a fixed number of integer variables are used.

@@ -7,15 +7,15 @@ githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/mast
 patterns: ["two-pointers"]
 tags: ["classic"]
 timeComplexity: "O(n²)"
-spaceComplexity: "O(n)"
+spaceComplexity: "O(1) auxiliary"
 isPremium: false
 hasProblemStatement: false
-javaApis: ["ArrayList","Arrays.sort"]
+javaApis: ["ArrayList","Arrays.sort","Arrays.asList"]
 similarProblems: []
 enrichmentNeeded: true
 ---
 
-Given an integer array nums, return all the triplets `[nums[i], nums[j], nums[k]]` such that `i != j`, `i != k`, and `j != k`, and `nums[i] + nums[j] + nums[k] == 0`.
+Given an integer array `nums`, return all the triplets `[nums[i], nums[j], nums[k]]` such that `i != j`, `i != k`, and `j != k`, and `nums[i] + nums[j] + nums[k] == 0`.
 
 Notice that the solution set must not contain duplicate triplets.
 
@@ -51,10 +51,9 @@ Explanation: The only possible triplet sums up to 0.
 **Constraints:**
 
 - `3 <= nums.length <= 3000`
-
 - `-10^5 <= nums[i] <= 10^5`
 
-**Patterns:** `sliding-window`
+**Patterns:** `two-pointers`
 
 ## Java Solution
 
@@ -95,23 +94,176 @@ public class ThreeSum {
 
 ## Explanation
 
+### Problem Analysis
+
+This problem asks for **all unique triplets** whose sum is `0`.
+
+There are two important requirements:
+- the three numbers must come from different indices
+- duplicate triplets must not appear in the final answer
+
+A brute-force solution would try every combination of three indices, but that would take `O(n^3)`, which is too slow for arrays of length up to `3000`.
+
 ### Approach
 
-**3Sum** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+The code sorts the array first, then fixes one number at a time and searches for the other two numbers using two pointers.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+For each index `i`:
+- `nums[i]` is treated as the first value of the triplet
+- `left` starts just after `i`
+- `right` starts at the end of the array
+
+Because the array is sorted, the sum tells us how to move:
+- if the sum is too small, move `left` rightward to increase it
+- if the sum is too large, move `right` leftward to decrease it
+- if the sum is `0`, record the triplet and skip duplicates
+
+### Pattern Used
+
+This solution uses the **sorted array + two pointers** pattern.
+
+There is no sliding window here. The main idea is to sort once, then use the sorted order to move two pointers intelligently for every fixed first element.
+
+### Key Insight
+
+After sorting, once `nums[i]` is fixed, the remaining task becomes:
+
+> find two numbers in the subarray `i + 1 ... n - 1` whose sum is `-nums[i]`
+
+Since the subarray is sorted, `left` and `right` can move based on whether the current total is too small or too large.
+
+The other key detail is duplicate handling. Sorting puts equal values next to each other, so the code can skip repeated first elements and repeated pointer values to avoid generating the same triplet multiple times.
 
 ### Code Walkthrough
 
-The solution is implemented in `threeSum(int[] nums)`:
+```java
+public List<List<Integer>> threeSum(int[] nums) {
+    List<List<Integer>> result = new ArrayList<>();
+    Arrays.sort(nums);
+    for (int i = 0; i < nums.length - 2; i++) {
+        if (i > 0 && nums[i] == nums[i - 1]) continue; // Skip duplicates
+        int left = i + 1;
+        int right = nums.length - 1;
+        while (left < right) {
+            int sum = nums[i] + nums[left] + nums[right];
+            if (sum == 0) {
+                result.add(Arrays.asList(nums[i], nums[left], nums[right]));
+                while (left < right && nums[left] == nums[left + 1]) left++; // Skip duplicates
+                while (left < right && nums[right] == nums[right - 1]) right--; // Skip duplicates
+                left++;
+                right--;
+            } else if (sum < 0) {
+                left++;
+            } else {
+                right--;
+            }
+        }
+    }
+    return result;
+}
+```
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+How the method works:
+
+1. `Arrays.sort(nums)` sorts the array so pointer movement becomes meaningful.
+2. The `for` loop chooses each possible first number of a triplet.
+3. `if (i > 0 && nums[i] == nums[i - 1]) continue;` skips duplicate starting values, so the same triplet is not rebuilt from the same first number.
+4. `left = i + 1` and `right = nums.length - 1` define the search range for the other two numbers.
+5. Inside `while (left < right)`, the code computes `sum` for the current triplet candidate.
+6. If `sum == 0`, the triplet is valid, so it is added using `Arrays.asList(...)`.
+7. After adding a triplet, the two inner `while` loops skip repeated values at `left` and `right` so duplicates are not added again.
+8. Then `left++` and `right--` move both pointers inward to continue searching.
+9. If `sum < 0`, the total is too small, so `left++` moves to a larger value.
+10. If `sum > 0`, the total is too large, so `right--` moves to a smaller value.
+
+`ArrayList` is used for the outer result container, and `Arrays.asList(...)` creates each triplet in one line once a valid combination is found.
+
+### Example Walkthrough
+
+Take `nums = [-1,0,1,2,-1,-4]`.
+
+After sorting:
+
+`[-4, -1, -1, 0, 1, 2]`
+
+Now follow the exact code flow:
+
+1. `i = 0`, so the fixed value is `-4`
+   - `left = 1`, `right = 5`
+   - sum = `-4 + (-1) + 2 = -3` → too small, move `left`
+   - sum = `-4 + (-1) + 2 = -3` again with the next `-1` → move `left`
+   - sum = `-4 + 0 + 2 = -2` → move `left`
+   - sum = `-4 + 1 + 2 = -1` → move `left`
+   - pointers meet, so no triplet starts with `-4`
+
+2. `i = 1`, so the fixed value is `-1`
+   - `left = 2`, `right = 5`
+   - sum = `-1 + (-1) + 2 = 0` → add `[-1, -1, 2]`
+   - the duplicate-skip loops do not move here because the next values are different
+   - then `left++` and `right--` make `left = 3` and `right = 4`
+   - sum = `-1 + 0 + 1 = 0` → add `[-1, 0, 1]`
+
+3. `i = 2`
+   - `nums[2] == nums[1]`, so this iteration is skipped
+   - that prevents duplicate triplets starting with `-1`
+
+4. Later starting points do not produce any new valid triplets.
+
+Final result:
+
+`[[-1, -1, 2], [-1, 0, 1]]`
+
+### Key Variables Explained
+
+- **`result`**: stores all valid unique triplets found so far.
+- **`i`**: the index of the fixed first element of the current triplet.
+- **`left`**: the pointer that moves rightward to make the sum larger.
+- **`right`**: the pointer that moves leftward to make the sum smaller.
+- **`sum`**: the current total `nums[i] + nums[left] + nums[right]` used to decide how to move the pointers.
+
+### Why This Works
+
+For each fixed index `i`, the code searches the rest of the sorted array for a pair that completes the triplet.
+
+Because the array is sorted:
+- moving `left` right increases the value at `left`
+- moving `right` left decreases the value at `right`
+
+So each pointer move is logically correct based on whether the current sum is too small or too large.
+
+The duplicate-skipping logic is also essential for correctness:
+- skipping duplicate `i` values avoids rebuilding the same family of triplets
+- skipping duplicate `left` and `right` values after a match avoids adding the same triplet again
+
+Together, that guarantees the method finds every valid triplet exactly once.
+
+### Trick Used
+
+There is no hidden trick beyond two practical ideas:
+- sort first so pointer movement becomes meaningful
+- skip duplicates immediately when choosing `i` and after finding a valid triplet
+
+That duplicate handling is what turns a correct sum-finding solution into a correct **unique triplet** solution.
+
+### Edge Cases Handled
+
+1. **Duplicate-heavy input** like `[-1,-1,-1,2,2]`
+   - the code skips repeated `i`, `left`, and `right` values
+   - duplicate triplets are not added multiple times
+
+2. **All zeros** like `[0,0,0]`
+   - the sorted array is still `[0,0,0]`
+   - the code adds `[0,0,0]` once, then skips duplicates correctly
+
+3. **No valid triplet** like `[0,1,1]`
+   - pointer movement finishes without ever seeing `sum == 0`
+   - `result` stays empty
+
+4. **Already sorted or reverse-sorted input**
+   - `Arrays.sort(nums)` normalizes the order first
+   - the rest of the logic works the same way
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n²)`** — sorting costs `O(n log n)`, and then for each index `i`, the `left`/`right` scan is linear. Across all starting positions, the quadratic scan dominates.
+- **Space Complexity: `O(1)` auxiliary** — aside from the output list, the algorithm only uses a few variables after sorting the array in place.

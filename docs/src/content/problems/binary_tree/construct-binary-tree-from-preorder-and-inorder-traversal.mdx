@@ -4,18 +4,22 @@ difficulty: "Medium"
 topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/ConstructBinaryTreeFromPreorderAndInOrderTraversal.java"
-patterns: ["dfs","divide-and-conquer"]
+patterns: ["dfs", "divide-and-conquer"]
 tags: []
-timeComplexity: "O(n)"
-spaceComplexity: "O(n)"
+timeComplexity: "O(n²)"
+spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
 similarProblems: []
-enrichmentNeeded: true
+enrichmentNeeded: false
 ---
 
-Given two integer arrays `preorder` and `inorder` where `preorder` is the preorder traversal of a binary tree and `inorder` is the inorder traversal of the same tree, construct and return _the binary tree_.
+Given two integer arrays `preorder` and `inorder` where:
+- `preorder` is the preorder traversal of a binary tree
+- `inorder` is the inorder traversal of the same tree
+
+Construct and return *the binary tree*.
 
 **Example 1:**
 
@@ -34,20 +38,9 @@ Output: [-1]
 **Constraints:**
 
 - `1 <= preorder.length <= 3000`
-
 - `inorder.length == preorder.length`
-
 - `-3000 <= preorder[i], inorder[i] <= 3000`
-
 - `preorder` and `inorder` consist of **unique** values.
-
-- Each value of `inorder` also appears in `preorder`.
-
-- `preorder` is **guaranteed** to be the preorder traversal of the tree.
-
-- `inorder` is **guaranteed** to be the inorder traversal of the tree.
-
-**Patterns:** `sliding-window`
 
 ## Java Solution
 
@@ -88,25 +81,107 @@ public class ConstructBinaryTreeFromPreorderAndInOrderTraversal {
 
 ## Explanation
 
+### Problem Analysis
+
+Preorder visits: root, left, right. Inorder visits: left, root, right. The first preorder element is always the root. Finding this root in inorder divides the array: elements before it are in the left subtree, after it are in the right. Properly partitioning both arrays for recursive calls is the challenge.
+
 ### Approach
 
-**Construct Binary Tree from Preorder and Inorder Traversal** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+Divide-and-conquer strategy:
+1. First preorder element is the root
+2. Find this root in inorder to divide into left and right
+3. Count left subtree size using inorder partition
+4. Partition preorder using left subtree size
+5. Recursively build left and right subtrees
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+
+**Recursive divide-and-conquer with range-based partitioning**.
+
+### Key Insight
+
+The key is connecting two traversals: Preorder tells us which node is root; inorder tells us which nodes are left vs. right. Locating preorder[0] in inorder determines left subtree size, which partitions preorder correctly.
 
 ### Code Walkthrough
 
-The solution is implemented in `buildTree(int[] preorder, int[] inorder)`:
+**Entry:**
+```java
+public TreeNode buildTree(int[] preorder, int[] inorder) {
+    return buildTree(preorder, 0, preorder.length - 1,
+            inorder, 0, inorder.length - 1);
+}
+```
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+**Helper:**
+```java
+private TreeNode buildTree(int[] preorder, int preStart, int preEnd,
+                           int[] inorder, int inStart, int inEnd) {
+    if (preStart > preEnd || inStart > inEnd) {
+        return null;  // Base case
+    }
+    TreeNode root = new TreeNode(preorder[preStart]);
+    int rootIndex = findRootIndex(inorder, inStart, inEnd, root.val);
+    int leftTreeSize = rootIndex - inStart;
+    root.left = buildTree(preorder, preStart + 1, preStart + leftTreeSize,
+            inorder, inStart, rootIndex - 1);
+    root.right = buildTree(preorder, preStart + leftTreeSize + 1, preEnd,
+            inorder, rootIndex + 1, inEnd);
+    return root;
+}
+```
 
-&gt; **Note:** This solution also uses the **divide and conquer — split, solve recursively, combine** technique.
+1. **Base case**: Invalid ranges return null.
+2. **Root creation**: First preorder element is root.
+3. **Find partition**: Locate root in inorder.
+4. **Calculate size**: Left subtree size = rootIndex - inStart.
+5. **Partition preorder**: Elements 1 to leftTreeSize+1 are left; rest are right.
+6. **Recurse**: Build left and right with partitioned ranges.
+
+### Example Walkthrough
+
+For `preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]`:
+
+1. Root = 3 (preorder[0])
+2. Find 3 in inorder → index 1
+3. Left subtree size = 1 - 0 = 1
+4. Preorder left: indices 1-1 ([9])
+5. Inorder left: indices 0-0 ([9])
+6. Preorder right: indices 2-4 ([20,15,7])
+7. Inorder right: indices 2-4 ([15,20,7])
+8. Recurse on both sides...
+
+### Key Variables Explained
+
+- **`preStart`, `preEnd`**: Preorder range
+- **`inStart`, `inEnd`**: Inorder range
+- **`leftTreeSize`**: Number of left subtree nodes
+- **`rootIndex`**: Position of root in inorder
+
+### Why This Works
+
+1. **Preorder first element**: Always root.
+2. **Inorder partition**: Elements before root are left; after are right.
+3. **Size calculation**: leftTreeSize bridges the two arrays.
+4. **Correct partitioning**: Ensures each recursive call processes correct subset.
+
+### Trick Used
+
+Using `leftTreeSize` to partition preorder:
+
+```java
+int leftTreeSize = rootIndex - inStart;
+```
+
+This single value bridges both arrays without knowing explicit values.
+
+### Edge Cases Handled
+
+1. **Single node**: Both arrays have one element.
+2. **Left-skewed**: All inorder elements before root.
+3. **Right-skewed**: All inorder elements after root.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n²)`** — Each recursive level does O(n) linear search in findRootIndex. O(n) levels = O(n²). (Optimizable to O(n) with HashMap.)
+- **Space Complexity: `O(h)`** — Recursion depth. Worst case O(n) for skewed trees.
+

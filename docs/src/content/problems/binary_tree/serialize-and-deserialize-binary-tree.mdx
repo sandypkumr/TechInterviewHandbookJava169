@@ -4,22 +4,22 @@ difficulty: "Hard"
 topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/serialize-and-deserialize-binary-tree"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/SerializeAndDeserializeBinaryTree.java"
-patterns: ["bfs","dfs"]
-tags: ["design"]
+patterns: ["dfs"]
+tags: []
 timeComplexity: "O(n)"
-spaceComplexity: "O(n)"
-isPremium: false
+spaceComplexity: "O(h)"
+isPremium: true
 hasProblemStatement: false
-javaApis: ["StringBuilder","Integer.parseInt"]
+javaApis: ["StringBuilder"]
 similarProblems: []
-enrichmentNeeded: true
+enrichmentNeeded: false
 ---
 
 Serialization is the process of converting a data structure or object into a sequence of bits so that it can be stored in a file or memory buffer, or transmitted across a network connection link to be reconstructed later in the same or another computer environment.
 
 Design an algorithm to serialize and deserialize a binary tree. There is no restriction on how your serialization/deserialization algorithm should work. You just need to ensure that a binary tree can be serialized to a string and this string can be deserialized to the original tree structure.
 
-**Clarification:** The input/output format is the same as how LeetCode serializes a binary tree. You do not necessarily need to follow this format, so please be creative and come up with different approaches yourself.
+**Clarification:** The input tree is not necessarily a full binary tree. Each node in the tree contains an integer value.
 
 **Example 1:**
 
@@ -40,8 +40,6 @@ Output: []
 - The number of nodes in the tree is in the range `[0, 10^4]`.
 
 - `-1000 <= Node.val <= 1000`
-
-**Patterns:** `sliding-window`
 
 ## Java Solution
 
@@ -87,25 +85,164 @@ public class SerializeAndDeserializeBinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+
+Serialization must preserve both tree structure and node values. A simple level-order listing (e.g., `[1,2,3]`) loses structure information; we need to encode null pointers so we can reconstruct the exact tree. Pre-order traversal with null markers is ideal: it encodes the full structure and can be uniquely reconstructed.
+
 ### Approach
 
-**Serialize and Deserialize Binary Tree** requires visiting nodes in order of their distance from the source — exactly what Breadth-First Search (BFS) guarantees. By processing nodes level by level via a queue (FIFO), BFS finds the shortest path in an unweighted graph and naturally handles all reachability questions.
+**Serialize:** Pre-order DFS traversal appending node values and "null" markers.
+- Root, left subtree, right subtree
+- Append "null" for null nodes
+- Use commas as delimiters
 
-Think of it as ripples spreading outward from a stone dropped in water. All nodes at distance 1 are visited before any node at distance 2, and so on. This property makes BFS the right tool whenever "minimum steps" or "level order" is part of the problem.
+**Deserialize:** Split the string and reconstruct using pre-order format:
+- Maintain an index pointer into the array
+- Use pre-order reconstruction: if current token is "null", return null
+- Otherwise, create node and recursively restore left and right children
+
+### Pattern Used
+
+**DFS with string serialization/deserialization** using pre-order traversal.
+
+### Key Insight
+
+The key insight is that pre-order traversal fully encodes tree structure when null nodes are explicitly marked. During deserialization, following the same pre-order pattern reconstructs the exact original tree because null markers tell us where branches end.
 
 ### Code Walkthrough
 
-The solution is implemented in `serialize(TreeNode root)`:
+**Serialize:**
+```java
+public String serialize(TreeNode root) {
+    StringBuilder sb = new StringBuilder();
+    serializeHelper(root, sb);
+    return sb.toString();
+}
 
-1. Add the source node(s) to a queue and mark them visited.
-2. While the queue is non-empty, poll the front node.
-3. Process the current node (update answer, record level, etc.).
-4. Enqueue all unvisited neighbours and mark them visited immediately to avoid re-processing.
-5. The first time you reach the target, you have the shortest path.
+private void serializeHelper(TreeNode node, StringBuilder sb) {
+    if (node == null) {
+        sb.append("null,");  // Encode null node
+        return;
+    }
+    sb.append(node.val).append(",");  // Encode node value
+    serializeHelper(node.left, sb);   // Pre-order: left subtree
+    serializeHelper(node.right, sb);  // Pre-order: right subtree
+}
+```
 
-&gt; **Note:** This solution also uses the **DFS to explore all paths or connected components recursively** technique.
+Pre-order traversal appending values and nulls with comma delimiters.
+
+**Deserialize:**
+```java
+public TreeNode deserialize(String data) {
+    String[] nodes = data.split(",");  // Split by delimiter
+    return deserializeHelper(nodes, new int[]{0});
+}
+
+private TreeNode deserializeHelper(String[] nodes, int[] index) {
+    if (index[0] >= nodes.length || nodes[index[0]].equals("null")) {
+        index[0]++;  // Advance pointer
+        return null;
+    }
+    TreeNode node = new TreeNode(Integer.parseInt(nodes[index[0]++]));
+    node.left = deserializeHelper(nodes, index);   // Pre-order: left
+    node.right = deserializeHelper(nodes, index);  // Pre-order: right
+    return node;
+}
+```
+
+Reconstruct following pre-order: root, then left subtree, then right subtree. Index array enables pass-by-reference in Java.
+
+### Example Walkthrough
+
+**Serialize** `[1,2,3,null,null,4,5]`:
+
+```
+       1
+      / \
+     2   3
+        / \
+       4   5
+```
+
+Pre-order traversal:
+1. Visit 1: append "1,"
+2. Visit 2: append "2,"
+   - Visit null: append "null,"
+   - Visit null: append "null,"
+3. Visit 3: append "3,"
+   - Visit 4: append "4,"
+     - Visit null: append "null,"
+     - Visit null: append "null,"
+   - Visit 5: append "5,"
+     - Visit null: append "null,"
+     - Visit null: append "null,"
+
+Result: `"1,2,null,null,3,4,null,null,5,null,null,"`
+
+**Deserialize** `"1,2,null,null,3,4,null,null,5,null,null,"`:
+
+Split into: `["1","2","null","null","3","4","null","null","5","null","null",""]`
+
+1. index=0, "1": Create node(1), recurse left
+2. index=1, "2": Create node(2), recurse left
+3. index=2, "null": Return null (advance to 3)
+4. Back to 2, recurse right
+5. index=3, "null": Return null (advance to 4)
+6. Back to 1, recurse right
+7. index=4, "3": Create node(3), recurse left
+8. index=5, "4": Create node(4), recurse left
+9. index=6, "null": Return null (advance to 7)
+10. Back to 4, recurse right
+11. index=7, "null": Return null (advance to 8)
+12. Back to 3, recurse right
+13. index=8, "5": Create node(5), recurse left
+14. index=9, "null": Return null
+15. Back to 5, recurse right
+16. index=10, "null": Return null
+
+Result reconstructs original tree ✓
+
+### Key Variables Explained
+
+- **`sb`**: StringBuilder for efficient string building
+- **`index`**: Array wrapper for pass-by-reference in deserialization
+- **`"null"`**: String marker for null nodes
+- **Pre-order**: Root, left, right traversal order ensures unambiguous encoding
+
+### Why This Works
+
+**Serialization correctness:**
+1. Pre-order traversal visits every node
+2. "null" markers encode structure
+3. Comma delimiters separate tokens
+
+**Deserialization correctness:**
+1. Following pre-order reconstruction matches serialization order
+2. When we see "null", we know that branch is empty
+3. Index pointer ensures we process tokens in correct sequence
+4. Recursive structure restoration mirrors pre-order traversal
+
+### Trick Used
+
+The main trick is using an array `int[]` for the index:
+
+```java
+return deserializeHelper(nodes, new int[]{0});
+```
+
+This allows pass-by-reference in Java. Instead of returning the updated index, the array is modified in place, enabling clean recursive code.
+
+### Edge Cases Handled
+
+1. **Empty tree**: Serialize returns "null,", deserialize recognizes it and returns null tree
+2. **Single node**: Correctly serialized and deserialized
+3. **Skewed tree**: Pre-order works regardless of shape
+4. **Large values**: Integer parsing handles the range
+5. **Negative values**: Correctly encoded and decoded
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(n)`** — the BFS queue can hold up to O(n) nodes at the widest level.
+- **Time Complexity: `O(n)`** — Both serialize and deserialize visit each node exactly once
+- **Space Complexity: `O(h)`** — Recursion stack depth plus serialized string (proportional to n for tree structure)
+

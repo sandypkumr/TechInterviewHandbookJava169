@@ -38,14 +38,11 @@ Explanation: 2 does not exist in nums so return -1
 **Constraints:**
 
 - `1 <= nums.length <= 10^4`
-
 - `-10^4 < nums[i], target < 10^4`
-
 - All the integers in `nums` are **unique**.
-
 - `nums` is sorted in ascending order.
 
-**Patterns:** `sliding-window`, `binary-search`
+**Patterns:** `binary-search`
 
 ## Java Solution
 
@@ -76,23 +73,157 @@ public class BinarySearch {
 
 ## Explanation
 
+### Problem Analysis
+
+The array is already sorted in ascending order, and we need to return the index of `target` if it exists.
+
+That sorted order is what makes this problem easy to solve efficiently. Once we check the middle element, we can tell which half cannot possibly contain the target.
+
+- If the middle value is too small, the target must be on the right.
+- If the middle value is too large, the target must be on the left.
+- If the middle value matches, we are done.
+
+So the problem is not about scanning values one by one. It is about repeatedly cutting down the valid search range.
+
 ### Approach
 
-**Binary Search** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The solution keeps two pointers:
+- `left` for the start of the current search range
+- `right` for the end of the current search range
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+As long as `left <= right`, there is still at least one candidate index to check.
+
+On each iteration:
+- compute the middle index `mid`
+- compare `nums[mid]` with `target`
+- throw away the half that cannot contain the answer
+
+If the target is found, return its index immediately. If the range becomes empty, return `-1`.
+
+### Pattern Used
+
+This solution uses the standard **binary search** pattern on a sorted array.
+
+There is no extra pattern layered on top of it. The code simply relies on direct binary search by shrinking the search interval after each middle comparison.
+
+### Key Insight
+
+The key invariant is:
+
+> If the target exists, it must always remain inside the current range `[left, right]`.
+
+That means every comparison at `mid` lets us safely remove one half of the current range.
+
+For example, if `nums[mid] < target`, then all values from `left` through `mid` are too small because the array is sorted. None of them can be the answer, so the code moves `left` to `mid + 1`.
 
 ### Code Walkthrough
 
-The solution is implemented in `search(int[] nums, int target)`:
+```java
+public int search(int[] nums, int target) {
+    int left = 0;
+    int right = nums.length - 1;
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+
+        if (nums[mid] == target) {
+            return mid;
+        } else if (nums[mid] < target) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return -1;
+}
+```
+
+How the method works:
+
+1. `left = 0` and `right = nums.length - 1` make the whole array searchable at the start.
+2. The loop condition `left <= right` means the current search range is still valid.
+3. `mid = left + (right - left) / 2` picks the middle index.
+   - This form is preferred over `(left + right) / 2` because it avoids potential integer overflow.
+4. If `nums[mid] == target`, the answer is found and the method returns `mid`.
+5. If `nums[mid] < target`, the target must be in the right half, so `left = mid + 1`.
+6. Otherwise, `nums[mid] > target`, so the target must be in the left half, and `right = mid - 1`.
+7. If the loop ends, no index remains to search, so the method returns `-1`.
+
+### Example Walkthrough
+
+For `nums = [-1,0,3,5,9,12]` and `target = 9`:
+
+| Step | `left` | `right` | `mid` | `nums[mid]` | Decision |
+|------|--------|---------|-------|-------------|----------|
+| 1 | 0 | 5 | 2 | 3 | `3 < 9`, move right by setting `left = 3` |
+| 2 | 3 | 5 | 4 | 9 | match found, return `4` |
+
+For `target = 2` on the same array:
+
+| Step | `left` | `right` | `mid` | `nums[mid]` | Decision |
+|------|--------|---------|-------|-------------|----------|
+| 1 | 0 | 5 | 2 | 3 | `3 > 2`, move left by setting `right = 1` |
+| 2 | 0 | 1 | 0 | -1 | `-1 < 2`, move right by setting `left = 1` |
+| 3 | 1 | 1 | 1 | 0 | `0 < 2`, move right by setting `left = 2` |
+
+Now `left = 2` and `right = 1`, so `left > right`. The range is empty, which means `2` is not present, so the method returns `-1`.
+
+### Key Variables Explained
+
+- **`left`**: the first index in the current search range.
+- **`right`**: the last index in the current search range.
+- **`mid`**: the middle index used to decide which half to keep.
+- **`nums[mid]`**: the current value being compared with `target`.
+- **`target`**: the value we are trying to find.
+
+### Why This Works
+
+The array is sorted, so the comparison with `nums[mid]` gives reliable information about every value on each side of `mid`.
+
+- If `nums[mid] < target`, then every element from `left` to `mid` is too small.
+- If `nums[mid] > target`, then every element from `mid` to `right` is too large.
+- If `nums[mid] == target`, that index is correct.
+
+Because each update keeps only the half that could still contain the target, the invariant remains true after every iteration.
+
+Eventually one of two things happens:
+- we find the target and return its index
+- the range becomes empty, proving the target does not exist in the array
+
+### Trick Used
+
+There is no special trick beyond standard binary search.
+
+The only small implementation detail worth calling out is the midpoint formula:
+
+`left + (right - left) / 2`
+
+It is the safe standard way to compute the middle index.
+
+### Edge Cases Handled
+
+1. **Target is the first element**
+   - the range keeps shrinking leftward until that index is checked
+   - the method returns `0`
+
+2. **Target is the last element**
+   - the range keeps shrinking rightward until that index is checked
+   - the method returns the last index
+
+3. **Target does not exist**
+   - eventually `left` becomes greater than `right`
+   - the method returns `-1`
+
+4. **Single-element array** like `[5]`
+   - the loop checks that one element
+   - it returns `0` if it matches, otherwise `-1`
+
+5. **Target smaller than all values or larger than all values**
+   - the valid range disappears naturally
+   - the method still returns `-1` correctly
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log n)`** — the search space is halved at each step (binary search).
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log n)`** — each iteration removes half of the remaining search range.
+- **Space Complexity: `O(1)`** — the algorithm uses only a few integer variables in addition to the input array.

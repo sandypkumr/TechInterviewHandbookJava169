@@ -4,7 +4,7 @@ difficulty: "Hard"
 topic: "binary_search"
 leetcodeUrl: "https://leetcode.com/problems/median-of-two-sorted-arrays"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_search/MedianOfTwoSortedArrays.java"
-patterns: ["binary-search","divide-and-conquer"]
+patterns: ["binary-search"]
 tags: ["classic","hard"]
 timeComplexity: "O(log(min(m,n)))"
 spaceComplexity: "O(1)"
@@ -38,15 +38,10 @@ Explanation: merged array = [1,2,3,4] and median is (2 + 3) / 2 = 2.5.
 **Constraints:**
 
 - `nums1.length == m`
-
 - `nums2.length == n`
-
 - `0 <= m <= 1000`
-
 - `0 <= n <= 1000`
-
 - `1 <= m + n <= 2000`
-
 - `-10^6 <= nums1[i], nums2[i] <= 10^6`
 
 ## Java Solution
@@ -93,25 +88,225 @@ public class MedianOfTwoSortedArrays {
 
 ## Explanation
 
+### Problem Analysis
+
+The hard part is not computing the median after merging. The hard part is finding it **without actually merging the arrays**.
+
+A full merge would make the problem easy, but it would take `O(m + n)` time. This solution avoids that by working directly with the positions where the two sorted arrays should be split.
+
+The goal is to divide the combined sorted order into:
+- a left half
+- a right half
+
+If we find a split where:
+- the left half contains the correct number of elements, and
+- every value on the left is less than or equal to every value on the right
+
+then the median is determined by the values right at that boundary.
+
 ### Approach
 
-**Median of Two Sorted Arrays** has a monotonic property: we can always determine whether the answer lies in the left or right half of the remaining search space. Binary search exploits this by halving the space at every step, achieving O(log n) instead of O(n) linear scan.
+The code binary-searches the partition position in the **smaller array**.
 
-Picture looking up a word in a dictionary: you open to the middle, decide whether your word is in the left or right half, and discard the other half entirely. After at most log₂(n) steps you've found your word — or confirmed it isn't there.
+If `partitionX` elements from `nums1` go into the left half, then the number of elements from `nums2` that must also go into the left half is fixed:
+
+`partitionY = (x + y + 1) / 2 - partitionX`
+
+So each binary-search step tries one partition in `nums1`, derives the matching partition in `nums2`, and checks whether the split is valid.
+
+The split is valid when:
+- `maxLeftX <= minRightY`
+- `maxLeftY <= minRightX`
+
+If that condition fails:
+- `maxLeftX > minRightY` means the cut in `nums1` is too far right, so move left
+- otherwise, the cut in `nums1` is too far left, so move right
+
+### Pattern Used
+
+This solution mainly uses **binary search on a partition boundary**.
+
+It is not merging arrays and it is not using a generic divide-and-conquer combine step. The key idea is to binary-search the cut position in the smaller sorted array until the combined left/right split becomes valid.
+
+### Key Insight
+
+We never need the full merged array.
+
+We only need the correct partition so that:
+- the left side has the proper size
+- the left side contains only values less than or equal to the right side
+
+Once that happens:
+- if the total number of elements is odd, the median is the largest value on the left
+- if the total number of elements is even, the median is the average of the largest value on the left and the smallest value on the right
+
+That is why the code focuses entirely on the boundary values around the partitions.
 
 ### Code Walkthrough
 
-The solution is implemented in `findMedianSortedArrays(int[] nums1, int[] nums2)`:
+```java
+public double findMedianSortedArrays(int[] nums1, int[] nums2) {
+    if (nums1.length > nums2.length) {
+        return findMedianSortedArrays(nums2, nums1);
+    }
 
-1. Define left and right boundaries covering all possible answers.
-2. Compute mid = left + (right - left) / 2 (avoids integer overflow).
-3. Evaluate the predicate at mid to decide which half to discard.
-4. Narrow the range: move left = mid + 1 or right = mid - 1.
-5. Repeat until left &gt; right; the answer is typically left (or right + 1).
+    int x = nums1.length;
+    int y = nums2.length;
+    int low = 0, high = x;
 
-&gt; **Note:** This solution also uses the **divide and conquer — split, solve recursively, combine** technique.
+    while (low <= high) {
+        int partitionX = (low + high) / 2;
+        int partitionY = (x + y + 1) / 2 - partitionX;
+
+        int maxLeftX = (partitionX == 0) ? Integer.MIN_VALUE : nums1[partitionX - 1];
+        int minRightX = (partitionX == x) ? Integer.MAX_VALUE : nums1[partitionX];
+
+        int maxLeftY = (partitionY == 0) ? Integer.MIN_VALUE : nums2[partitionY - 1];
+        int minRightY = (partitionY == y) ? Integer.MAX_VALUE : nums2[partitionY];
+
+        if (maxLeftX <= minRightY && maxLeftY <= minRightX) {
+            if ((x + y) % 2 == 0) {
+                return ((double) Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2;
+            } else {
+                return (double) Math.max(maxLeftX, maxLeftY);
+            }
+        } else if (maxLeftX > minRightY) {
+            high = partitionX - 1;
+        } else {
+            low = partitionX + 1;
+        }
+    }
+    throw new IllegalArgumentException("Input arrays are not sorted or invalid.");
+}
+```
+
+How the method works:
+
+1. If `nums1` is longer than `nums2`, the method calls itself with the arrays swapped.
+   - This guarantees that binary search happens on the smaller array.
+   - That is why the runtime depends on `min(m, n)`.
+
+2. `x` and `y` store the lengths of `nums1` and `nums2`.
+
+3. `low = 0` and `high = x` mean the partition in `nums1` can be anywhere from before the first element to after the last element.
+
+4. For each iteration:
+   - `partitionX` is the current cut in `nums1`
+   - `partitionY` is chosen so the total size of the left half stays correct
+
+5. The code reads four boundary values:
+   - `maxLeftX` and `maxLeftY` are the values just left of the cuts
+   - `minRightX` and `minRightY` are the values just right of the cuts
+
+6. If the cross-comparisons are valid, the partition is correct.
+   - odd total length → return `Math.max(maxLeftX, maxLeftY)`
+   - even total length → return the average of `Math.max(maxLeftX, maxLeftY)` and `Math.min(minRightX, minRightY)`
+
+7. If `maxLeftX > minRightY`, too many elements from `nums1` were placed on the left, so the code moves `high` left.
+
+8. Otherwise, too few elements from `nums1` were placed on the left, so the code moves `low` right.
+
+9. The final `IllegalArgumentException` is a guard for invalid input, though valid sorted input should always return from inside the loop.
+
+### Example Walkthrough
+
+Take `nums1 = [1,2]` and `nums2 = [3,4]`.
+
+The total length is `4`, so the answer should be the average of the two middle values.
+
+#### First iteration
+
+- `x = 2`, `y = 2`
+- `low = 0`, `high = 2`
+- `partitionX = 1`
+- `partitionY = (2 + 2 + 1) / 2 - 1 = 1`
+
+Boundary values:
+- `maxLeftX = 1`
+- `minRightX = 2`
+- `maxLeftY = 3`
+- `minRightY = 4`
+
+Check the partition:
+- `maxLeftX <= minRightY` → `1 <= 4`, true
+- `maxLeftY <= minRightX` → `3 <= 2`, false
+
+So the split is not valid yet. We need more elements from `nums1` on the left side, so the code moves right:
+- `low = partitionX + 1 = 2`
+
+#### Second iteration
+
+- `partitionX = 2`
+- `partitionY = 0`
+
+Boundary values:
+- `maxLeftX = 2`
+- `minRightX = Integer.MAX_VALUE`
+- `maxLeftY = Integer.MIN_VALUE`
+- `minRightY = 3`
+
+Now both checks pass:
+- `2 <= 3`, true
+- `Integer.MIN_VALUE <= Integer.MAX_VALUE`, true
+
+So the partition is correct. Because the total length is even, the code returns:
+
+`(Math.max(2, Integer.MIN_VALUE) + Math.min(Integer.MAX_VALUE, 3)) / 2 = (2 + 3) / 2 = 2.5`
+
+### Key Variables Explained
+
+- **`x` / `y`**: lengths of `nums1` and `nums2`
+- **`low` / `high`**: current binary-search range for the partition position in `nums1`
+- **`partitionX`**: number of elements from `nums1` placed in the combined left half
+- **`partitionY`**: number of elements from `nums2` placed in the combined left half
+- **`maxLeftX` / `maxLeftY`**: largest values immediately to the left of each partition
+- **`minRightX` / `minRightY`**: smallest values immediately to the right of each partition
+
+### Why This Works
+
+At every step, the algorithm keeps the left half size correct by computing `partitionY` from `partitionX`.
+
+That means the only remaining question is whether the ordering across the two cuts is correct. The partition is valid exactly when:
+- `maxLeftX <= minRightY`
+- `maxLeftY <= minRightX`
+
+Those two checks guarantee that every element in the combined left half is less than or equal to every element in the combined right half.
+
+If `maxLeftX > minRightY`, the cut in `nums1` is too far right, so moving left is correct.
+If `maxLeftY > minRightX`, the cut in `nums1` is too far left, so moving right is correct.
+
+Because both arrays are sorted, each decision safely discards half of the remaining partition positions. Once the valid partition is found, the median must sit at the boundary between the two halves.
+
+### Trick Used
+
+The useful trick here is the use of **sentinel values**:
+- `Integer.MIN_VALUE` when a partition has no left element
+- `Integer.MAX_VALUE` when a partition has no right element
+
+That lets the code treat edge partitions the same way as middle partitions without adding separate special-case branches.
+
+The other practical trick is swapping the arrays first so binary search always runs on the smaller one.
+
+### Edge Cases Handled
+
+1. **One array is empty**
+   - The partition logic still works because all left-half elements can come from the other array.
+   - The sentinel values make the boundary checks simple.
+
+2. **Odd total length**
+   - The formula `(x + y + 1) / 2` gives the left half one extra element.
+   - The median becomes the maximum value on the left side.
+
+3. **Even total length**
+   - The median becomes the average of the two boundary values around the split.
+
+4. **Partition at the start or end of an array**
+   - `Integer.MIN_VALUE` and `Integer.MAX_VALUE` handle those boundaries cleanly.
+
+5. **`nums1` longer than `nums2`**
+   - The initial swap ensures the search still runs on the smaller array.
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(log(min(m,n)))`** — see the analysis for full details.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(log(min(m,n)))`** — the binary search runs only over the smaller array, and each iteration does constant work.
+- **Space Complexity: `O(1)`** — the algorithm uses only a fixed number of variables. The initial swap is just one extra method call and does not allocate any extra data structure.

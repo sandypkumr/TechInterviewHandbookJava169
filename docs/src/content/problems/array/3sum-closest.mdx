@@ -40,12 +40,10 @@ Explanation: The sum that is closest to the target is 0. (0 + 0 + 0 = 0).
 **Constraints:**
 
 - `3 <= nums.length <= 500`
-
 - `-1000 <= nums[i] <= 1000`
-
 - `-10^4 <= target <= 10^4`
 
-**Patterns:** `sliding-window`
+**Patterns:** `two-pointers`
 
 ## Java Solution
 
@@ -92,23 +90,182 @@ public class ThreeSumClosest {
 
 ## Explanation
 
+### Problem Analysis
+
+We need to choose exactly three numbers and return the sum that is **closest** to `target`.
+
+This is different from the regular 3Sum problem:
+- we do not need all triplets
+- we do not need triplets with sum exactly equal to a value unless we happen to find one
+- we only care about the triplet whose sum has the smallest absolute difference from `target`
+
+A brute-force solution would try all possible triplets, but that would take `O(n^3)`. The Java code avoids that by sorting once and then searching intelligently.
+
 ### Approach
 
-**3Sum Closest** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+The solution sorts the array and then fixes one number at a time using index `i`.
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+For each fixed `nums[i]`, it uses two pointers:
+- `left = i + 1`
+- `right = nums.length - 1`
+
+Then it checks the triplet sum:
+- if the sum is closer to `target` than anything seen before, update the answer
+- if the sum is too small, move `left` rightward to make the sum larger
+- if the sum is too large, move `right` leftward to make the sum smaller
+- if the sum is exactly equal to `target`, return immediately
+
+### Pattern Used
+
+This solution uses the **sorted two-pointers** pattern.
+
+After sorting, the code fixes one element and uses two moving pointers to search for the best pair among the remaining elements. That is the main idea here, not a sliding window.
+
+### Key Insight
+
+Once the array is sorted, pointer movement becomes meaningful.
+
+If `currentSum < target`, the only way to possibly get closer is to increase the sum, so the code moves `left` forward.
+
+If `currentSum > target`, the only way to possibly get closer is to decrease the sum, so the code moves `right` backward.
+
+That lets the algorithm skip a large number of useless combinations.
 
 ### Code Walkthrough
 
-The solution is implemented in `threeSumClosest(int[] nums, int target)`:
+```java
+public int threeSumClosest(int[] nums, int target) {
+    int closestSum = Integer.MAX_VALUE;
+    int minDiff = Integer.MAX_VALUE;
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+    Arrays.sort(nums);
+
+    for (int i = 0; i < nums.length - 2; i++) {
+        int left = i + 1;
+        int right = nums.length - 1;
+
+        while (left < right) {
+            int currentSum = nums[i] + nums[left] + nums[right];
+            int currentDiff = Math.abs(currentSum - target);
+
+            if (currentDiff < minDiff) {
+                minDiff = currentDiff;
+                closestSum = currentSum;
+            }
+
+            if (currentSum < target) {
+                left++;
+            } else if (currentSum > target) {
+                right--;
+            } else {
+                return currentSum;
+            }
+        }
+    }
+
+    return closestSum;
+}
+```
+
+How the method works:
+
+1. `closestSum` stores the best triplet sum found so far.
+2. `minDiff` stores the smallest absolute difference seen so far.
+3. `Arrays.sort(nums)` sorts the array so pointer moves can increase or decrease the sum in a predictable way.
+4. The `for` loop fixes the first number of the triplet at index `i`.
+5. `left` and `right` search for the best second and third numbers for that fixed `i`.
+6. `currentSum` is the sum of the current triplet.
+7. `currentDiff = Math.abs(currentSum - target)` measures how far this sum is from the target.
+8. If `currentDiff < minDiff`, the code updates both `minDiff` and `closestSum`.
+9. Then the code moves one pointer based on whether the sum is too small or too large.
+10. If `currentSum == target`, the method returns immediately because a difference of `0` is the best possible result.
+
+### Example Walkthrough
+
+For `nums = [-1,2,1,-4]` and `target = 1`:
+
+1. Sort the array:
+   - `[-4, -1, 1, 2]`
+
+2. Start with `i = 0`
+   - fixed value = `-4`
+   - `left = 1`, `right = 3`
+   - `currentSum = -4 + -1 + 2 = -3`
+   - `currentDiff = |-3 - 1| = 4`
+   - update `minDiff = 4`, `closestSum = -3`
+   - sum is too small, so move `left` to `2`
+
+3. Still with `i = 0`
+   - `left = 2`, `right = 3`
+   - `currentSum = -4 + 1 + 2 = -1`
+   - `currentDiff = |-1 - 1| = 2`
+   - this is better, so update `minDiff = 2`, `closestSum = -1`
+   - sum is still too small, so move `left` again
+
+4. Now `left == right`, so that inner loop ends.
+
+5. Move to `i = 1`
+   - fixed value = `-1`
+   - `left = 2`, `right = 3`
+   - `currentSum = -1 + 1 + 2 = 2`
+   - `currentDiff = |2 - 1| = 1`
+   - update `minDiff = 1`, `closestSum = 2`
+   - sum is too large, so move `right` leftward
+
+6. The pointers cross, so the search ends and the method returns `2`.
+
+That matches the expected answer.
+
+### Key Variables Explained
+
+- **`closestSum`**: the triplet sum currently closest to `target`.
+- **`minDiff`**: the smallest absolute difference found so far.
+- **`i`**: index of the fixed first element of the triplet.
+- **`left`**: pointer searching from just after `i` toward the middle.
+- **`right`**: pointer searching from the end toward the middle.
+- **`currentSum`**: the sum of `nums[i] + nums[left] + nums[right]`.
+- **`currentDiff`**: the value returned by `Math.abs(currentSum - target)`.
+
+### Why This Works
+
+For each fixed first element, the two-pointer scan considers candidate pairs in a structured way.
+
+Because the array is sorted:
+- moving `left` right makes the total larger
+- moving `right` left makes the total smaller
+
+So the code always moves in the direction that could improve closeness to `target`.
+
+Every time a better difference is found, `closestSum` is updated. Since all useful pointer states are explored for each fixed `i`, the best recorded sum at the end is the correct answer.
+
+### Trick Used
+
+The main trick is very simple:
+- sort the array once
+- use `Math.abs` to measure closeness
+- return early on an exact match
+
+There is no extra hidden trick beyond using sorted order to guide pointer movement.
+
+### Edge Cases Handled
+
+1. **Exact match exists**
+   - the `else` branch returns immediately
+   - this is correct because no sum can be closer than difference `0`
+
+2. **All zeros** like `[0,0,0]`
+   - the code still evaluates the only possible triplet correctly
+   - answer is `0`
+
+3. **Array length is exactly 3**
+   - there is only one possible triplet
+   - the loop structure still handles it correctly
+
+4. **Negative and positive values mixed together**
+   - sorting keeps the pointer logic valid
+   - sums are still compared correctly using `Math.abs`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n²)`** — requires examining all pairs of elements, leading to a quadratic number of comparisons.
-- **Space Complexity: `O(1)`** — only a fixed number of extra variables are used; no data structures that scale with input.
+- **Time Complexity: `O(n²)`** — sorting takes `O(n log n)`, and for each fixed index `i`, the two-pointer scan is linear. The overall runtime is dominated by `O(n²)`.
+- **Space Complexity: `O(1)`** — the algorithm uses only a constant number of extra variables beyond the input array.

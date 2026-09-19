@@ -12,7 +12,7 @@ isPremium: false
 hasProblemStatement: false
 javaApis: ["Math.abs"]
 similarProblems: []
-enrichmentNeeded: true
+enrichmentNeeded: false
 ---
 
 Given an integer array `nums` sorted in **non-decreasing** order, return _an array of **the squares of each number** sorted in non-decreasing order_.
@@ -43,7 +43,7 @@ Output: [4,9,9,49,121]
 
 **Follow up:** Squaring each element and sorting the new array is very trivial, could you find an `O(n)` solution using a different approach?
 
-**Patterns:** `sliding-window`, `binary-search`
+**Patterns:** `two-pointers`
 
 ## Java Solution
 
@@ -72,23 +72,139 @@ public class SquaresOfASortedArray {
 
 ## Explanation
 
+### Problem Analysis
+
+The input array is already sorted, but after squaring, the values do not necessarily stay sorted.
+
+That happens because negative numbers can become large positive values. For example, `-7` and `11` sit at opposite ends of a sorted array, but their squares are `49` and `121`, which are among the largest values in the final answer.
+
+So the real challenge is not just squaring the numbers. It is producing the squared values in sorted order without doing an extra sort afterward.
+
 ### Approach
 
-**Squares of a Sorted Array** exploits sorted order (or a structural property) to let two pointers converge from opposite ends of the array, eliminating the need for a nested loop. When the current pair doesn't satisfy the condition, we know exactly which pointer to advance — so each element is visited at most once, giving O(n) time.
+The code uses two pointers:
+- `left` starts at the beginning of the array
+- `right` starts at the end
 
-Imagine squeezing a tube of toothpaste from both ends simultaneously — instead of trying every possible pair (both ends → O(n²)), you make an informed decision at each step about which end to squeeze next.
+At every step, it compares the absolute values at those two positions.
+
+The larger absolute value must produce the larger square, so that square belongs at the current **end** of the result array. The code writes that square into `result[index]`, then moves the matching pointer inward and shifts `index` left.
+
+### Pattern Used
+
+This is a **two-pointers** solution.
+
+More specifically, it is a two-pointer scan on a sorted array with **backward filling** of the answer array.
+
+### Key Insight
+
+Because the input is sorted, the number with the largest magnitude among the remaining values must be at one of the two ends.
+
+That means the next largest square is always either:
+- `nums[left] * nums[left]`
+- `nums[right] * nums[right]`
+
+So the algorithm never needs to search the middle for the maximum square.
 
 ### Code Walkthrough
 
-The solution is implemented in `sortedSquares(int[] nums)`:
+```java
+public int[] sortedSquares(int[] nums) {
+    int[] result = new int[nums.length];
+    int left = 0;
+    int right = nums.length - 1;
+    int index = nums.length - 1;
+    while (left <= right) {
+        if (Math.abs(nums[left]) > Math.abs(nums[right])) {
+            result[index--] = nums[left] * nums[left];
+            left++;
+        } else {
+            result[index--] = nums[right] * nums[right];
+            right--;
+        }
+    }
+    return result;
+}
+```
 
-1. Sort the array if it isn't already (or confirm the existing order guarantees correctness).
-2. Place one pointer at the start (left = 0) and one at the end (right = n - 1).
-3. Compute the result for the current pair.
-4. If the result is too small, advance left to increase it; if too large, move right backward.
-5. Stop when the pointers meet or cross.
+How the method works:
+
+1. `result` is created with the same length as `nums`.
+2. `left` points to the first element and `right` points to the last element.
+3. `index` starts at the last position in `result`, because the algorithm places the largest squares first.
+4. The loop runs while `left <= right`, so every element gets processed exactly once.
+5. `Math.abs(nums[left]) > Math.abs(nums[right])` decides which side has the larger magnitude.
+6. If the left side is larger, the code squares `nums[left]`, writes it into `result[index]`, and increments `left`.
+7. Otherwise, it squares `nums[right]`, writes it into `result[index]`, and decrements `right`.
+8. In both cases, `index--` moves the write position one step left.
+9. When the loop ends, `result` is already sorted in non-decreasing order.
+
+### Example Walkthrough
+
+For `nums = [-7,-3,2,3,11]`:
+
+| Step | `left` value | `right` value | Larger absolute value | Written to `result[index]` | `result` after step |
+|------|--------------|---------------|------------------------|----------------------------|---------------------|
+| 1 | -7 | 11 | 11 | 121 | `[_, _, _, _, 121]` |
+| 2 | -7 | 3 | -7 | 49 | `[_, _, _, 49, 121]` |
+| 3 | -3 | 3 | 3 | 9 | `[_, _, 9, 49, 121]` |
+| 4 | -3 | 2 | -3 | 9 | `[_, 9, 9, 49, 121]` |
+| 5 | 2 | 2 | 2 | 4 | `[4, 9, 9, 49, 121]` |
+
+Final answer: `[4,9,9,49,121]`
+
+The important detail is that the code fills the answer from the back, not from the front. That matches the fact that each step chooses the **largest remaining** square.
+
+### Key Variables Explained
+
+- **`result`**: the output array that will hold squared values in sorted order.
+- **`left`**: the pointer scanning from the start of `nums`.
+- **`right`**: the pointer scanning from the end of `nums`.
+- **`index`**: the next position to fill in `result`, starting from the back.
+- **`Math.abs(...)`**: used to compare magnitudes, since `-7` and `11` must be compared as `7` and `11` before deciding which square is larger.
+
+### Why This Works
+
+The algorithm maintains a simple invariant:
+
+> After each iteration, the portion `result[index + 1 ... end]` already contains the largest squared values in correct sorted order.
+
+Why this is true:
+- among the numbers still under consideration, the largest square must come from either `left` or `right`
+- the code places that square at the current back position
+- then it removes that value from future consideration by moving the corresponding pointer
+
+So the filled suffix of `result` is always correct, and the remaining unprocessed window still contains exactly the values whose squares have not been placed yet. When the pointers cross, the entire array has been built correctly.
+
+### Trick Used
+
+The main trick is **writing from right to left**.
+
+That lets the algorithm place the largest square immediately, instead of:
+- squaring everything and sorting later
+- building the answer in the wrong order and reversing it afterward
+
+There is no extra hidden trick beyond using the sorted input in a smart way.
+
+### Edge Cases Handled
+
+1. **All negative numbers** like `[-5,-4,-1]`
+   - the largest squares come from the left side first
+   - comparing absolute values handles this naturally
+
+2. **All non-negative numbers** like `[0,2,3]`
+   - the right side keeps providing the largest square
+   - the output is still filled correctly from back to front
+
+3. **Zeros and repeated values** like `[-2,0,0,2]`
+   - ties are fine
+   - the `else` branch handles equal absolute values correctly
+
+4. **Single element** like `[-3]`
+   - the loop runs once
+   - the square is written directly into `result[0]`
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the two pointers together traverse the array at most once — every element is visited at most twice.
-- **Space Complexity: `O(n)`** — auxiliary space proportional to the input size is used.
+- **Time Complexity: `O(n)`** — each iteration moves either `left` or `right`, so each element is processed once.
+- **Space Complexity: `O(n)`** — the implementation creates a separate `result` array of length `n`.

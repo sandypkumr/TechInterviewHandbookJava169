@@ -10,23 +10,23 @@ timeComplexity: "O(n)"
 spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
-javaApis: ["Math.max/min"]
+javaApis: ["Math.max"]
 similarProblems: []
-enrichmentNeeded: true
+enrichmentNeeded: false
 ---
 
 Given the `root` of a binary tree, return _the length of the **diameter** of the tree_.
 
-The **diameter** of a binary tree is the **length** of the longest path between any two nodes in a tree. This path may or may not pass through the `root`.
+The **diameter** of a binary tree is the **length of the longest path** between any two nodes in a tree. This path may or may not pass through the `root`.
 
-The **length** of a path between two nodes is represented by the number of edges between them.
+The **length of a path** between two nodes is represented by the number of edges between them.
 
 **Example 1:**
 
 ```
 Input: root = [1,2,3,4,5]
 Output: 3
-Explanation: 3 is the length of the path [4,2,1,3] or [5,2,1,3].
+Explanation: [4,2,1,3] or [5,2,1,3].
 ```
 
 **Example 2:**
@@ -49,7 +49,7 @@ package binary_tree;
 
 public class DiameterOfBinaryTree {
     public int diameterOfBinaryTree(TreeNode root) {
-        int[] diameter = new int[1]; // Use an array to store the diameter
+        int[] diameter = new int[1];
         calculateHeight(root, diameter);
         return diameter[0];
     }
@@ -62,10 +62,8 @@ public class DiameterOfBinaryTree {
         int leftHeight = calculateHeight(node.left, diameter);
         int rightHeight = calculateHeight(node.right, diameter);
 
-        // Update the diameter if the path through the current node is larger
         diameter[0] = Math.max(diameter[0], leftHeight + rightHeight);
 
-        // Return the height of the current node
         return Math.max(leftHeight, rightHeight) + 1;
     }
 }
@@ -73,23 +71,70 @@ public class DiameterOfBinaryTree {
 
 ## Explanation
 
+### Problem Analysis
+
+The diameter is the longest path between any two nodes. A path through node X has length = leftHeight + rightHeight (in edges, not nodes).
+
 ### Approach
 
-**Diameter of Binary Tree** needs to explore all possible paths or the full extent of a connected region — the classic use-case for Depth-First Search (DFS). DFS dives as deep as possible along one branch before backtracking, making it ideal for connectivity, cycle detection, and exhaustive enumeration.
+DFS to compute heights while tracking the max diameter seen at any node. For each node, diameter through it = leftHeight + rightHeight.
 
-Imagine navigating a maze by always turning left until you hit a dead end, then backtracking to the last junction and trying the next option. DFS systematically explores every possibility without re-visiting the same cell.
+### Pattern Used
+
+**Recursive DFS with global state tracking** (similar to MaximumPathSum).
+
+### Key Insight
+
+The longest path either goes through a node or doesn't. For each node, we track the max diameter seen (using global array), and return the height to the parent.
 
 ### Code Walkthrough
 
-The solution is implemented in `diameterOfBinaryTree(TreeNode root)`:
+1. Base case: null returns height 0.
+2. Recursively get left and right heights.
+3. Update diameter: `leftHeight + rightHeight` is the path through this node.
+4. Return height to parent: `max(leftHeight, rightHeight) + 1`.
 
-1. Choose a starting node and mark it as visited.
-2. Recursively (or with an explicit stack) visit each unvisited neighbour.
-3. Perform the required computation during entry or exit of each node.
-4. Backtrack naturally when recursion returns — the call stack handles the state.
-5. Repeat for all unvisited nodes to cover disconnected components if needed.
+### Example Walkthrough
+
+For `[1,2,3,4,5]`:
+
+```
+       1
+      / \
+     2   3
+    / \
+   4   5
+```
+
+- At 4 (leaf): height = 1, diameter = 0
+- At 5 (leaf): height = 1, diameter = 0
+- At 2: leftHeight = 1, rightHeight = 1, diameter = 2, height = 2
+- At 3 (leaf): height = 1, diameter = 0
+- At 1: leftHeight = 2, rightHeight = 1, diameter = max(2, 3) = 3, height = 3
+
+Result: 3 (path [4,2,1,3] has 3 edges)
+
+### Key Variables Explained
+
+- **`leftHeight`/`rightHeight`**: heights of child subtrees
+- **`diameter[0]`**: global max diameter (using array for pass-by-reference)
+- **`return`**: height for parent to use
+
+### Why This Works
+
+DFS visits every node, computing diameter through each. The global max captures the largest path.
+
+### Trick Used
+
+Using `int[]` array for diameter to enable pass-by-reference in Java (allowing update in recursive calls).
+
+### Edge Cases Handled
+
+1. Single node: diameter = 0
+2. Two nodes: diameter = 1
 
 ### Complexity Analysis
 
-- **Time Complexity: `O(n)`** — the input is processed in a single linear pass.
-- **Space Complexity: `O(h)`** — auxiliary space proportional to the input is required.
+- **Time Complexity: `O(n)`** — Each node visited once
+- **Space Complexity: `O(h)`** — Recursion stack depth
+

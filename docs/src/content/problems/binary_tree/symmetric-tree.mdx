@@ -4,18 +4,18 @@ difficulty: "Easy"
 topic: "binary_tree"
 leetcodeUrl: "https://leetcode.com/problems/symmetric-tree"
 githubUrl: "https://github.com/sandypkumr/TechInterviewHandbookJava169/blob/master/src/binary_tree/SymmetricTree.java"
-patterns: ["sliding-window"]
+patterns: ["dfs"]
 tags: []
-timeComplexity: ""
-spaceComplexity: ""
+timeComplexity: "O(n)"
+spaceComplexity: "O(h)"
 isPremium: false
 hasProblemStatement: false
 javaApis: []
 similarProblems: []
-enrichmentNeeded: true
+enrichmentNeeded: false
 ---
 
-Given the `root` of a binary tree, _check whether it is a mirror of itself_ (i.e., symmetric around its center).
+Given the `root` of a binary tree, check whether it is a mirror of itself (i.e., symmetric around its center).
 
 **Example 1:**
 
@@ -36,10 +36,6 @@ Output: false
 - The number of nodes in the tree is in the range `[1, 1000]`.
 
 - `-100 <= Node.val <= 100`
-
-**Follow up:** Could you solve it both recursively and iteratively?
-
-**Patterns:** `sliding-window`
 
 ## Java Solution
 
@@ -65,23 +61,122 @@ public class SymmetricTree {
 
 ## Explanation
 
+### Problem Analysis
+
+A symmetric tree is a mirror of itself around its center. This means the left subtree must be a mirror image of the right subtree. For mirroring, left.left mirrors right.right and left.right mirrors right.left, not left-to-left or right-to-right.
+
 ### Approach
 
-**Symmetric Tree** asks about a contiguous subarray or substring, which is the classic signal for a sliding window. Instead of recomputing the window's property from scratch every time (O(n²)), we maintain a running state and slide one boundary at a time.
+Recursively compare two subtrees with mirroring logic:
+1. Extract left and right children of the root
+2. Check if they are mirrors using a helper function
+3. Two nodes are mirrors if: both are null (symmetric), or both exist with equal values and their children form mirrors (with positions swapped)
 
-Think of it like looking through a physical window on a train — as the train moves you don't redraw the entire landscape; you simply note what enters on one side and what leaves on the other. The window expands when we want to include more elements and shrinks when a constraint is violated.
+### Pattern Used
+
+**Recursive mirror comparison** — traverse tree in mirrored paths (left-right instead of left-left).
+
+### Key Insight
+
+The key insight is recognizing that mirroring requires *cross-comparison*: left.left mirrors right.right, not left.left mirrors left.left. This swapped pattern is what makes it different from equality checking.
 
 ### Code Walkthrough
 
-The solution is implemented in `isSymmetric(TreeNode root)`:
+```java
+public boolean isSymmetric(TreeNode root) {
+    return isMirror(root.left, root.right);
+}
+```
 
-1. Initialise left and right pointers both at index 0.
-2. Expand the window by advancing the right pointer and updating the window state.
-3. When the window violates the constraint, shrink from the left until it is valid again.
-4. At each valid state, update the global answer (max length, min size, etc.).
-5. Continue until the right pointer reaches the end of the input.
+Entry point: Check if root's left and right children are mirrors.
+
+```java
+private boolean isMirror(TreeNode left, TreeNode right) {
+    // Both subtrees are empty: they are mirrors
+    if (left == null && right == null) {
+        return true;
+    }
+    // Exactly one is empty: not mirrors
+    if (left == null || right == null) {
+        return false;
+    }
+    // Both exist: check value and recurse with swapped children
+    return left.val == right.val &&
+           isMirror(left.left, right.right) &&
+           isMirror(left.right, right.left);
+}
+```
+
+1. **Base case 1**: If both are null, they're mirrors.
+2. **Base case 2**: If exactly one is null, not mirrors.
+3. **Recursive case**: Both exist.
+   - Values must be equal: `left.val == right.val`
+   - Left's left child must mirror right's right child (cross)
+   - Left's right child must mirror right's left child (cross)
+
+### Example Walkthrough
+
+**Example 1: `root = [1,2,2,3,4,4,3]` → true**
+
+```
+        1
+       / \
+      2   2
+     / \ / \
+    3 4 4 3
+```
+
+1. `isMirror(2_left, 2_right)`: 2==2 ✓
+   - `isMirror(3, 3)`: 3==3 ✓, both children null → **true**
+   - `isMirror(4, 4)`: 4==4 ✓, both children null → **true**
+   - Returns **true**
+
+**Example 2: `root = [1,2,2,null,3,null,3]` → false**
+
+```
+        1
+       / \
+      2   2
+       \   \
+        3   3
+```
+
+1. `isMirror(2_left, 2_right)`: 2==2 ✓
+   - `isMirror(2_left.left=null, 2_right.right=3)`: left==null, right!=null → **false**
+
+### Key Variables Explained
+
+- **`left`, `right`**: Subtrees being compared for mirroring
+- **`left.val`, `right.val`**: Values that must be equal
+- **Cross-comparison pattern**: left.left with right.right (not left-to-left)
+
+### Why This Works
+
+The recursion is correct because:
+
+1. **Base cases**: Two null nodes trivially mirror; one null means no mirror.
+2. **Mirroring definition**: For subtrees to mirror, roots have equal values and children recursively mirror with swapped sides.
+3. **Complete checking**: All nodes checked, all relationships verified.
+
+### Trick Used
+
+The **swapped recursion** is the key:
+
+```java
+isMirror(left.left, right.right)  // Cross-comparison
+isMirror(left.right, right.left)  // Cross-comparison
+```
+
+This cross-pattern (not same-side) implements mirroring, distinguishing it from equality.
+
+### Edge Cases Handled
+
+1. **Single node**: No children, both left and right of root are null → true
+2. **Skewed tree**: Null checks catch structural differences
+3. **Same values, wrong structure**: Cross-comparison catches it
 
 ### Complexity Analysis
 
-- **Time Complexity: `?`** — see analysis above.
-- **Space Complexity: `?`** — see analysis above.
+- **Time Complexity: `O(n)`** — Each node visited once. In worst case, traverses entire tree.
+- **Space Complexity: `O(h)`** — Recursion stack depth equals height. Balanced: O(log n); skewed: O(n).
+
